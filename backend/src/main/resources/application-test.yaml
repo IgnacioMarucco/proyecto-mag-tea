@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:magtea-test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+
+  mail:
+    host: localhost
+    port: 3025
+
+app:
+  jwt:
+    secret: test-secret-key-minimo-256-bits-para-hmac-sha256-algoritmo
+    expiration-ms: 3600000

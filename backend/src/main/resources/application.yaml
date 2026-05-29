@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: magtea
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/magtea
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        default_schema: public
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    time-zone: America/Argentina/Cordoba
+
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+
+server:
+  port: 8080
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:cambiar-en-produccion-minimo-256-bits-de-longitud}
+    expiration-ms: 86400000  # 24 horas
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
