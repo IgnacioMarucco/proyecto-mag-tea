@@ -1,0 +1,10 @@
+FROM eclipse-temurin:21-jdk-alpine
+WORKDIR /app
+
+COPY .mvn/ .mvn/
+COPY mvnw pom.xml ./
+RUN sed -i 's/\r//' mvnw && chmod +x mvnw
+RUN ./mvnw dependency:go-offline -q
+
+# -Dmaven.test.skip=true: no compilar ni ejecutar tests al arrancar la app
+CMD ["./mvnw", "spring-boot:run", "-Dspring-boot.run.profiles=dev", "-Dmaven.test.skip=true"]

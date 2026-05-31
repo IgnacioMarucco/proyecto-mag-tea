@@ -1,3 +1,36 @@
-# Claude Code
+# ─── Claude Code ─────────────────────────────────────────────────────────────
 CLAUDE.md
+DESIGN.md
 .claude/
+
+# ─── Entorno / secretos ──────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ─── IDE ─────────────────────────────────────────────────────────────────────
+# IntelliJ (cuando se abre el monorepo raíz)
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# VS Code (la carpeta raíz, si existe)
+# Las subcarpetas frontend/ y backend/ tienen sus propias reglas
+.vscode/
+
+# ─── Sistema operativo ───────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ─── Docker ──────────────────────────────────────────────────────────────────
+# Override local (nunca commitear; puede tener puertos, mounts personales)
+docker-compose.override.yml
+
+# ─── Logs ────────────────────────────────────────────────────────────────────
+*.log
+logs/

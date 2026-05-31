@@ -1,0 +1,21 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./backend:/app
+      - maven_cache:/root/.m2   # cache de dependencias entre reinicios
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules       # evita que el host sobreescriba node_modules del contenedor
+    ports:
+      - "4200:4200"
+
+volumes:
+  maven_cache:
