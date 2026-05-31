@@ -1,0 +1,60 @@
+<div class="flex h-screen overflow-hidden bg-background font-sans">
+
+  <!-- Sidebar -->
+  <aside class="w-60 flex flex-col flex-shrink-0 bg-sidebar border-r border-sidebar-border">
+
+    <!-- Brand -->
+    <div class="px-5 py-5 border-b border-sidebar-border">
+      <div class="flex items-center gap-2.5 mb-1">
+        <span class="block w-1.5 h-1.5 rounded-full bg-accent"></span>
+        <span class="text-white text-xs font-semibold tracking-[0.2em] uppercase font-mono">MAG-TEA</span>
+      </div>
+      <p class="text-sidebar-muted text-[10px] font-mono tracking-widest pl-4 uppercase">
+        Sistema de Investigación
+      </p>
+    </div>
+
+    <!-- Nav -->
+    <nav class="flex-1 py-3 overflow-y-auto" aria-label="Navegación principal">
+      @for (item of visibleNavItems(); track item.protocol) {
+        <a
+          [routerLink]="item.path"
+          routerLinkActive="!text-white !border-l-2 !border-primary bg-primary/10"
+          [routerLinkActiveOptions]="{ exact: false }"
+          class="group flex items-center gap-4 pl-4 pr-5 py-2.5 text-sm text-sidebar-muted
+                 border-l-2 border-transparent
+                 hover:text-white hover:bg-white/5
+                 transition-all duration-150"
+          [attr.aria-label]="item.label"
+        >
+          <span class="font-mono text-[10px] text-sidebar-muted/50 group-hover:text-primary/70 transition-colors w-5 flex-shrink-0">
+            {{ item.protocol }}
+          </span>
+          <span>{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+
+    <!-- User -->
+    <div class="px-5 py-4 border-t border-sidebar-border">
+      <p class="text-white text-sm font-medium truncate" [title]="user()?.email ?? ''">
+        {{ user()?.email }}
+      </p>
+      <p class="text-accent text-[11px] font-mono mt-0.5">{{ roleLabel() }}</p>
+      <button
+        (click)="logout()"
+        class="mt-3 text-xs text-sidebar-muted hover:text-white transition-colors"
+        aria-label="Cerrar sesión"
+      >
+        Cerrar sesión →
+      </button>
+    </div>
+
+  </aside>
+
+  <!-- Content -->
+  <main class="flex-1 overflow-y-auto">
+    <router-outlet />
+  </main>
+
+</div>

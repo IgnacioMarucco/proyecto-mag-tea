@@ -21,7 +21,7 @@ public class AuthService {
         );
         var profesional = repository.findByEmail(request.email())
                 .orElseThrow(() -> new UsernameNotFoundException("Profesional no encontrado"));
-        String token = jwtUtil.generateToken(request.email());
+        String token = jwtUtil.generateToken(request.email(), profesional.getRole().name());
         return new LoginResponse(token, profesional.getEmail(), profesional.getRole().name());
     }
 }

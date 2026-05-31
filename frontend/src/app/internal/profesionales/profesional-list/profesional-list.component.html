@@ -1,40 +1,68 @@
-<section aria-labelledby="page-title">
-  <header class="page-header">
-    <h1 id="page-title">Profesionales</h1>
-    <a routerLink="/internal/profesionales/nuevo" class="btn-primary">Nuevo profesional</a>
-  </header>
+<div class="p-8">
 
+  <!-- Header -->
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      <p class="text-xs font-mono text-text-muted tracking-widest uppercase mb-1">Gestión</p>
+      <h1 class="text-2xl font-semibold text-text">Profesionales</h1>
+    </div>
+    <a
+      routerLink="/internal/profesionales/nuevo"
+      class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors"
+    >
+      <span>+ Nuevo profesional</span>
+    </a>
+  </div>
+
+  <!-- Tabla -->
   @if (profesionales().length === 0) {
-    <p>No hay profesionales registrados.</p>
+    <div class="text-center py-16 text-text-muted text-sm">
+      No hay profesionales registrados.
+    </div>
   } @else {
-    <table aria-label="Listado de profesionales">
-      <thead>
-        <tr>
-          <th scope="col">Nombre</th>
-          <th scope="col">Email</th>
-          <th scope="col">Rol</th>
-          <th scope="col">Acciones</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (p of profesionales(); track p.id) {
-          <tr>
-            <td>{{ p.apellido }}, {{ p.nombre }}</td>
-            <td>{{ p.email }}</td>
-            <td>{{ roleLabels[p.role] }}</td>
-            <td>
-              <a [routerLink]="['/internal/profesionales', p.id, 'editar']">Editar</a>
-              <button
-                (click)="confirmDelete(p.id)"
-                [disabled]="deleting() === p.id"
-                [attr.aria-label]="'Dar de baja a ' + p.nombre + ' ' + p.apellido"
-              >
-                {{ deleting() === p.id ? 'Procesando...' : 'Dar de baja' }}
-              </button>
-            </td>
+    <div class="bg-surface border border-border rounded-lg overflow-hidden">
+      <table class="w-full text-sm" aria-label="Listado de profesionales">
+        <thead>
+          <tr class="border-b border-border bg-background">
+            <th scope="col" class="text-left px-5 py-3 text-xs font-mono text-text-muted tracking-wider uppercase">Apellido, Nombre</th>
+            <th scope="col" class="text-left px-5 py-3 text-xs font-mono text-text-muted tracking-wider uppercase">Email</th>
+            <th scope="col" class="text-left px-5 py-3 text-xs font-mono text-text-muted tracking-wider uppercase">Rol</th>
+            <th scope="col" class="px-5 py-3"></th>
           </tr>
-        }
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          @for (p of profesionales(); track p.id) {
+            <tr class="border-b border-border last:border-0 hover:bg-background transition-colors">
+              <td class="px-5 py-3.5 text-text font-medium">{{ p.apellido }}, {{ p.nombre }}</td>
+              <td class="px-5 py-3.5 text-text-muted font-mono text-xs">{{ p.email }}</td>
+              <td class="px-5 py-3.5">
+                <span class="inline-block px-2 py-0.5 rounded text-xs font-mono bg-primary-light text-primary">
+                  {{ roleLabels[p.role] }}
+                </span>
+              </td>
+              <td class="px-5 py-3.5">
+                <div class="flex items-center justify-end gap-4">
+                  <a
+                    [routerLink]="['/internal/profesionales', p.id, 'editar']"
+                    class="text-xs text-primary hover:text-primary-dark transition-colors"
+                  >
+                    Editar
+                  </a>
+                  <button
+                    (click)="confirmDelete(p.id)"
+                    [disabled]="deleting() === p.id"
+                    class="text-xs text-danger hover:opacity-70 transition-opacity disabled:opacity-40"
+                    [attr.aria-label]="'Dar de baja a ' + p.nombre + ' ' + p.apellido"
+                  >
+                    {{ deleting() === p.id ? 'Procesando...' : 'Dar de baja' }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
   }
-</section>
+
+</div>

@@ -1,28 +1,81 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { RouterLink, RouterOutlet } from '@angular/router';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { Role, ROLE_LABELS } from '../../core/models/profesional.model';
+
+interface NavItem {
+  protocol: string;
+  label: string;
+  path: string;
+  allowedRoles: Role[];
+}
+
+const NAV_ITEMS: NavItem[] = [
+  {
+    protocol: '01',
+    label: 'Profesionales',
+    path: '/internal/profesionales',
+    allowedRoles: ['INVESTIGADOR_PRINCIPAL'],
+  },
+  {
+    protocol: '02',
+    label: 'Bandeja',
+    path: '/internal/bandeja',
+    allowedRoles: ['SECRETARIA', 'CUERPO_MEDICO', 'ROTANTE_CLINICA', 'INVESTIGADOR_PRINCIPAL'],
+  },
+  {
+    protocol: '03',
+    label: 'Pacientes',
+    path: '/internal/pacientes',
+    allowedRoles: ['CUERPO_TECNICO', 'CUERPO_MEDICO', 'ROTANTE_CLINICA', 'ROTANTE_BASICA', 'INVESTIGADOR_PRINCIPAL'],
+  },
+  {
+    protocol: '04',
+    label: 'Sueros',
+    path: '/internal/sueros',
+    allowedRoles: ['CUERPO_TECNICO', 'ROTANTE_BASICA', 'INVESTIGADOR_PRINCIPAL'],
+  },
+  {
+    protocol: '05',
+    label: 'Pools',
+    path: '/internal/pools',
+    allowedRoles: ['CUERPO_TECNICO', 'ROTANTE_BASICA', 'INVESTIGADOR_PRINCIPAL'],
+  },
+  {
+    protocol: '06',
+    label: 'Modelos Animales',
+    path: '/internal/modelos-animales',
+    allowedRoles: ['CUERPO_TECNICO', 'ROTANTE_BASICA', 'INVESTIGADOR_PRINCIPAL'],
+  },
+  {
+    protocol: '07',
+    label: 'Reportes',
+    path: '/internal/reportes',
+    allowedRoles: ['INVESTIGADOR_PRINCIPAL'],
+  },
+];
 
 @Component({
   selector: 'app-internal-layout',
-  imports: [RouterOutlet, RouterLink],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  template: `
-    <div class="layout">
-      <nav class="sidebar" aria-label="Menú principal">
-        <h2 class="sidebar-title">MAG-TEA</h2>
-        <ul role="list">
-          <li><a routerLink="/internal/profesionales">Profesionales</a></li>
-        </ul>
-        <button (click)="logout()" class="logout-btn">Cerrar sesión</button>
-      </nav>
-      <main class="content">
-        <router-outlet />
-      </main>
-    </div>
-  `,
+  templateUrl: './internal-layout.component.html',
 })
 export class InternalLayoutComponent {
   private readonly authService = inject(AuthService);
+
+  user = this.authService.currentUser;
+
+  roleLabel = computed(() => {
+    const role = this.user()?.role;
+    return role ? ROLE_LABELS[role] : '';
+  });
+
+  visibleNavItems = computed(() => {
+    const role = this.user()?.role;
+    if (!role) return [];
+    return NAV_ITEMS.filter(item => item.allowedRoles.includes(role));
+  });
 
   logout(): void {
     this.authService.logout();

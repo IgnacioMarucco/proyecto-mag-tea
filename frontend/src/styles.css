@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  /* Primarios */
+  --color-primary:          #1a6b8a;
+  --color-primary-light:    #e8f4f8;
+  --color-primary-dark:     #0d4d65;
+
+  /* Acento */
+  --color-accent:           #2eb872;
+  --color-accent-light:     #e6f7ef;
+
+  /* Semánticos */
+  --color-danger:           #c0392b;
+  --color-warning:          #e67e22;
+  --color-success:          #27ae60;
+
+  /* Neutros */
+  --color-background:       #f5f7f9;
+  --color-surface:          #ffffff;
+  --color-border:           #d1d9e0;
+  --color-text:             #1a2332;
+  --color-text-muted:       #5a6a7a;
+
+  /* Sidebar */
+  --color-sidebar:          #0d1821;
+  --color-sidebar-border:   #1e3448;
+  --color-sidebar-muted:    #8a9bb0;
+
+  /* Tipografía */
+  --font-sans:  'DM Sans', sans-serif;
+  --font-mono:  'JetBrains Mono', monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--color-background);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+}
