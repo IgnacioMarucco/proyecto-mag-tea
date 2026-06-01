@@ -1,12 +1,12 @@
 import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ProfesionalService } from '../../../core/services/profesional.service';
 import { ROLE_LABELS, ROLES, ProfesionalCreate, ProfesionalUpdate } from '../../../core/models/profesional.model';
 
 @Component({
   selector: 'app-profesional-form',
-  imports: [ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './profesional-form.component.html',
 })

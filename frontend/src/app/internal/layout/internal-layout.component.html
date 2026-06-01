@@ -16,20 +16,17 @@
 
     <!-- Nav -->
     <nav class="flex-1 py-3 overflow-y-auto" aria-label="Navegación principal">
-      @for (item of visibleNavItems(); track item.protocol) {
+      @for (item of visibleNavItems(); track item.path) {
         <a
           [routerLink]="item.path"
           routerLinkActive="!text-white !border-l-2 !border-primary bg-primary/10"
           [routerLinkActiveOptions]="{ exact: false }"
-          class="group flex items-center gap-4 pl-4 pr-5 py-2.5 text-sm text-sidebar-muted
+          class="flex items-center pl-4 pr-5 py-2.5 text-sm text-sidebar-muted
                  border-l-2 border-transparent
                  hover:text-white hover:bg-white/5
                  transition-all duration-150"
           [attr.aria-label]="item.label"
         >
-          <span class="font-mono text-[10px] text-sidebar-muted/50 group-hover:text-primary/70 transition-colors w-5 flex-shrink-0">
-            {{ item.protocol }}
-          </span>
           <span>{{ item.label }}</span>
         </a>
       }

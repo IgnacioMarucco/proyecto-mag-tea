@@ -44,14 +44,14 @@
                 <div class="flex items-center justify-end gap-4">
                   <a
                     [routerLink]="['/internal/profesionales', p.id, 'editar']"
-                    class="text-xs text-primary hover:text-primary-dark transition-colors"
+                    class="px-3 py-1.5 text-xs font-medium text-white bg-primary rounded-md hover:opacity-90 transition-opacity"
                   >
                     Editar
                   </a>
                   <button
                     (click)="confirmDelete(p.id)"
                     [disabled]="deleting() === p.id"
-                    class="text-xs text-danger hover:opacity-70 transition-opacity disabled:opacity-40"
+                    class="px-3 py-1.5 text-xs font-medium text-white bg-danger rounded-md hover:opacity-90 transition-opacity disabled:opacity-40 cursor-pointer"
                     [attr.aria-label]="'Dar de baja a ' + p.nombre + ' ' + p.apellido"
                   >
                     {{ deleting() === p.id ? 'Procesando...' : 'Dar de baja' }}

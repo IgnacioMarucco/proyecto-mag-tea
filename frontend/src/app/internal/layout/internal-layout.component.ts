@@ -4,7 +4,6 @@ import { AuthService } from '../../core/services/auth.service';
 import { Role, ROLE_LABELS } from '../../core/models/profesional.model';
 
 interface NavItem {
-  protocol: string;
   label: string;
   path: string;
   allowedRoles: Role[];
@@ -12,43 +11,36 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   {
-    protocol: '01',
     label: 'Profesionales',
     path: '/internal/profesionales',
     allowedRoles: ['INVESTIGADOR_PRINCIPAL'],
   },
   {
-    protocol: '02',
     label: 'Bandeja',
     path: '/internal/bandeja',
     allowedRoles: ['SECRETARIA', 'CUERPO_MEDICO', 'ROTANTE_CLINICA', 'INVESTIGADOR_PRINCIPAL'],
   },
   {
-    protocol: '03',
     label: 'Pacientes',
     path: '/internal/pacientes',
     allowedRoles: ['CUERPO_TECNICO', 'CUERPO_MEDICO', 'ROTANTE_CLINICA', 'ROTANTE_BASICA', 'INVESTIGADOR_PRINCIPAL'],
   },
   {
-    protocol: '04',
     label: 'Sueros',
     path: '/internal/sueros',
     allowedRoles: ['CUERPO_TECNICO', 'ROTANTE_BASICA', 'INVESTIGADOR_PRINCIPAL'],
   },
   {
-    protocol: '05',
     label: 'Pools',
     path: '/internal/pools',
     allowedRoles: ['CUERPO_TECNICO', 'ROTANTE_BASICA', 'INVESTIGADOR_PRINCIPAL'],
   },
   {
-    protocol: '06',
     label: 'Modelos Animales',
     path: '/internal/modelos-animales',
     allowedRoles: ['CUERPO_TECNICO', 'ROTANTE_BASICA', 'INVESTIGADOR_PRINCIPAL'],
   },
   {
-    protocol: '07',
     label: 'Reportes',
     path: '/internal/reportes',
     allowedRoles: ['INVESTIGADOR_PRINCIPAL'],
