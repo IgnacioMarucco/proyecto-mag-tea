@@ -6,6 +6,7 @@ import com.utn.magtea.common.exception.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -49,6 +50,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DisabledException.class)
     public ResponseEntity<ErrorResponse> handleDisabled(DisabledException ex) {
         return build(HttpStatus.FORBIDDEN, "Acceso denegado", "Profesional dado de baja");
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
+        return build(HttpStatus.FORBIDDEN, "Acceso denegado", "No tiene permisos para esta operación");
     }
 
     @ExceptionHandler(Exception.class)
