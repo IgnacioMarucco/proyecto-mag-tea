@@ -2,15 +2,15 @@ services:
   db:
     image: postgres:17-alpine
     environment:
-      POSTGRES_DB: ${DB_NAME:-magtea}
-      POSTGRES_USER: ${DB_USERNAME:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-magtea}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -19,9 +19,11 @@ services:
     build: ./backend
     environment:
       DB_HOST: db
-      DB_USERNAME: ${DB_USERNAME:-postgres}
-      DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      JWT_SECRET: ${JWT_SECRET:-cambiar-este-secreto-en-produccion-minimo-256-bits-ok}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      APP_INIT_ADMIN_EMAIL: ${ADMIN_EMAIL}
+      APP_INIT_ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       SPRING_PROFILES_ACTIVE: dev
     depends_on:
       db:
