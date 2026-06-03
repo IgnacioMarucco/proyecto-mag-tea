@@ -1,23 +1,38 @@
 <div class="p-8">
 
   <!-- Header -->
-  <div class="flex items-center justify-between mb-8">
+  <div class="flex items-center justify-between mb-6">
     <div>
       <p class="text-xs font-mono text-text-muted tracking-widest uppercase mb-1">Gestión</p>
       <h1 class="text-2xl font-semibold text-text">Profesionales</h1>
     </div>
+  </div>
+
+  <!-- Toolbar: búsqueda + filtros por rol + botón nuevo -->
+  <app-list-toolbar
+    placeholder="Buscar por nombre o email…"
+    [filters]="filters"
+    [activeFilter]="activeFilter()"
+    (searchChange)="search.set($event)"
+    (filterChange)="activeFilter.set($event)"
+  >
     <a
       routerLink="/internal/profesionales/nuevo"
-      class="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors"
+      class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors whitespace-nowrap"
     >
-      <span>+ Nuevo profesional</span>
+      + Nuevo profesional
     </a>
-  </div>
+  </app-list-toolbar>
 
   <!-- Tabla -->
   @if (profesionales().length === 0) {
-    <div class="text-center py-16 text-text-muted text-sm">
-      No hay profesionales registrados.
+    <div class="bg-surface border border-border rounded-lg py-16 text-center">
+      <p class="text-sm font-medium text-text mb-1">
+        {{ search() || activeFilter() !== 'todos' ? 'Sin resultados' : 'No hay profesionales registrados' }}
+      </p>
+      <p class="text-xs text-text-muted">
+        {{ search() || activeFilter() !== 'todos' ? 'Probá con otro criterio de búsqueda' : 'Creá el primero con el botón de arriba' }}
+      </p>
     </div>
   } @else {
     <div class="bg-surface border border-border rounded-lg overflow-hidden">
@@ -41,18 +56,19 @@
                 </span>
               </td>
               <td class="px-5 py-3.5">
-                <div class="flex items-center justify-end gap-4">
+                <div class="flex items-center justify-end gap-3">
                   <a
                     [routerLink]="['/internal/profesionales', p.id, 'editar']"
-                    class="px-3 py-1.5 text-xs font-medium text-white bg-primary rounded-md hover:opacity-90 transition-opacity"
+                    class="px-3 py-1.5 text-xs font-medium text-white bg-primary rounded-md hover:opacity-90 transition-opacity cursor-pointer"
                   >
                     Editar
                   </a>
                   <button
-                    (click)="confirmDelete(p.id)"
+                    type="button"
+                    (click)="requestDelete(p.id)"
                     [disabled]="deleting() === p.id"
                     class="px-3 py-1.5 text-xs font-medium text-white bg-danger rounded-md hover:opacity-90 transition-opacity disabled:opacity-40 cursor-pointer"
-                    [attr.aria-label]="'Dar de baja a ' + p.nombre + ' ' + p.apellido"
+                    [attr.aria-label]="'Dar de baja a ' + p.apellido + ', ' + p.nombre"
                   >
                     {{ deleting() === p.id ? 'Procesando...' : 'Dar de baja' }}
                   </button>
@@ -66,3 +82,15 @@
   }
 
 </div>
+
+<!-- Modal de confirmación -->
+@if (pendingDeleteId() !== null) {
+  <app-confirm-modal
+    title="¿Dar de baja al profesional?"
+    message="El profesional quedará inactivo y no podrá iniciar sesión."
+    confirmLabel="Dar de baja"
+    cancelLabel="Cancelar"
+    (confirmed)="confirmDelete()"
+    (cancelled)="cancelDelete()"
+  />
+}

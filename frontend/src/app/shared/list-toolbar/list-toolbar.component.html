@@ -1,0 +1,48 @@
+<div class="flex items-center justify-between gap-4 mb-5 flex-wrap">
+
+  <!-- Búsqueda -->
+  <div class="relative flex-1 min-w-64 max-w-sm">
+    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm pointer-events-none select-none">⌕</span>
+    <input
+      type="text"
+      [value]="searchValue()"
+      (input)="onInput($any($event.target).value)"
+      [placeholder]="placeholder()"
+      class="w-full pl-8 pr-8 py-2 text-sm bg-surface border border-border rounded-md text-text
+             placeholder-text-muted/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+      aria-label="Buscar"
+    />
+    @if (searchValue()) {
+      <button
+        (click)="clearSearch()"
+        aria-label="Limpiar búsqueda"
+        class="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text transition-colors text-base leading-none cursor-pointer"
+      >×</button>
+    }
+  </div>
+
+  <!-- Filtros + acciones proyectadas -->
+  <div class="flex items-center gap-3">
+    @if (filters().length) {
+      <div class="flex gap-1 bg-surface border border-border rounded-lg p-1">
+        @for (f of filters(); track f.key) {
+          <button
+            type="button"
+            (click)="filterChange.emit(f.key)"
+            class="px-3 py-1.5 text-xs font-medium rounded-md transition-colors cursor-pointer"
+            [class.bg-primary]="activeFilter() === f.key"
+            [class.text-white]="activeFilter() === f.key"
+            [class.text-text-muted]="activeFilter() !== f.key"
+          >
+            {{ f.label }}
+            @if (f.count != null) {
+              <span class="font-mono opacity-60 ml-1">{{ f.count }}</span>
+            }
+          </button>
+        }
+      </div>
+    }
+    <ng-content />
+  </div>
+
+</div>

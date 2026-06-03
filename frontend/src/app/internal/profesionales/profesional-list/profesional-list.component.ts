@@ -1,45 +1,70 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { BehaviorSubject, switchMap } from 'rxjs';
-import { catchError, of } from 'rxjs';
+import { BehaviorSubject, switchMap, catchError, of } from 'rxjs';
 import { ProfesionalService } from '../../../core/services/profesional.service';
-import { ROLE_LABELS } from '../../../core/models/profesional.model';
+import { ROLE_LABELS, Role } from '../../../core/models/profesional.model';
+import { ListToolbarComponent, ToolbarFilter } from '../../../shared/list-toolbar/list-toolbar.component';
+import { ConfirmModalComponent } from '../../../shared/confirm-modal/confirm-modal.component';
 
 @Component({
   selector: 'app-profesional-list',
-  imports: [RouterLink],
+  imports: [RouterLink, ListToolbarComponent, ConfirmModalComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './profesional-list.component.html',
 })
 export class ProfesionalListComponent {
   private readonly service = inject(ProfesionalService);
-
   private readonly refresh$ = new BehaviorSubject<void>(undefined);
 
-  profesionales = toSignal(
+  private readonly todos = toSignal(
     this.refresh$.pipe(
       switchMap(() => this.service.findAll().pipe(catchError(() => of([]))))
     ),
     { initialValue: [] }
   );
 
-  deleting = signal<number | null>(null);
   readonly roleLabels = ROLE_LABELS;
 
-  confirmDelete(id: number): void {
-    if (!confirm('¿Dar de baja este profesional?')) return;
+  search      = signal('');
+  activeFilter = signal<string>('todos');
+  deleting    = signal<number | null>(null);
+  pendingDeleteId = signal<number | null>(null);
 
+  readonly filters: ToolbarFilter[] = [
+    { key: 'todos', label: 'Todos' },
+    ...Object.entries(ROLE_LABELS).map(([key, label]) => ({ key, label })),
+  ];
+
+  readonly profesionales = computed(() => {
+    const q    = this.search().toLowerCase().trim();
+    const rol  = this.activeFilter();
+    return this.todos().filter(p => {
+      const matchRol    = rol === 'todos' || p.role === (rol as Role);
+      const matchSearch = !q ||
+        p.apellido.toLowerCase().includes(q) ||
+        p.nombre.toLowerCase().includes(q) ||
+        p.email.toLowerCase().includes(q);
+      return matchRol && matchSearch;
+    });
+  });
+
+  requestDelete(id: number): void {
+    this.pendingDeleteId.set(id);
+  }
+
+  cancelDelete(): void {
+    this.pendingDeleteId.set(null);
+  }
+
+  confirmDelete(): void {
+    const id = this.pendingDeleteId();
+    if (id === null) return;
+    this.pendingDeleteId.set(null);
     this.deleting.set(id);
     this.service.delete(id).subscribe({
-      next: () => {
-        this.deleting.set(null);
-        this.refresh$.next();
-      },
-      error: () => {
-        this.deleting.set(null);
-        alert('Error al dar de baja el profesional');
-      },
+      next: () => { this.deleting.set(null); this.refresh$.next(); },
+      error: () => this.deleting.set(null),
     });
   }
 }
