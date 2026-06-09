@@ -8,7 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import com.utn.magtea.common.PageResponse;
 
 @RestController
 @RequestMapping("/api/profesionales")
@@ -20,9 +20,15 @@ public class ProfesionalController {
     private final ProfesionalService service;
 
     @GetMapping
-    @Operation(summary = "Listar profesionales activos")
-    public List<ProfesionalResponseDTO> findAll() {
-        return service.findAll();
+    @Operation(summary = "Listar profesionales activos con paginación")
+    public PageResponse<ProfesionalResponseDTO> findAll(
+            @RequestParam(defaultValue = "0")       int page,
+            @RequestParam(defaultValue = "50")      int size,
+            @RequestParam(required = false)         String q,
+            @RequestParam(required = false)         Role rol,
+            @RequestParam(defaultValue = "apellido") String sortBy,
+            @RequestParam(defaultValue = "asc")     String sortDir) {
+        return service.findAll(page, size, q, rol, sortBy, sortDir);
     }
 
     @GetMapping("/{id}")
