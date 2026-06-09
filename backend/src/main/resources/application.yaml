@@ -36,6 +36,9 @@ app:
   jwt:
     secret: ${JWT_SECRET:cambiar-en-produccion-minimo-256-bits-de-longitud}
     expiration-ms: 86400000  # 24 horas
+  base-url: ${APP_BASE_URL:http://localhost:4200}
+  mchat:
+    token-expiry-days: 30
 
 springdoc:
   swagger-ui:
