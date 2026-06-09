@@ -1,0 +1,29 @@
+<div class="flex justify-end">
+
+  @if (panelOpen()) {
+    <div class="fixed inset-0 z-40" (click)="panelOpen.set(false)"></div>
+  }
+
+  <button type="button" (click)="togglePanel($event)"
+    class="flex items-center justify-center w-8 h-8 rounded-md text-text-muted hover:text-text hover:bg-background transition-colors cursor-pointer"
+    aria-label="Acciones">
+    <app-icon name="ellipsis-vertical" class="w-4 h-4" />
+  </button>
+
+  @if (panelOpen()) {
+    <div class="fixed z-50 bg-surface border border-border rounded-lg shadow-md min-w-36 py-1"
+      [style.top.px]="panelPosition().top"
+      [style.right.px]="panelPosition().right">
+      @for (action of visibleActions(); track action.label) {
+        <button type="button"
+          [disabled]="action.disabled"
+          (click)="execute(action)"
+          class="w-full text-left px-3 py-2 text-sm transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          [class]="actionClass(action.style)">
+          {{ action.label }}
+        </button>
+      }
+    </div>
+  }
+
+</div>

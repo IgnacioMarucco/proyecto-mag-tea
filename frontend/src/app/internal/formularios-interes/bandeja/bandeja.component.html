@@ -1,0 +1,187 @@
+<div class="p-8">
+
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-xs font-mono text-text-muted tracking-widest uppercase mb-1">Etapa Clínica</h1>
+      <h2 class="text-2xl font-semibold text-text">Bandeja de formularios</h2>
+    </div>
+  </div>
+
+  <app-list-toolbar
+    placeholder="Buscar por tutor o niño/a…"
+    [filterGroups]="filterGroups"
+    [activeFilters]="activeFilters()"
+    (searchChange)="onSearch($event)"
+    (filtersChange)="onFiltersChange($event)"
+  />
+
+  <app-data-table
+    [columns]="columns"
+    [rows]="formularios().length"
+    ariaLabel="Listado de formularios de interés"
+    [emptyTitle]="emptyTitle()"
+    [emptySubtitle]="emptySubtitle()"
+    [currentSort]="sortState()"
+    (sortChange)="onSortChange($event)"
+  >
+    @for (f of formularios(); track f.id) {
+      <tr class="border-b border-border last:border-0 hover:bg-background transition-colors">
+
+        <td class="px-5 py-3.5 text-text">{{ f.apellidoTutor }}, {{ f.nombreTutor }}</td>
+
+        <td class="px-5 py-3.5">
+          <span class="font-medium text-text">{{ f.apellidoNino }}, {{ f.nombreNino }}</span>
+        </td>
+
+        <td class="px-5 py-3.5 hidden sm:table-cell text-xs text-text-muted">
+          {{ formatEdad(f) }}
+        </td>
+
+        <td class="px-5 py-3.5 hidden md:table-cell font-mono text-xs text-text-muted">
+          {{ f.telefono || '—' }}
+        </td>
+
+        <td class="px-5 py-3.5 hidden lg:table-cell font-mono text-xs text-text-muted">
+          {{ f.correoTutor }}
+        </td>
+
+        <td class="px-5 py-3.5 hidden md:table-cell font-mono text-xs text-text-muted">
+          {{ f.fechaContacto }}
+        </td>
+
+        <td class="px-5 py-3.5">
+          <app-status-badge [value]="f.estado" [labels]="estadoLabels" [colorMap]="estadoColors" />
+        </td>
+
+        <td class="px-5 py-3.5">
+          <app-row-actions [actions]="getActionsFor(f)" />
+        </td>
+
+      </tr>
+    }
+  </app-data-table>
+
+  <app-paginator
+    [currentPage]="currentPage()"
+    [totalPages]="totalPages()"
+    [totalElements]="totalElements()"
+    itemLabel="formularios"
+    (pageChange)="goToPage($event)"
+  />
+
+</div>
+
+<!-- Modal confirmar descartar -->
+@if (pendingDescartarId() !== null) {
+  <app-confirm-modal
+    title="¿Descartar formulario?"
+    message="Esto marcará el formulario como descartado. La familia no recibirá ninguna notificación."
+    confirmLabel="Sí, descartar"
+    cancelLabel="Cancelar"
+    (confirmed)="confirmDescartar()"
+    (cancelled)="cancelDescartar()"
+  />
+}
+
+<!-- Modal confirmar revertir a pendiente -->
+@if (pendingRevertirId() !== null) {
+  <app-confirm-modal
+    title="¿Revertir a Pendiente?"
+    message="El formulario volverá al estado Pendiente. Podés volver a marcarlo como Contactado cuando corresponda."
+    confirmLabel="Sí, revertir"
+    cancelLabel="Cancelar"
+    [danger]="false"
+    (confirmed)="confirmRevertir()"
+    (cancelled)="cancelRevertir()"
+  />
+}
+
+<!-- Modal de detalles -->
+@if (selectedFormulario(); as f) {
+  <div class="fixed inset-0 bg-sidebar/50 flex items-center justify-center z-50 p-5"
+    (click)="cerrarDetalle()">
+    <div class="bg-surface border border-border rounded-lg w-full max-w-lg shadow-md"
+      (click)="$event.stopPropagation()">
+
+      <div class="flex items-start justify-between px-6 pt-5 pb-4 border-b border-border">
+        <div>
+          <p class="text-xs font-mono text-text-muted uppercase tracking-wider mb-0.5">Formulario de interés</p>
+          <h3 class="text-base font-semibold text-text">{{ f.apellidoNino }}, {{ f.nombreNino }}</h3>
+        </div>
+        <button (click)="cerrarDetalle()" aria-label="Cerrar"
+          class="text-text-muted hover:text-text transition-colors text-xl leading-none cursor-pointer ml-4">×</button>
+      </div>
+
+      <div class="px-6 py-5 space-y-5 text-sm">
+        <div>
+          <p class="text-xs font-mono text-primary tracking-wider uppercase mb-3">Niño/a</p>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <p class="text-xs text-text-muted mb-0.5">Apellido y nombre</p>
+              <p class="text-text font-medium">{{ f.apellidoNino }}, {{ f.nombreNino }}</p>
+            </div>
+            @if (f.fechaNacimientoNino) {
+              <div>
+                <p class="text-xs text-text-muted mb-0.5">Fecha de nacimiento</p>
+                <p class="text-text">{{ f.fechaNacimientoNino }}
+                  @if (f.edadActual !== null) {
+                    <span class="text-text-muted">({{ formatEdad(f) }})</span>
+                  }
+                </p>
+              </div>
+            }
+          </div>
+        </div>
+
+        <div>
+          <p class="text-xs font-mono text-primary tracking-wider uppercase mb-3">Tutor/a</p>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <p class="text-xs text-text-muted mb-0.5">Apellido y nombre</p>
+              <p class="text-text">{{ f.apellidoTutor }}, {{ f.nombreTutor }}</p>
+            </div>
+            <div>
+              <p class="text-xs text-text-muted mb-0.5">Correo</p>
+              <p class="text-text font-mono text-xs">{{ f.correoTutor }}</p>
+            </div>
+            @if (f.telefono) {
+              <div>
+                <p class="text-xs text-text-muted mb-0.5">Teléfono</p>
+                <p class="text-text font-mono text-xs">{{ f.telefono }}</p>
+              </div>
+            }
+            <div>
+              <p class="text-xs text-text-muted mb-0.5">Cómo conoció el proyecto</p>
+              <p class="text-text">{{ f.comoConocioProyecto ? comoConocioLabels[f.comoConocioProyecto] : '—' }}</p>
+              @if (f.comoConocioProyecto === 'OTRO' && f.otroComoConocio) {
+                <p class="text-xs text-text-muted mt-0.5">{{ f.otroComoConocio }}</p>
+              }
+            </div>
+          </div>
+        </div>
+
+        @if (f.diasDisponibles) {
+          <div>
+            <p class="text-xs font-mono text-primary tracking-wider uppercase mb-3">Coordinación de llamada</p>
+            <div>
+              <p class="text-xs text-text-muted mb-0.5">Días y horarios disponibles</p>
+              <p class="text-text">{{ f.diasDisponibles }}</p>
+            </div>
+          </div>
+        }
+
+        <div class="flex items-center justify-between pt-1 border-t border-border">
+          <div>
+            <p class="text-xs text-text-muted mb-0.5">Estado</p>
+            <app-status-badge [value]="f.estado" [labels]="estadoLabels" [colorMap]="estadoColors" />
+          </div>
+          <div class="text-right">
+            <p class="text-xs text-text-muted mb-0.5">Fecha de contacto</p>
+            <p class="font-mono text-xs text-text-muted">{{ f.fechaContacto }}</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+}

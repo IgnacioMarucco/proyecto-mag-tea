@@ -1,0 +1,39 @@
+@if (totalPages() > 1) {
+  <div class="flex items-center justify-between px-5 py-3 border-t border-border text-sm">
+    <span class="text-text-muted text-xs font-mono">{{ totalElements() }} {{ itemLabel() }}</span>
+    <div class="flex items-center gap-1">
+
+      <button
+        (click)="goTo(currentPage() - 1)"
+        [disabled]="currentPage() === 0"
+        aria-label="Página anterior"
+        class="w-8 h-8 flex items-center justify-center rounded text-text-muted hover:bg-background disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors">
+        <app-icon name="chevron-left" class="w-4 h-4" />
+      </button>
+
+      @for (p of visiblePages(); track p) {
+        @if (p === -1) {
+          <span class="w-8 h-8 flex items-center justify-center text-text-muted text-xs">…</span>
+        } @else {
+          <button
+            (click)="goTo(p)"
+            [class]="p === currentPage()
+              ? 'bg-primary text-white'
+              : 'text-text-muted hover:bg-background'"
+            class="w-8 h-8 flex items-center justify-center rounded text-xs font-mono cursor-pointer transition-colors">
+            {{ p + 1 }}
+          </button>
+        }
+      }
+
+      <button
+        (click)="goTo(currentPage() + 1)"
+        [disabled]="currentPage() === totalPages() - 1"
+        aria-label="Página siguiente"
+        class="w-8 h-8 flex items-center justify-center rounded text-text-muted hover:bg-background disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors">
+        <app-icon name="chevron-right" class="w-4 h-4" />
+      </button>
+
+    </div>
+  </div>
+}

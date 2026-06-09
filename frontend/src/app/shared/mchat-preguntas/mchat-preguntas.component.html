@@ -1,0 +1,87 @@
+@if (readonly()) {
+
+  <!-- Vista de solo lectura (acordeón de respuestas) -->
+  @if (respuestas(); as r) {
+    <ol class="space-y-2">
+      @for (preg of preguntas; track $index) {
+        @let n = $index + 1;
+        @let val = r[$index];
+        <li class="flex items-start gap-3 text-sm">
+          <span class="text-text-muted shrink-0 w-5 text-right">{{ n }}.</span>
+          <span class="text-text-muted grow text-xs leading-snug">{{ preg }}</span>
+          <span class="shrink-0 font-medium text-xs"
+            [class.text-accent]="!isFalla(n, val)"
+            [class.text-danger]="isFalla(n, val)">
+            {{ getLabel(n, val) }}
+          </span>
+        </li>
+      }
+    </ol>
+  }
+
+} @else {
+
+  <!-- Formulario editable -->
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+    <div class="space-y-4">
+      @for (preg of preguntas; track $index) {
+        @let n = $index + 1;
+        <div class="flex items-start gap-3">
+          <span class="text-text-muted text-xs w-5 text-right shrink-0 mt-0.5">{{ n }}.</span>
+          <p class="text-sm text-text grow leading-snug">
+            {{ preg }}
+          </p>
+          <div class="flex gap-2 shrink-0">
+            <label class="flex items-center gap-1 cursor-pointer"
+              [class.text-accent]="modo() === 'seguimiento'">
+              <!-- inicial: Sí=true | seguimiento: Pasa=false -->
+              <input type="radio" [formControlName]="'q' + n" [value]="modo() === 'inicial'" class="accent-primary" />
+              <span class="text-xs">{{ labelPositivo() }}</span>
+            </label>
+            <label class="flex items-center gap-1 cursor-pointer"
+              [class.text-danger]="modo() === 'seguimiento'">
+              <!-- inicial: No=false | seguimiento: Falla=true -->
+              <input type="radio" [formControlName]="'q' + n" [value]="modo() !== 'inicial'" class="accent-primary" />
+              <span class="text-xs">{{ labelNegativo() }}</span>
+            </label>
+          </div>
+        </div>
+        @if (required() && form.get('q' + n)?.value === null && form.get('q' + n)?.touched) {
+          <p role="alert" class="ml-8 text-xs text-danger">Por favor seleccione una opción.</p>
+        }
+      }
+    </div>
+
+    @if (modo() === 'seguimiento') {
+      <div class="mt-6 p-4 bg-background rounded-lg border border-border">
+        <p class="text-sm text-text-muted">
+          Fallas contadas: <strong class="text-text">{{ fallasCount() }}</strong>
+        </p>
+        <p class="text-sm mt-1">
+          Resultado calculado:
+          <strong [class.text-danger]="fallasCount() >= 2" [class.text-accent]="fallasCount() < 2">
+            {{ fallasCount() >= 2 ? 'POSITIVA (≥ 2 fallas)' : 'NEGATIVA (< 2 fallas)' }}
+          </strong>
+        </p>
+      </div>
+    }
+
+    @if (error()) {
+      <p role="alert" class="mt-4 text-xs text-danger">{{ error() }}</p>
+    }
+
+    <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-border">
+      @if (cancelLabel()) {
+        <button type="button" (click)="onCancel()"
+          class="px-4 py-2 text-sm text-text-muted hover:text-text transition-colors cursor-pointer">
+          {{ cancelLabel() }}
+        </button>
+      }
+      <button type="submit" [disabled]="saving()"
+        class="px-5 py-2 text-sm font-medium bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50 transition-colors cursor-pointer">
+        {{ saving() ? savingLabel() : submitLabel() }}
+      </button>
+    </div>
+  </form>
+
+}
