@@ -1,89 +1,58 @@
 <div class="p-8">
 
-  <!-- Header -->
   <div class="flex items-center justify-between mb-6">
     <div>
-      <p class="text-xs font-mono text-text-muted tracking-widest uppercase mb-1">Gestión</p>
-      <h1 class="text-2xl font-semibold text-text">Profesionales</h1>
+      <h1 class="text-xs font-mono text-text-muted tracking-widest uppercase mb-1">Gestión</h1>
+      <h2 class="text-2xl font-semibold text-text">Profesionales</h2>
     </div>
   </div>
 
-  <!-- Toolbar: búsqueda + filtros por rol + botón nuevo -->
   <app-list-toolbar
     placeholder="Buscar por nombre o email…"
-    [filters]="filters"
-    [activeFilter]="activeFilter()"
-    (searchChange)="search.set($event)"
-    (filterChange)="activeFilter.set($event)"
+    [filterGroups]="filterGroups"
+    [activeFilters]="activeFilters()"
+    (searchChange)="onSearch($event)"
+    (filtersChange)="onFiltersChange($event)"
   >
-    <a
-      routerLink="/internal/profesionales/nuevo"
-      class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors whitespace-nowrap"
-    >
-      + Nuevo profesional
+    <a routerLink="/internal/profesionales/nuevo"
+      class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors whitespace-nowrap">
+      <app-icon name="plus" class="w-4 h-4" /> Nuevo profesional
     </a>
   </app-list-toolbar>
 
-  <!-- Tabla -->
-  @if (profesionales().length === 0) {
-    <div class="bg-surface border border-border rounded-lg py-16 text-center">
-      <p class="text-sm font-medium text-text mb-1">
-        {{ search() || activeFilter() !== 'todos' ? 'Sin resultados' : 'No hay profesionales registrados' }}
-      </p>
-      <p class="text-xs text-text-muted">
-        {{ search() || activeFilter() !== 'todos' ? 'Probá con otro criterio de búsqueda' : 'Creá el primero con el botón de arriba' }}
-      </p>
-    </div>
-  } @else {
-    <div class="bg-surface border border-border rounded-lg overflow-hidden">
-      <table class="w-full text-sm" aria-label="Listado de profesionales">
-        <thead>
-          <tr class="border-b border-border bg-background">
-            <th scope="col" class="text-left px-5 py-3 text-xs font-mono text-text-muted tracking-wider uppercase">Apellido, Nombre</th>
-            <th scope="col" class="text-left px-5 py-3 text-xs font-mono text-text-muted tracking-wider uppercase">Email</th>
-            <th scope="col" class="text-left px-5 py-3 text-xs font-mono text-text-muted tracking-wider uppercase">Rol</th>
-            <th scope="col" class="px-5 py-3"></th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (p of profesionales(); track p.id) {
-            <tr class="border-b border-border last:border-0 hover:bg-background transition-colors">
-              <td class="px-5 py-3.5 text-text font-medium">{{ p.apellido }}, {{ p.nombre }}</td>
-              <td class="px-5 py-3.5 text-text-muted font-mono text-xs">{{ p.email }}</td>
-              <td class="px-5 py-3.5">
-                <span class="inline-block px-2 py-0.5 rounded text-xs font-mono bg-primary-light text-primary">
-                  {{ roleLabels[p.role] }}
-                </span>
-              </td>
-              <td class="px-5 py-3.5">
-                <div class="flex items-center justify-end gap-3">
-                  <a
-                    [routerLink]="['/internal/profesionales', p.id, 'editar']"
-                    class="px-3 py-1.5 text-xs font-medium text-white bg-primary rounded-md hover:opacity-90 transition-opacity cursor-pointer"
-                  >
-                    Editar
-                  </a>
-                  <button
-                    type="button"
-                    (click)="requestDelete(p.id)"
-                    [disabled]="deleting() === p.id"
-                    class="px-3 py-1.5 text-xs font-medium text-white bg-danger rounded-md hover:opacity-90 transition-opacity disabled:opacity-40 cursor-pointer"
-                    [attr.aria-label]="'Dar de baja a ' + p.apellido + ', ' + p.nombre"
-                  >
-                    {{ deleting() === p.id ? 'Procesando...' : 'Dar de baja' }}
-                  </button>
-                </div>
-              </td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-  }
+  <app-data-table
+    [columns]="columns"
+    [rows]="profesionales().length"
+    ariaLabel="Listado de profesionales"
+    [emptyTitle]="emptyTitle()"
+    [emptySubtitle]="emptySubtitle()"
+    [currentSort]="sortState()"
+    (sortChange)="onSortChange($event)"
+  >
+    @for (p of profesionales(); track p.id) {
+      <tr class="border-b border-border last:border-0 hover:bg-background transition-colors">
+        <td class="px-5 py-3.5 text-text font-medium">{{ p.apellido }}, {{ p.nombre }}</td>
+        <td class="px-5 py-3.5 text-text-muted font-mono text-xs">{{ p.email }}</td>
+        <td class="px-5 py-3.5">
+          <app-status-badge [value]="p.role" [labels]="roleLabels" [colorMap]="rolColors" />
+        </td>
+        <td class="px-5 py-3.5">
+          <app-row-actions [actions]="getActionsFor(p)" />
+        </td>
+      </tr>
+    }
+  </app-data-table>
+
+  <app-paginator
+    [currentPage]="currentPage()"
+    [totalPages]="totalPages()"
+    [totalElements]="totalElements()"
+    itemLabel="profesionales"
+    (pageChange)="goToPage($event)"
+  />
 
 </div>
 
-<!-- Modal de confirmación -->
 @if (pendingDeleteId() !== null) {
   <app-confirm-modal
     title="¿Dar de baja al profesional?"
