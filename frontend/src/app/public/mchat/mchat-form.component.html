@@ -1,0 +1,80 @@
+<div class="min-h-screen bg-background py-10">
+  <div class="max-w-2xl mx-auto px-4 sm:px-6">
+
+    <!-- Header -->
+    <div class="mb-8">
+      <img src="/assets/logo-magtea.png" alt="MAG-TEA" class="h-8 w-auto mb-4" />
+      <h1 class="text-2xl font-semibold text-text">Formulario M-CHAT-R™</h1>
+      <p class="text-sm text-text-muted mt-1">Evaluación del desarrollo de su hijo/a</p>
+    </div>
+
+    @if (loadError()) {
+      <div class="bg-surface border border-border rounded-lg p-8 text-center">
+        <p class="text-base font-medium text-text mb-2">Enlace no válido</p>
+        <p class="text-sm text-text-muted">{{ loadError() }}</p>
+        <p class="text-sm text-text-muted mt-3">Si cree que es un error, comuníquese con el equipo MAG-TEA.</p>
+      </div>
+
+    } @else if (!paciente()) {
+      <div class="py-16 text-center">
+        <p class="text-sm text-text-muted">Cargando formulario…</p>
+      </div>
+
+    } @else if (paciente()!.yaCompletado) {
+      <div class="bg-surface border border-border rounded-lg p-8 text-center">
+        <div class="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-4">
+          <svg class="w-6 h-6 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <p class="text-base font-medium text-text mb-2">Formulario ya completado</p>
+        <p class="text-sm text-text-muted">
+          Ya recibimos las respuestas para <strong>{{ paciente()!.nombreNino }} {{ paciente()!.apellidoNino }}</strong>.
+          El equipo las revisará antes de la visita. ¡Gracias!
+        </p>
+      </div>
+
+    } @else if (submitState() === 'success') {
+      <div class="bg-surface border border-border rounded-lg p-8 text-center">
+        <div class="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-4">
+          <svg class="w-6 h-6 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h2 class="text-lg font-semibold text-text mb-2">¡Formulario enviado!</h2>
+        <p class="text-sm text-text-muted leading-relaxed max-w-sm mx-auto">
+          Recibimos sus respuestas para <strong>{{ paciente()!.nombreNino }} {{ paciente()!.apellidoNino }}</strong>.
+          El equipo MAG-TEA las revisará antes de la consulta. Muchas gracias.
+        </p>
+      </div>
+
+    } @else {
+      <!-- Descripción contextual -->
+      <div class="bg-surface border border-border rounded-lg p-5 mb-6">
+        <p class="text-sm text-text leading-relaxed">
+          Por favor responda estas preguntas sobre
+          <strong>{{ paciente()!.nombreNino }} {{ paciente()!.apellidoNino }}</strong>.
+          Tenga en cuenta cómo se comporta normalmente.
+          Si ha visto el comportamiento algunas veces pero no lo hace habitualmente, por favor conteste <strong>No</strong>.
+        </p>
+      </div>
+
+      <!-- Formulario compartido -->
+      <div class="bg-surface border border-border rounded-lg p-5">
+        <app-mchat-preguntas
+          modo="inicial"
+          [required]="true"
+          [saving]="submitState() === 'loading'"
+          [error]="submitState() === 'error' ? submitError() : null"
+          submitLabel="Enviar formulario"
+          savingLabel="Enviando…"
+          (submitted)="onSubmit($event)" />
+      </div>
+    }
+
+    <p class="text-center text-xs text-text-muted mt-8">
+      Centro Wernicke · CIQUIBIC · Córdoba — Proyecto MAG-TEA
+    </p>
+
+  </div>
+</div>

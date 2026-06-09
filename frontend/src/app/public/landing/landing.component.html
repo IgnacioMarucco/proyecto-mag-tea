@@ -1,0 +1,344 @@
+<!-- ============================================================
+     HEADER — sticky, mobile-first
+     ============================================================ -->
+<header class="fixed top-0 left-0 w-full z-50 bg-surface/95 backdrop-blur-sm border-b border-border">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
+
+    <!-- Logo -->
+    <img src="/assets/logo-magtea.png" alt="MAG-TEA" class="h-8 w-auto" />
+
+    <!-- Nav — visible siempre -->
+    <nav class="flex items-center gap-7" aria-label="Navegación principal">
+      <a href="#proyecto"   class="text-sm hover:text-text transition-colors" [class.text-primary]="activeSection==='proyecto'" [class.text-text-muted]="activeSection!=='proyecto'">El proyecto</a>
+      <a href="#participar" class="text-sm hover:text-text transition-colors" [class.text-primary]="activeSection==='participar'" [class.text-text-muted]="activeSection!=='participar'">Cómo participar</a>
+      <a href="#donar"      class="text-sm hover:text-text transition-colors" [class.text-primary]="activeSection==='donar'" [class.text-text-muted]="activeSection!=='donar'">Donar</a>
+    </nav>
+
+    <!-- CTA mobile -->
+    
+
+  </div>
+
+<!-- ============================================================
+     HERO
+     ============================================================ -->
+</header>
+
+<div class="pt-16"> <!-- spacer for fixed header -->
+
+<!-- ============================================================
+   HERO
+   ============================================================ -->
+<section class="bg-primary-dark text-white py-16 lg:py-24">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+
+    <div>
+      <p class="font-mono text-xs text-accent tracking-widest uppercase mb-4">
+        Centro Wernicke · CIQUIBIC · Córdoba
+      </p>
+      <h1 class="text-3xl sm:text-4xl lg:text-5xl font-semibold leading-tight tracking-tight mb-5">
+        Investigamos el autismo desde la primera infancia.
+      </h1>
+      <p class="text-base sm:text-lg text-white/80 leading-relaxed max-w-lg">
+        MAG-TEA estudia la relación entre anticuerpos anti-MAG y el Trastorno del Espectro Autista.
+        Si tenés un niño o niña entre 2 y 8 años, tu participación puede ayudar a entenderlo mejor.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-3 mt-8">
+        <a
+          href="#formulario"
+          class="inline-flex items-center justify-center px-6 py-3 bg-accent text-white text-sm font-medium rounded-md hover:opacity-90 transition-opacity"
+        >Quiero participar</a>
+        <a
+          href="#donar"
+          class="inline-flex items-center justify-center px-6 py-3 border border-white/30 text-white text-sm font-medium rounded-md hover:bg-white/10 transition-colors"
+        >Hacer una donación</a>
+      </div>
+    </div>
+
+    <!-- Placeholder imagen — solo desktop -->
+    <div class="hidden lg:flex items-center justify-center bg-white/5 rounded-xl border border-white/10 h-72">
+      <p class="text-white/25 text-xs font-mono uppercase tracking-widest text-center px-4">
+        Imagen del proyecto<br>próximamente
+      </p>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ============================================================
+     EL PROYECTO
+     ============================================================ -->
+<section id="proyecto" class="py-16 sm:py-20 bg-surface">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6">
+    <p class="font-mono text-xs text-primary tracking-widest uppercase mb-3">El proyecto</p>
+    <h2 class="text-2xl sm:text-3xl font-semibold text-text mb-10 max-w-xl leading-snug">
+      Un estudio cuidadoso, paso a paso, junto a las familias.
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      @for (card of projectCards; track card.n) {
+        <div class="border-t-2 border-primary pt-5">
+          <span class="font-mono text-sm text-primary font-semibold">{{ card.n }}</span>
+          <h3 class="text-base font-semibold text-text mt-3 mb-2">{{ card.title }}</h3>
+          <p class="text-sm text-text-muted leading-relaxed">{{ card.desc }}</p>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     CÓMO PARTICIPAR
+     ============================================================ -->
+<section id="participar" class="py-16 sm:py-20 bg-background">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6">
+    <p class="font-mono text-xs text-primary tracking-widest uppercase mb-3">Cómo participar</p>
+    <h2 class="text-2xl sm:text-3xl font-semibold text-text mb-10">Tres pasos, sin compromiso.</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+      @for (step of steps; track $index) {
+        <div class="bg-surface border border-border rounded-lg p-6">
+          <div class="w-9 h-9 rounded-full bg-accent-light flex items-center justify-center font-mono text-sm font-semibold text-accent mb-4">
+            {{ $index + 1 }}
+          </div>
+          <h3 class="text-base font-semibold text-text mb-2">{{ step.title }}</h3>
+          <p class="text-sm text-text-muted leading-relaxed">{{ step.desc }}</p>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     FORMULARIO DE INTERÉS
+     ============================================================ -->
+<section id="formulario" class="py-16 sm:py-20 bg-surface">
+  <div class="max-w-2xl mx-auto px-4 sm:px-6">
+    <p class="font-mono text-xs text-primary tracking-widest uppercase mb-3">Formulario de interés</p>
+    <h2 class="text-2xl sm:text-3xl font-semibold text-text mb-2">Dejanos tus datos</h2>
+    <p class="text-sm text-text-muted mb-8">Completá el formulario y nos comunicamos a la brevedad.</p>
+
+    @if (submitState() === 'success') {
+      <!-- Estado de éxito -->
+      <div class="bg-surface border border-border rounded-lg p-8 text-center">
+        <div class="w-12 h-12 rounded-full bg-success/10 flex items-center justify-center mx-auto mb-4">
+          <svg class="w-6 h-6 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+        </div>
+        <h3 class="text-lg font-semibold text-text mb-2">¡Formulario enviado!</h3>
+        <p class="text-sm text-text-muted leading-relaxed max-w-sm mx-auto">
+          Recibimos tus datos. Vamos a comunicarnos a la brevedad para coordinar una llamada y contarte más sobre el proyecto.
+        </p>
+      </div>
+    } @else {
+      <!-- Formulario -->
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
+        <div class="bg-surface border border-border rounded-lg p-6 sm:p-8 space-y-5">
+
+          <!-- Error general -->
+          @if (submitState() === 'error') {
+            <div role="alert" class="px-4 py-3 bg-danger/10 border border-danger/30 rounded-md text-sm text-danger">
+              {{ errorMessage() }}
+            </div>
+          }
+
+          <!-- Tutor -->
+          <p class="font-mono text-xs text-primary tracking-wider uppercase">Datos del tutor/a</p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block font-mono text-xs text-text-muted uppercase tracking-wider mb-1.5">
+                Apellido <span class="text-danger">*</span>
+              </label>
+              <input type="text" formControlName="apellidoTutor" placeholder="García"
+                class="w-full px-3 py-2 text-sm bg-background border border-border rounded-md text-text placeholder-text-muted/40 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                [class.border-danger]="form.get('apellidoTutor')?.invalid && form.get('apellidoTutor')?.touched" />
+              @if (form.get('apellidoTutor')?.invalid && form.get('apellidoTutor')?.touched) {
+                <p role="alert" class="mt-1 text-xs text-danger">El apellido es obligatorio.</p>
+              }
+            </div>
+            <div>
+              <label class="block font-mono text-xs text-text-muted uppercase tracking-wider mb-1.5">
+                Nombre <span class="text-danger">*</span>
+              </label>
+              <input type="text" formControlName="nombreTutor" placeholder="María"
+                class="w-full px-3 py-2 text-sm bg-background border border-border rounded-md text-text placeholder-text-muted/40 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                [class.border-danger]="form.get('nombreTutor')?.invalid && form.get('nombreTutor')?.touched" />
+              @if (form.get('nombreTutor')?.invalid && form.get('nombreTutor')?.touched) {
+                <p role="alert" class="mt-1 text-xs text-danger">El nombre es obligatorio.</p>
+              }
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block font-mono text-xs text-text-muted uppercase tracking-wider mb-1.5">
+                Correo electrónico <span class="text-danger">*</span>
+              </label>
+              <input type="email" formControlName="correoTutor" placeholder="maria@ejemplo.com"
+                class="w-full px-3 py-2 text-sm bg-background border border-border rounded-md text-text placeholder-text-muted/40 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                [class.border-danger]="form.get('correoTutor')?.invalid && form.get('correoTutor')?.touched" />
+              @if (form.get('correoTutor')?.touched) {
+                @if (form.get('correoTutor')?.hasError('required')) {
+                  <p role="alert" class="mt-1 text-xs text-danger">El correo es obligatorio.</p>
+                } @else if (form.get('correoTutor')?.hasError('email')) {
+                  <p role="alert" class="mt-1 text-xs text-danger">Ingresá un correo válido.</p>
+                }
+              }
+            </div>
+            <div>
+              <label class="block font-mono text-xs text-text-muted uppercase tracking-wider mb-1.5">Teléfono</label>
+              <input type="tel" formControlName="telefono" placeholder="351 000-0000"
+                class="w-full px-3 py-2 text-sm bg-background border border-border rounded-md text-text placeholder-text-muted/40 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" />
+            </div>
+          </div>
+
+          <!-- Niño -->
+          <p class="font-mono text-xs text-primary tracking-wider uppercase pt-2">Datos del niño/a</p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block font-mono text-xs text-text-muted uppercase tracking-wider mb-1.5">
+                Apellido <span class="text-danger">*</span>
+              </label>
+              <input type="text" formControlName="apellidoNino" placeholder="García"
+                class="w-full px-3 py-2 text-sm bg-background border border-border rounded-md text-text placeholder-text-muted/40 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                [class.border-danger]="form.get('apellidoNino')?.invalid && form.get('apellidoNino')?.touched" />
+              @if (form.get('apellidoNino')?.invalid && form.get('apellidoNino')?.touched) {
+                <p role="alert" class="mt-1 text-xs text-danger">El apellido del niño/a es obligatorio.</p>
+              }
+            </div>
+            <div>
+              <label class="block font-mono text-xs text-text-muted uppercase tracking-wider mb-1.5">
+                Nombre <span class="text-danger">*</span>
+              </label>
+              <input type="text" formControlName="nombreNino" placeholder="Juan"
+                class="w-full px-3 py-2 text-sm bg-background border border-border rounded-md text-text placeholder-text-muted/40 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                [class.border-danger]="form.get('nombreNino')?.invalid && form.get('nombreNino')?.touched" />
+              @if (form.get('nombreNino')?.invalid && form.get('nombreNino')?.touched) {
+                <p role="alert" class="mt-1 text-xs text-danger">El nombre del niño/a es obligatorio.</p>
+              }
+            </div>
+          </div>
+
+          <div>
+            <label class="block font-mono text-xs text-text-muted uppercase tracking-wider mb-1.5">Fecha de nacimiento</label>
+            <input type="date" formControlName="fechaNacimientoNino"
+              class="w-full px-3 py-2 text-sm bg-background border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" />
+          </div>
+
+          <!-- Cómo conoció -->
+          <div>
+            <label class="block font-mono text-xs text-text-muted uppercase tracking-wider mb-1.5">¿Cómo conociste el proyecto?</label>
+            <select formControlName="comoConocioProyecto"
+              class="w-full px-3 py-2 text-sm bg-background border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors">
+              <option value="">Seleccioná una opción</option>
+              @for (op of comoOpciones; track op.value) {
+                <option [value]="op.value">{{ op.label }}</option>
+              }
+            </select>
+          </div>
+
+          @if (showOtroField() === 'OTRO') {
+            <div>
+              <label class="block font-mono text-xs text-text-muted uppercase tracking-wider mb-1.5">¿Por quién o por dónde?</label>
+              <input type="text" formControlName="otroComoConocio" placeholder="Contanos cómo te enteraste"
+                class="w-full px-3 py-2 text-sm bg-background border border-border rounded-md text-text placeholder-text-muted/40 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" />
+            </div>
+          }
+
+          <!-- Disponibilidad -->
+          <p class="font-mono text-xs text-primary tracking-wider uppercase pt-2">Coordinación de llamada</p>
+
+          <div>
+            <label class="block font-mono text-xs text-text-muted uppercase tracking-wider mb-1.5">Días y horarios disponibles</label>
+            <textarea rows="2" formControlName="diasDisponibles" placeholder="Ej: lunes a viernes por la tarde"
+              class="w-full px-3 py-2 text-sm bg-background border border-border rounded-md text-text placeholder-text-muted/40 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors resize-none"></textarea>
+          </div>
+
+          <button type="submit"
+            class="w-full py-3 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            [disabled]="submitState() === 'loading'">
+            @if (submitState() === 'loading') {
+              Enviando...
+            } @else {
+              Enviar formulario
+            }
+          </button>
+
+        </div>
+      </form>
+    }
+  </div>
+</section>
+
+
+<!-- ============================================================
+     DONACIONES
+     ============================================================ -->
+<section id="donar" class="py-16 sm:py-20 bg-background">
+  <div class="max-w-xl mx-auto px-4 sm:px-6">
+    <p class="font-mono text-xs text-accent tracking-widest uppercase mb-3">Donaciones</p>
+    <h2 class="text-2xl sm:text-3xl font-semibold text-text mb-2">Sostené la investigación.</h2>
+    <p class="text-sm text-text-muted leading-relaxed mb-8">
+      Los niños y niñas que participan reciben un premio de agradecimiento después de la extracción de sangre.
+      Este reconocimiento no está subsidiado ni esponsorizado, se sostiene únicamente con donaciones.
+      Tu aporte ayuda a que podamos seguir agradeciéndoles a ellos y a sus familias.
+    </p>
+
+    <div class="bg-surface border border-border rounded-lg p-6 sm:p-8">
+      <p class="font-mono text-xs text-text-muted uppercase tracking-wider mb-3">Elegí un monto (ARS)</p>
+      <div class="grid grid-cols-3 gap-3 mb-4">
+        @for (amount of donationAmounts; track amount) {
+          <button type="button"
+            class="py-3.5 rounded-lg border border-border font-mono text-sm font-medium text-text bg-surface hover:border-primary hover:text-primary transition-colors cursor-pointer">
+            ${{ amount | number:'1.0-0' }}
+          </button>
+        }
+      </div>
+      <div class="mb-5">
+        <label class="block font-mono text-xs text-text-muted uppercase tracking-wider mb-1.5">Otro monto</label>
+        <input type="number" placeholder="$ ..."
+          class="w-full px-3 py-2 text-sm bg-background border border-border rounded-md text-text placeholder-text-muted/40 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" />
+      </div>
+      <a href="#"
+        class="flex items-center justify-center w-full py-3.5 rounded-md text-white text-sm font-semibold transition-opacity hover:opacity-90 cursor-pointer"
+        style="background-color: #009ee3;">
+        Donar con Mercado Pago
+      </a>
+      <p class="text-xs text-text-muted text-center mt-3">
+        Pago seguro · Te redirigimos a Mercado Pago para completar la donación.
+      </p>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     FOOTER
+     ============================================================ -->
+</div>
+
+<!-- ============================================================
+  FOOTER
+  ============================================================ -->
+<footer class="bg-sidebar py-12">
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+
+    <div>
+      <div class="mb-3">
+        <img src="/assets/logo-magtea.png" alt="MAG-TEA" class="h-8 w-auto" />
+      </div>
+      <p class="text-sm text-sidebar-muted leading-relaxed max-w-xs">
+        Proyecto de investigación sobre anticuerpos anti-MAG y Trastorno del Espectro Autista.
+      </p>
+    </div>
+
+    <p class="font-mono text-xs text-sidebar-muted tracking-widest uppercase text-left sm:text-right">
+      Centro Wernicke<br>CIQUIBIC · Córdoba
+    </p>
+
+  </div>
+</footer>

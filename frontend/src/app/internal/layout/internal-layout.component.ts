@@ -9,41 +9,61 @@ interface NavItem {
   allowedRoles: Role[];
 }
 
-const NAV_ITEMS: NavItem[] = [
+interface NavSection {
+  label: string;
+  items: NavItem[];
+}
+
+const NAV_SECTIONS: NavSection[] = [
   {
-    label: 'Profesionales',
-    path: '/internal/profesionales',
-    allowedRoles: ['INVESTIGADOR_PRINCIPAL'],
+    label: 'Etapa Clínica',
+    items: [
+      {
+        label: 'Bandeja',
+        path: '/internal/bandeja',
+        allowedRoles: ['SECRETARIA', 'CUERPO_MEDICO', 'ROTANTE_CLINICA', 'INVESTIGADOR_PRINCIPAL'],
+      },
+      {
+        label: 'Pacientes',
+        path: '/internal/pacientes',
+        allowedRoles: ['CUERPO_TECNICO', 'CUERPO_MEDICO', 'ROTANTE_CLINICA', 'ROTANTE_BASICA', 'INVESTIGADOR_PRINCIPAL'],
+      },
+    ],
   },
   {
-    label: 'Bandeja',
-    path: '/internal/bandeja',
-    allowedRoles: ['SECRETARIA', 'CUERPO_MEDICO', 'ROTANTE_CLINICA', 'INVESTIGADOR_PRINCIPAL'],
+    label: 'Etapa Básica',
+    items: [
+      {
+        label: 'Sueros',
+        path: '/internal/sueros',
+        allowedRoles: ['CUERPO_TECNICO', 'ROTANTE_BASICA', 'INVESTIGADOR_PRINCIPAL'],
+      },
+      {
+        label: 'Pools',
+        path: '/internal/pools',
+        allowedRoles: ['CUERPO_TECNICO', 'ROTANTE_BASICA', 'INVESTIGADOR_PRINCIPAL'],
+      },
+      {
+        label: 'Modelos Animales',
+        path: '/internal/modelos-animales',
+        allowedRoles: ['CUERPO_TECNICO', 'ROTANTE_BASICA', 'INVESTIGADOR_PRINCIPAL'],
+      },
+    ],
   },
   {
-    label: 'Pacientes',
-    path: '/internal/pacientes',
-    allowedRoles: ['CUERPO_TECNICO', 'CUERPO_MEDICO', 'ROTANTE_CLINICA', 'ROTANTE_BASICA', 'INVESTIGADOR_PRINCIPAL'],
-  },
-  {
-    label: 'Sueros',
-    path: '/internal/sueros',
-    allowedRoles: ['CUERPO_TECNICO', 'ROTANTE_BASICA', 'INVESTIGADOR_PRINCIPAL'],
-  },
-  {
-    label: 'Pools',
-    path: '/internal/pools',
-    allowedRoles: ['CUERPO_TECNICO', 'ROTANTE_BASICA', 'INVESTIGADOR_PRINCIPAL'],
-  },
-  {
-    label: 'Modelos Animales',
-    path: '/internal/modelos-animales',
-    allowedRoles: ['CUERPO_TECNICO', 'ROTANTE_BASICA', 'INVESTIGADOR_PRINCIPAL'],
-  },
-  {
-    label: 'Reportes',
-    path: '/internal/reportes',
-    allowedRoles: ['INVESTIGADOR_PRINCIPAL'],
+    label: 'Gestión',
+    items: [
+      {
+        label: 'Profesionales',
+        path: '/internal/profesionales',
+        allowedRoles: ['INVESTIGADOR_PRINCIPAL'],
+      },
+      {
+        label: 'Reportes',
+        path: '/internal/reportes',
+        allowedRoles: ['INVESTIGADOR_PRINCIPAL'],
+      },
+    ],
   },
 ];
 
@@ -63,10 +83,15 @@ export class InternalLayoutComponent {
     return role ? ROLE_LABELS[role] : '';
   });
 
-  visibleNavItems = computed(() => {
+  visibleNavSections = computed(() => {
     const role = this.user()?.role;
     if (!role) return [];
-    return NAV_ITEMS.filter(item => item.allowedRoles.includes(role));
+    return NAV_SECTIONS
+      .map(section => ({
+        ...section,
+        items: section.items.filter(item => item.allowedRoles.includes(role)),
+      }))
+      .filter(section => section.items.length > 0);
   });
 
   logout(): void {

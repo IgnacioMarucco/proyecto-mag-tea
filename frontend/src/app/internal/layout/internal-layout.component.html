@@ -5,30 +5,42 @@
 
     <!-- Brand -->
     <div class="px-5 py-5 border-b border-sidebar-border">
-      <div class="flex items-center gap-2.5 mb-1">
-        <span class="block w-1.5 h-1.5 rounded-full bg-accent"></span>
-        <span class="text-white text-xs font-semibold tracking-[0.2em] uppercase font-mono">MAG-TEA</span>
-      </div>
-      <p class="text-sidebar-muted text-[10px] font-mono tracking-widest pl-4 uppercase">
+      <img src="/assets/logo-magtea.png" alt="MAG-TEA" class="h-7 w-auto mb-1" />
+      <p class="text-sidebar-muted text-[10px] font-mono tracking-widest uppercase">
         Sistema de Investigación
       </p>
     </div>
 
     <!-- Nav -->
-    <nav class="flex-1 py-3 overflow-y-auto" aria-label="Navegación principal">
-      @for (item of visibleNavItems(); track item.path) {
-        <a
-          [routerLink]="item.path"
-          routerLinkActive="!text-white !border-l-2 !border-primary bg-primary/10"
-          [routerLinkActiveOptions]="{ exact: false }"
-          class="flex items-center pl-4 pr-5 py-2.5 text-sm text-sidebar-muted
-                 border-l-2 border-transparent
-                 hover:text-white hover:bg-white/5
-                 transition-all duration-150"
-          [attr.aria-label]="item.label"
-        >
-          <span>{{ item.label }}</span>
-        </a>
+    <nav class="flex-1 py-2 overflow-y-auto" aria-label="Navegación principal">
+      @for (section of visibleNavSections(); track section.label; let first = $first) {
+
+        <!-- Separador entre secciones -->
+        @if (!first) {
+          <div class="mx-5 my-2 border-t border-sidebar-border"></div>
+        }
+
+        <!-- Label de sección -->
+        <p class="px-5 pt-2 pb-1 text-[10px] font-mono text-sidebar-muted uppercase tracking-widest select-none">
+          {{ section.label }}
+        </p>
+
+        <!-- Items de la sección -->
+        @for (item of section.items; track item.path) {
+          <a
+            [routerLink]="item.path"
+            routerLinkActive="!text-white !border-l-2 !border-primary bg-primary/10"
+            [routerLinkActiveOptions]="{ exact: false }"
+            class="flex items-center pl-4 pr-5 py-2.5 text-sm text-sidebar-muted
+                   border-l-2 border-transparent
+                   hover:text-white hover:bg-white/5
+                   transition-all duration-150"
+            [attr.aria-label]="item.label"
+          >
+            {{ item.label }}
+          </a>
+        }
+
       }
     </nav>
 
