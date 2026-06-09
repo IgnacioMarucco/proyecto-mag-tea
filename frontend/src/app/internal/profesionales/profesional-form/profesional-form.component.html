@@ -6,11 +6,12 @@
       routerLink="/internal/profesionales"
       class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-text-muted border border-border rounded-md hover:text-text hover:border-text-muted transition-colors mb-4"
     >
-      ← Volver
+      <app-icon name="arrow-left" class="w-3.5 h-3.5" /> Volver
     </a>
-    <h1 class="text-2xl font-semibold text-text">
+    <h1 class="text-xs font-mono text-text-muted tracking-widest uppercase mb-1">Gestión</h1>
+    <h2 class="text-2xl font-semibold text-text">
       {{ isEdit ? 'Editar profesional' : 'Nuevo profesional' }}
-    </h1>
+    </h2>
   </div>
 
   <div class="bg-surface border border-border rounded-lg p-6">
