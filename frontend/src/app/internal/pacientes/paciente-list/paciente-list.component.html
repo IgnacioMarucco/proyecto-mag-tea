@@ -1,0 +1,89 @@
+<div class="p-8">
+
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h1 class="text-xs font-mono text-text-muted tracking-widest uppercase mb-1">Etapa Clínica</h1>
+      <h2 class="text-2xl font-semibold text-text">Pacientes</h2>
+    </div>
+  </div>
+
+  <app-list-toolbar
+    placeholder="Buscar por nombre, apellido o código…"
+    [filterGroups]="filterGroups"
+    [activeFilters]="activeFilters()"
+    (searchChange)="onSearch($event)"
+    (filtersChange)="onFiltersChange($event)"
+  >
+    <a routerLink="/internal/pacientes/nuevo"
+      class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors whitespace-nowrap">
+      <app-icon name="plus" class="w-4 h-4" /> Nuevo paciente
+    </a>
+  </app-list-toolbar>
+
+  <app-data-table
+    [columns]="columns"
+    [rows]="pacientes().length"
+    ariaLabel="Listado de pacientes"
+    [emptyTitle]="emptyTitle()"
+    [emptySubtitle]="emptySubtitle()"
+    [currentSort]="sortState()"
+    (sortChange)="onSortChange($event)"
+  >
+    @for (p of pacientes(); track p.id) {
+      <tr class="border-b border-border last:border-0 hover:bg-background transition-colors">
+
+        <td class="px-5 py-3.5 text-text">
+          {{ p.apellidoTutor }}, {{ p.nombreTutor }}
+        </td>
+
+        <td class="px-5 py-3.5">
+          <span class="font-medium text-text">{{ p.apellidoNino }}, {{ p.nombreNino }}</span>
+        </td>
+
+        <td class="px-5 py-3.5 hidden sm:table-cell text-xs text-text-muted">
+          {{ formatEdad(p.fechaNacimientoNino) }}
+        </td>
+
+        <td class="px-5 py-3.5">
+          <app-status-badge [value]="p.pacienteEstado" [labels]="estadoLabels" [colorMap]="estadoColors" />
+        </td>
+
+        <td class="px-5 py-3.5 hidden md:table-cell">
+          @if (proximaFecha(p); as fecha) {
+            <div>
+              <p class="text-xs text-text-muted mb-0.5">{{ fecha.label }}</p>
+              <p class="font-mono text-xs text-text">{{ fecha.valor }}</p>
+            </div>
+          } @else {
+            <span class="text-xs text-text-muted">—</span>
+          }
+        </td>
+
+        <td class="px-5 py-3.5">
+          <app-row-actions [actions]="getActionsFor(p)" />
+        </td>
+
+      </tr>
+    }
+  </app-data-table>
+
+  <app-paginator
+    [currentPage]="currentPage()"
+    [totalPages]="totalPages()"
+    [totalElements]="totalElements()"
+    itemLabel="pacientes"
+    (pageChange)="goToPage($event)"
+  />
+
+</div>
+
+@if (pendingDeleteId() !== null) {
+  <app-confirm-modal
+    title="¿Dar de baja al paciente?"
+    message="El paciente quedará inactivo. Esta acción es solo para el investigador principal."
+    confirmLabel="Dar de baja"
+    cancelLabel="Cancelar"
+    (confirmed)="confirmDelete()"
+    (cancelled)="cancelDelete()"
+  />
+}

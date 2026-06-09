@@ -1,0 +1,93 @@
+@let p = paciente();
+
+<section class="bg-surface border border-border rounded-lg">
+  <div class="flex items-center justify-between px-6 py-4 border-b border-border">
+    <h2 class="text-sm font-semibold text-text">Datos básicos</h2>
+    <a [routerLink]="['/internal/pacientes', paciente().id, 'editar']"
+       class="text-xs px-3 py-1.5 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors cursor-pointer">
+      Editar datos
+    </a>
+  </div>
+  <div class="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm">
+    <div class="flex gap-2">
+      <span class="text-text-muted w-36 shrink-0">Tutor/a</span>
+      <span class="text-text font-medium">{{ p.apellidoTutor }}, {{ p.nombreTutor }}</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="text-text-muted w-36 shrink-0">Niño/a</span>
+      <span class="text-text font-medium">{{ p.apellidoNino }}, {{ p.nombreNino }}</span>
+      <app-status-badge [value]="p.sexo"
+        [labels]="{ FEMENINO: 'Femenino', MASCULINO: 'Masculino' }"
+        [colorMap]="{ FEMENINO: 'bg-primary-light text-primary', MASCULINO: 'bg-primary-light text-primary' }" />
+    </div>
+    <div class="flex gap-2">
+      <span class="text-text-muted w-36 shrink-0">Correo</span>
+      <span class="text-text font-mono text-xs">{{ p.correoTutor }}</span>
+    </div>
+    <div class="flex gap-2">
+      <span class="text-text-muted w-36 shrink-0">Teléfono</span>
+      <span class="text-text">{{ p.telefono || '—' }}</span>
+    </div>
+    <div class="flex gap-2">
+      <span class="text-text-muted w-36 shrink-0">Nacimiento</span>
+      <span class="text-text">{{ formatDate(p.fechaNacimientoNino) }}</span>
+    </div>
+    <div class="flex gap-2">
+      <span class="text-text-muted w-36 shrink-0">Edad</span>
+      <span class="text-text">{{ p.edadActual !== null ? p.edadActual + ' años' : '—' }}</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="text-text-muted w-36 shrink-0">Fecha visita</span>
+      <span class="text-text">{{ formatDateTime(p.fechaPrimeraVisita) }}</span>
+      <button type="button" (click)="openModal()" aria-label="Editar fecha de visita"
+        class="ml-1 text-text-muted hover:text-primary transition-colors cursor-pointer">
+        <app-icon name="pencil" class="w-3.5 h-3.5" />
+      </button>
+    </div>
+    <div class="flex gap-2">
+      <span class="text-text-muted w-36 shrink-0">Fecha extracción</span>
+      <span class="text-text">{{ formatDate(p.fechaExtraccion) }}</span>
+    </div>
+    @if (p.notas) {
+      <div class="md:col-span-2 flex gap-2">
+        <span class="text-text-muted w-36 shrink-0">Notas</span>
+        <p class="text-text text-xs whitespace-pre-wrap">{{ p.notas }}</p>
+      </div>
+    }
+  </div>
+</section>
+
+@if (showModal()) {
+<div class="fixed inset-0 bg-sidebar/50 flex items-center justify-center z-50 p-5"
+     (click)="showModal.set(false)">
+  <div class="bg-surface border border-border rounded-lg w-full max-w-sm shadow-md"
+       (click)="$event.stopPropagation()">
+    <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border">
+      <h3 class="text-base font-semibold text-text">Fecha de la primera visita</h3>
+      <button (click)="showModal.set(false)" aria-label="Cerrar"
+        class="text-text-muted hover:text-text cursor-pointer">
+        <app-icon name="x-mark" class="w-5 h-5" />
+      </button>
+    </div>
+    <form [formGroup]="form" (ngSubmit)="save()" class="px-6 py-5">
+      <label class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
+        Fecha y hora
+      </label>
+      <input type="datetime-local" formControlName="fechaPrimeraVisita"
+        class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text
+               focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" />
+      @if (saveError()) {
+        <p class="mt-3 text-xs text-danger" role="alert">{{ saveError() }}</p>
+      }
+      <div class="flex justify-end gap-3 mt-5 pt-4 border-t border-border">
+        <button type="button" (click)="showModal.set(false)"
+          class="px-4 py-2 text-sm text-text-muted hover:text-text transition-colors cursor-pointer">Cancelar</button>
+        <button type="submit" [disabled]="saving()"
+          class="px-5 py-2 text-sm font-medium bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50 cursor-pointer">
+          {{ saving() ? 'Guardando…' : 'Guardar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+}
