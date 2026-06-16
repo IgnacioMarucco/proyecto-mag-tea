@@ -2,10 +2,13 @@ package com.utn.magtea.profesional;
 
 import com.utn.magtea.common.Auditable;
 import jakarta.persistence.*;
+import org.hibernate.envers.Audited;
+import org.hibernate.envers.NotAudited;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+@Audited
 @Entity
 @Table(name = "profesionales")
 @Getter
@@ -26,6 +29,10 @@ public class Profesional extends Auditable {
     @Column(nullable = false, unique = true)
     private String email;
 
+    @Column
+    private String telefono;
+
+    @NotAudited
     @Column(nullable = false)
     private String password;
 

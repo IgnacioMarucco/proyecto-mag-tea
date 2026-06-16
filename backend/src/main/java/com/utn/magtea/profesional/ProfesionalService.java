@@ -43,6 +43,12 @@ public class ProfesionalService {
         return mapper.toDTO(findActiveById(id));
     }
 
+    @Transactional(readOnly = true)
+    public ProfesionalResponseDTO findByEmail(String email) {
+        return mapper.toDTO(repository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Profesional no encontrado")));
+    }
+
     @Transactional
     public ProfesionalResponseDTO create(ProfesionalCreateDTO dto) {
         if (repository.existsByEmail(dto.email())) {
@@ -62,6 +68,7 @@ public class ProfesionalService {
         profesional.setNombre(dto.nombre());
         profesional.setApellido(dto.apellido());
         profesional.setEmail(dto.email());
+        profesional.setTelefono(dto.telefono());
         profesional.setRole(dto.role());
         return mapper.toDTO(repository.save(profesional));
     }

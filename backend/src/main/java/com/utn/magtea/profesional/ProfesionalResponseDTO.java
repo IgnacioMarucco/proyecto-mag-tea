@@ -7,6 +7,7 @@ public record ProfesionalResponseDTO(
         String nombre,
         String apellido,
         String email,
+        String telefono,
         Role role,
         boolean activo,
         LocalDateTime createdAt

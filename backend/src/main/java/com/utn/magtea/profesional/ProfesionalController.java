@@ -5,13 +5,16 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import com.utn.magtea.common.ApiConstants;
 import com.utn.magtea.common.PageResponse;
 
 @RestController
-@RequestMapping("/api/profesionales")
+@RequestMapping(ApiConstants.V1 + "/profesionales")
 @PreAuthorize("hasRole('INVESTIGADOR_PRINCIPAL')")
 @Tag(name = "Profesionales")
 @RequiredArgsConstructor
@@ -38,10 +41,12 @@ public class ProfesionalController {
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Registrar profesional")
-    public ProfesionalResponseDTO create(@RequestBody @Valid ProfesionalCreateDTO dto) {
-        return service.create(dto);
+    public ResponseEntity<ProfesionalResponseDTO> create(@RequestBody @Valid ProfesionalCreateDTO dto) {
+        ProfesionalResponseDTO created = service.create(dto);
+        var location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}").buildAndExpand(created.id()).toUri();
+        return ResponseEntity.created(location).body(created);
     }
 
     @PutMapping("/{id}")
