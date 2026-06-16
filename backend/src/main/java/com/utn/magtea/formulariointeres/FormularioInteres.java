@@ -2,12 +2,14 @@ package com.utn.magtea.formulariointeres;
 
 import com.utn.magtea.common.Auditable;
 import jakarta.persistence.*;
+import org.hibernate.envers.Audited;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDate;
 
+@Audited
 @Entity
 @Table(name = "formularios_interes")
 @Getter

@@ -5,15 +5,18 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import com.utn.magtea.common.ApiConstants;
 import com.utn.magtea.common.PageResponse;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/formularios-interes")
+@RequestMapping(ApiConstants.V1 + "/formularios-interes")
 @Tag(name = "Formularios de Interés")
 @RequiredArgsConstructor
 public class FormularioInteresController {
@@ -41,10 +44,12 @@ public class FormularioInteresController {
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
     @Operation(summary = "Registrar formulario de interés (acceso público)")
-    public FormularioInteresResponseDTO create(@RequestBody @Valid FormularioInteresCreateDTO dto) {
-        return service.create(dto);
+    public ResponseEntity<FormularioInteresResponseDTO> create(@RequestBody @Valid FormularioInteresCreateDTO dto) {
+        FormularioInteresResponseDTO created = service.create(dto);
+        var location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}").buildAndExpand(created.id()).toUri();
+        return ResponseEntity.created(location).body(created);
     }
 
     @PutMapping("/{id}")
