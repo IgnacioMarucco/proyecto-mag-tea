@@ -47,14 +47,14 @@
   <app-modal-container title="Escala Vineland-II" size="md" (closed)="showModal.set(false)">
     <form [formGroup]="form" (ngSubmit)="save()" class="px-6 py-5 space-y-4">
       @for (sub of [
-        { key: 'vinelandComunicacion',          label: 'Comunicación' },
-        { key: 'vinelandAutovalimiento',        label: 'Autovalimiento' },
-        { key: 'vinelandSocial',                label: 'Socialización' },
-        { key: 'vinelandMotor',                 label: 'Motor' },
-        { key: 'vinelandCocienteFinal',         label: 'Cociente de Conducta Adaptativa (CCA)' },
-        { key: 'vinelandConductaDesadaptativa', label: 'Índice de Conducta Desadaptativa' },
-        { key: 'vinelandInternalizante',        label: 'Internalizante' },
-        { key: 'vinelandExternalizante',        label: 'Externalizante' }
+        { key: 'comunicacion',          label: 'Comunicación' },
+        { key: 'autovalimiento',        label: 'Autovalimiento' },
+        { key: 'social',                label: 'Socialización' },
+        { key: 'motor',                 label: 'Motor' },
+        { key: 'cocienteFinal',         label: 'Cociente de Conducta Adaptativa (CCA)' },
+        { key: 'conductaDesadaptativa', label: 'Índice de Conducta Desadaptativa' },
+        { key: 'internalizante',        label: 'Internalizante' },
+        { key: 'externalizante',        label: 'Externalizante' }
       ]; track sub.key) {
         <div>
           <label [for]="sub.key" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">

@@ -44,12 +44,12 @@
             <span class="w-10 text-center">{{ v }}</span>
           }
         </div>
-        @for (item of items; track item; let rowIdx = $index; let isEven = $even) {
+        @for (item of items; track item.numero; let rowIdx = $index; let isEven = $even) {
           <div class="py-2 border-b border-border/50 last:border-0 -mx-1 px-1 rounded"
                [class.bg-background]="isEven">
             <div class="flex items-center gap-2">
               <span class="text-xs text-text-muted w-6 text-right shrink-0">{{ rowIdx + 1 }}.</span>
-              <span class="text-sm text-text grow">{{ item }}</span>
+              <span class="text-sm text-text grow">{{ item.texto }}</span>
               @for (v of valores; track v) {
                 <label class="w-10 flex justify-center cursor-pointer">
                   <input type="radio" class="sr-only" [formControlName]="'item' + (rowIdx + 1)" [value]="v" />

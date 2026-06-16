@@ -1,0 +1,99 @@
+<div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+
+  <!-- Header -->
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-slate-800">Análisis Estadístico</h1>
+    @if (resumen(); as r) {
+      <p class="mt-1 text-sm text-slate-500">Pacientes PROBLEMA (N = {{ r.pacientesProblema }})</p>
+    } @else {
+      <div class="mt-1 h-4 w-40 animate-pulse rounded bg-slate-100"></div>
+    }
+  </div>
+
+  <!-- ══ BLOQUE 1 — CARACTERIZACIÓN DE LA MUESTRA ══ -->
+  <section class="mb-10">
+    <div class="mb-4 flex items-center gap-3">
+      <div class="h-px flex-1 bg-slate-200"></div>
+      <span class="text-xs font-semibold uppercase tracking-widest text-slate-400">
+        Bloque 1 — Caracterización de la Muestra
+      </span>
+      <div class="h-px flex-1 bg-slate-200"></div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+      <app-kpi-card label="Formularios recibidos" [value]="resumen()?.totalFormularios ?? null" />
+      <app-kpi-card label="Pacientes totales" [value]="resumen()?.pacientesTotal ?? null" />
+      <app-kpi-card label="Pacientes PROBLEMA" [value]="resumen()?.pacientesProblema ?? null" />
+      <app-kpi-card label="Pacientes CONTROL" [value]="resumen()?.pacientesControl ?? null" />
+      <app-kpi-card label="Tasa de admisión" [value]="tasaAdmision()" />
+      <app-kpi-card label="M-CHAT completados" [value]="resumen()?.mchatCompletados ?? null" />
+    </div>
+
+    <!-- Embudo + Demografico -->
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      @defer (on viewport) {
+        <app-embudo-reclutamiento />
+      } @placeholder {
+        <div class="h-80 rounded-xl border border-slate-200 bg-slate-50 animate-pulse"></div>
+      }
+
+      @defer (on viewport) {
+        <app-caracterizacion />
+      } @placeholder {
+        <div class="h-80 rounded-xl border border-slate-200 bg-slate-50 animate-pulse"></div>
+      }
+    </div>
+  </section>
+
+  <!-- ══ BLOQUE 2 — EVALUACIONES CLÍNICAS ══ -->
+  <section class="mb-10">
+    <div class="mb-4 flex items-center gap-3">
+      <div class="h-px flex-1 bg-slate-200"></div>
+      <span class="text-xs font-semibold uppercase tracking-widest text-slate-400">
+        Bloque 2 — Evaluaciones Clínicas
+      </span>
+      <div class="h-px flex-1 bg-slate-200"></div>
+    </div>
+
+    <div class="flex flex-col gap-6">
+      @defer (on viewport) {
+        <app-mchat-analisis />
+      } @placeholder {
+        <div class="h-96 rounded-xl border border-slate-200 bg-slate-50 animate-pulse"></div>
+      }
+
+      <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        @defer (on viewport) {
+          <app-cars-analisis />
+        } @placeholder {
+          <div class="h-80 rounded-xl border border-slate-200 bg-slate-50 animate-pulse"></div>
+        }
+
+        @defer (on viewport) {
+          <app-vineland-analisis />
+        } @placeholder {
+          <div class="h-80 rounded-xl border border-slate-200 bg-slate-50 animate-pulse"></div>
+        }
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ BLOQUE 3 — CORRELACIONES ══ -->
+  <section class="mb-10">
+    <div class="mb-4 flex items-center gap-3">
+      <div class="h-px flex-1 bg-slate-200"></div>
+      <span class="text-xs font-semibold uppercase tracking-widest text-slate-400">
+        Bloque 3 — Correlaciones Avanzadas
+      </span>
+      <div class="h-px flex-1 bg-slate-200"></div>
+    </div>
+
+    @defer (on viewport) {
+      <app-correlaciones />
+    } @placeholder {
+      <div class="h-96 rounded-xl border border-slate-200 bg-slate-50 animate-pulse"></div>
+    }
+  </section>
+
+</div>

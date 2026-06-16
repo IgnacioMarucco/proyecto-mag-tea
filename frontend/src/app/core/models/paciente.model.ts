@@ -79,7 +79,6 @@ export interface PacienteCriterios {
   patologiaPsiquiatrica: boolean;
   otrosSindromesGeneticos: boolean;
   pubertadPrecoz: boolean;
-  consentimientoFirmado: boolean;
 }
 
 export interface PacienteMchatSeguimiento {
@@ -114,14 +113,14 @@ export interface CarsItemsResponse {
 }
 
 export interface PacienteVineland {
-  vinelandComunicacion: number | null;
-  vinelandAutovalimiento: number | null;
-  vinelandSocial: number | null;
-  vinelandMotor: number | null;
-  vinelandCocienteFinal: number | null;
-  vinelandConductaDesadaptativa: number | null;
-  vinelandInternalizante: number | null;
-  vinelandExternalizante: number | null;
+  comunicacion: number | null;
+  autovalimiento: number | null;
+  social: number | null;
+  motor: number | null;
+  cocienteFinal: number | null;
+  conductaDesadaptativa: number | null;
+  internalizante: number | null;
+  externalizante: number | null;
 }
 
 export interface PacienteSegundaVisita {

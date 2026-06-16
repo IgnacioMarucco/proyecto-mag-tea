@@ -9,7 +9,7 @@
         <li class="flex items-start gap-3 text-sm py-2 border-b border-border/50 last:border-0 -mx-1 px-1 rounded"
             [class.bg-background]="isEven">
           <span class="text-text-muted shrink-0 w-5 text-right">{{ n }}.</span>
-          <span class="text-text-muted grow text-xs leading-snug">{{ preg }}</span>
+          <span class="text-text-muted grow text-xs leading-snug">{{ preg.texto }}</span>
           <span class="shrink-0 font-medium text-xs"
             [class.text-accent]="!isFalla(n, val)"
             [class.text-danger]="isFalla(n, val)">
@@ -31,7 +31,7 @@
         <div class="flex items-start gap-3 py-2 border-b border-border/50 last:border-0 -mx-1 px-1 rounded"
              [class.bg-background]="isEven">
           <span class="text-text-muted text-xs w-5 text-right shrink-0 mt-2">{{ n }}.</span>
-          <p class="text-sm text-text grow leading-snug mt-0.5">{{ preg }}</p>
+          <p class="text-sm text-text grow leading-snug mt-0.5">{{ preg.texto }}</p>
           <div class="flex rounded overflow-hidden border border-border shrink-0 text-xs mt-0.5">
             <!-- Positivo: Sí / Pasa → true -->
             <label class="cursor-pointer select-none">

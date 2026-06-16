@@ -22,28 +22,28 @@ export class VinelandSectionComponent {
   saveError = signal<string | null>(null);
 
   form = this.fb.group({
-    vinelandComunicacion:          [null as number | null],
-    vinelandAutovalimiento:        [null as number | null],
-    vinelandSocial:                [null as number | null],
-    vinelandMotor:                 [null as number | null],
-    vinelandCocienteFinal:         [null as number | null],
-    vinelandConductaDesadaptativa: [null as number | null],
-    vinelandInternalizante:        [null as number | null],
-    vinelandExternalizante:        [null as number | null],
+    comunicacion:          [null as number | null],
+    autovalimiento:        [null as number | null],
+    social:                [null as number | null],
+    motor:                 [null as number | null],
+    cocienteFinal:         [null as number | null],
+    conductaDesadaptativa: [null as number | null],
+    internalizante:        [null as number | null],
+    externalizante:        [null as number | null],
   });
 
   openModal(): void {
     this.saveError.set(null);
     const p = this.paciente();
     this.form.patchValue({
-      vinelandComunicacion:          p.vinelandComunicacion,
-      vinelandAutovalimiento:        p.vinelandAutovalimiento,
-      vinelandSocial:                p.vinelandSocial,
-      vinelandMotor:                 p.vinelandMotor,
-      vinelandCocienteFinal:         p.vinelandCocienteFinal,
-      vinelandConductaDesadaptativa: p.vinelandConductaDesadaptativa,
-      vinelandInternalizante:        p.vinelandInternalizante,
-      vinelandExternalizante:        p.vinelandExternalizante,
+      comunicacion:          p.vinelandComunicacion,
+      autovalimiento:        p.vinelandAutovalimiento,
+      social:                p.vinelandSocial,
+      motor:                 p.vinelandMotor,
+      cocienteFinal:         p.vinelandCocienteFinal,
+      conductaDesadaptativa: p.vinelandConductaDesadaptativa,
+      internalizante:        p.vinelandInternalizante,
+      externalizante:        p.vinelandExternalizante,
     });
     this.showModal.set(true);
   }

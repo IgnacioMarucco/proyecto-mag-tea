@@ -6,24 +6,7 @@ import { PacienteService } from '../../../../core/services/paciente.service';
 import { PacienteResponse } from '../../../../core/models/paciente.model';
 import { StatusBadgeComponent } from '../../../../shared/status-badge/status-badge.component';
 import { ModalContainerComponent } from '../../../../shared/modal-container/modal-container.component';
-
-const ITEMS_CARS = [
-  'Relación con las personas',
-  'Imitación',
-  'Respuesta emocional',
-  'Uso del cuerpo',
-  'Uso de objetos',
-  'Adaptación al cambio',
-  'Respuesta visual',
-  'Respuesta auditiva',
-  'Gusto, olfato y tacto',
-  'Miedo o nerviosismo',
-  'Comunicación verbal',
-  'Comunicación no verbal',
-  'Nivel de actividad',
-  'Nivel y consistencia intelectual',
-  'Impresiones generales',
-];
+import { CARS_ITEMS } from '../../../../shared/constants/cars.constants';
 
 @Component({
   selector: 'app-cars-section',
@@ -42,7 +25,7 @@ export class CarsSectionComponent {
   saving    = signal(false);
   saveError = signal<string | null>(null);
 
-  readonly items   = ITEMS_CARS;
+  readonly items   = CARS_ITEMS;
   readonly valores = [1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0];
 
   form = this.fb.group({

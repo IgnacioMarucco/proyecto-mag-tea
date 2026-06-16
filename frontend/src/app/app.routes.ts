@@ -86,6 +86,14 @@ export const routes: Routes = [
             m => m.ProfesionalFormComponent
           ),
       },
+      {
+        path: 'reportes',
+        data: { crumbs: [{ label: 'Gestión' }, { label: 'Reportes' }] },
+        loadComponent: () =>
+          import('./internal/reportes/dashboard/reportes-dashboard.component').then(
+            m => m.ReportesDashboardComponent
+          ),
+      },
     ],
   },
   {

@@ -1,0 +1,34 @@
+<div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+  <h3 class="mb-4 text-sm font-semibold text-slate-700">CARS-2</h3>
+
+  @if (data() === undefined) {
+    <div class="h-64 animate-pulse rounded bg-slate-50"></div>
+  } @else if (data() === null || data()!.totalConCars === 0) {
+    <p class="text-sm text-slate-400">Sin evaluaciones CARS-2 registradas</p>
+  } @else {
+    <p class="mb-2 text-xs text-slate-500">N = {{ data()!.totalConCars }} · Media = {{ data()!.mediaRawScore }} ± {{ data()!.sdRawScore }}</p>
+
+    <div echarts [options]="histogramaOptions()!" [autoResize]="true" class="h-48 w-full"></div>
+
+    <div class="mt-4 grid grid-cols-2 gap-4">
+      <div>
+        <p class="mb-2 text-xs font-medium text-slate-500">Categorías</p>
+        <div echarts [options]="donutOptions()!" [autoResize]="true" class="h-40 w-full"></div>
+      </div>
+      <div class="flex flex-col justify-center gap-2">
+        <div class="flex items-center justify-between rounded-lg bg-green-50 px-3 py-2">
+          <span class="text-xs text-green-700">Mínimo / No TEA (&lt; 30)</span>
+          <span class="font-semibold text-green-700">{{ data()!.minimoNoTea }}</span>
+        </div>
+        <div class="flex items-center justify-between rounded-lg bg-amber-50 px-3 py-2">
+          <span class="text-xs text-amber-700">Leve-Moderado (30-36.5)</span>
+          <span class="font-semibold text-amber-700">{{ data()!.leveModerado }}</span>
+        </div>
+        <div class="flex items-center justify-between rounded-lg bg-red-50 px-3 py-2">
+          <span class="text-xs text-red-700">Severo (&gt; 36.5)</span>
+          <span class="font-semibold text-red-700">{{ data()!.severo }}</span>
+        </div>
+      </div>
+    </div>
+  }
+</div>

@@ -86,7 +86,7 @@ export class CriteriosSectionComponent {
     if (this.saving()) return;
     this.saving.set(true);
     this.saveError.set(null);
-    const dto = { ...this.form.value, consentimientoFirmado: this.paciente().consentimientoFirmado } as any;
+    const dto = this.form.value as any;
     this.service.patchCriterios(this.paciente().id, dto).subscribe({
       next: p  => { this.updated.emit(p); this.showModal.set(false); this.saving.set(false); },
       error: err => { this.saveError.set(err.error?.message ?? 'Error al guardar'); this.saving.set(false); },
