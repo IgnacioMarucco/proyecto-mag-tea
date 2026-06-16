@@ -25,7 +25,7 @@ class ProfesionalControllerTest {
 
     @Test
     void deberia_listarProfesionales_cuandoAutenticado() throws Exception {
-        mockMvc.perform(get("/api/profesionales")
+        mockMvc.perform(get("/api/v1/profesionales")
                         .with(user("test@test.com").roles("INVESTIGADOR_PRINCIPAL")))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON));
@@ -33,22 +33,22 @@ class ProfesionalControllerTest {
 
     @Test
     void deberia_rechazarAcceso_cuandoNoAutenticado() throws Exception {
-        mockMvc.perform(get("/api/profesionales"))
+        mockMvc.perform(get("/api/v1/profesionales"))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     void deberia_rechazarAcceso_cuandoRolInsuficiente() throws Exception {
-        mockMvc.perform(get("/api/profesionales")
+        mockMvc.perform(get("/api/v1/profesionales")
                         .with(user("test@test.com").roles("CUERPO_MEDICO")))
                 .andExpect(status().isForbidden());
     }
 
     @Test
     void deberia_crearProfesional_cuandoDatosValidos() throws Exception {
-        var dto = new ProfesionalCreateDTO("Luis", "Pérez", "luis@test.com", "pass1234", Role.CUERPO_MEDICO);
+        var dto = new ProfesionalCreateDTO("Luis", "Pérez", "luis@test.com", "351-000-0001", "pass1234", Role.CUERPO_MEDICO);
 
-        mockMvc.perform(post("/api/profesionales")
+        mockMvc.perform(post("/api/v1/profesionales")
                         .with(user("test@test.com").roles("INVESTIGADOR_PRINCIPAL"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
@@ -59,9 +59,9 @@ class ProfesionalControllerTest {
 
     @Test
     void deberia_retornar400_cuandoDatosInvalidos() throws Exception {
-        var dtoInvalido = new ProfesionalCreateDTO("", "", "no-es-email", "123", null);
+        var dtoInvalido = new ProfesionalCreateDTO("", "", "no-es-email", "", "123", null);
 
-        mockMvc.perform(post("/api/profesionales")
+        mockMvc.perform(post("/api/v1/profesionales")
                         .with(user("test@test.com").roles("INVESTIGADOR_PRINCIPAL"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dtoInvalido)))
@@ -70,15 +70,15 @@ class ProfesionalControllerTest {
 
     @Test
     void deberia_retornar404_cuandoIdNoExiste() throws Exception {
-        mockMvc.perform(get("/api/profesionales/9999")
+        mockMvc.perform(get("/api/v1/profesionales/9999")
                         .with(user("test@test.com").roles("INVESTIGADOR_PRINCIPAL")))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void deberia_darDeBaja_cuandoProfesionalExiste() throws Exception {
-        var dto = new ProfesionalCreateDTO("María", "Gómez", "maria@test.com", "pass1234", Role.SECRETARIA);
-        var response = mockMvc.perform(post("/api/profesionales")
+        var dto = new ProfesionalCreateDTO("María", "Gómez", "maria@test.com", "351-000-0002", "pass1234", Role.SECRETARIA);
+        var response = mockMvc.perform(post("/api/v1/profesionales")
                         .with(user("test@test.com").roles("INVESTIGADOR_PRINCIPAL"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
@@ -87,11 +87,11 @@ class ProfesionalControllerTest {
 
         Long id = objectMapper.readTree(response.getResponse().getContentAsString()).get("id").asLong();
 
-        mockMvc.perform(delete("/api/profesionales/" + id)
+        mockMvc.perform(delete("/api/v1/profesionales/" + id)
                         .with(user("test@test.com").roles("INVESTIGADOR_PRINCIPAL")))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/profesionales/" + id)
+        mockMvc.perform(get("/api/v1/profesionales/" + id)
                         .with(user("test@test.com").roles("INVESTIGADOR_PRINCIPAL")))
                 .andExpect(status().isNotFound());
     }

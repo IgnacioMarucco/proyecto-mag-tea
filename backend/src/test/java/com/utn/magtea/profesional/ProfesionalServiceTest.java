@@ -7,6 +7,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.List;
@@ -28,9 +31,9 @@ class ProfesionalServiceTest {
 
     @Test
     void deberia_crearProfesional_cuandoDatosValidos() {
-        var dto = new ProfesionalCreateDTO("Ana", "García", "ana@test.com", "pass1234", Role.CUERPO_MEDICO);
+        var dto = new ProfesionalCreateDTO("Ana", "García", "ana@test.com", "351-000-0000", "pass1234", Role.CUERPO_MEDICO);
         var entidad = new Profesional();
-        var response = new ProfesionalResponseDTO(1L, "Ana", "García", "ana@test.com", Role.CUERPO_MEDICO, true, null);
+        var response = new ProfesionalResponseDTO(1L, "Ana", "García", "ana@test.com", "351-000-0000", Role.CUERPO_MEDICO, true, null);
 
         when(repository.existsByEmail(dto.email())).thenReturn(false);
         when(mapper.toEntity(dto)).thenReturn(entidad);
@@ -47,7 +50,7 @@ class ProfesionalServiceTest {
 
     @Test
     void deberia_lanzarExcepcion_cuandoEmailDuplicadoAlCrear() {
-        var dto = new ProfesionalCreateDTO("Ana", "García", "ana@test.com", "pass1234", Role.CUERPO_MEDICO);
+        var dto = new ProfesionalCreateDTO("Ana", "García", "ana@test.com", "351-000-0000", "pass1234", Role.CUERPO_MEDICO);
         when(repository.existsByEmail(dto.email())).thenReturn(true);
 
         assertThatThrownBy(() -> service.create(dto))
@@ -59,7 +62,7 @@ class ProfesionalServiceTest {
     void deberia_retornarProfesional_cuandoIdExiste() {
         var entidad = new Profesional();
         entidad.setActivo(true);
-        var response = new ProfesionalResponseDTO(1L, "Ana", "García", "ana@test.com", Role.CUERPO_MEDICO, true, null);
+        var response = new ProfesionalResponseDTO(1L, "Ana", "García", "ana@test.com", null, Role.CUERPO_MEDICO, true, null);
 
         when(repository.findById(1L)).thenReturn(Optional.of(entidad));
         when(mapper.toDTO(entidad)).thenReturn(response);
@@ -82,14 +85,15 @@ class ProfesionalServiceTest {
     void deberia_retornarSoloProfesionalesActivos_cuandoListar() {
         var activo = new Profesional();
         activo.setActivo(true);
-        var response = new ProfesionalResponseDTO(1L, "Ana", "García", "ana@test.com", Role.CUERPO_MEDICO, true, null);
+        var response = new ProfesionalResponseDTO(1L, "Ana", "García", "ana@test.com", null, Role.CUERPO_MEDICO, true, null);
 
-        when(repository.findAllByActivoTrue()).thenReturn(List.of(activo));
+        when(repository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(activo)));
         when(mapper.toDTO(activo)).thenReturn(response);
 
-        var result = service.findAll();
+        var result = service.findAll(0, 20, null, null, "apellido", "asc");
 
-        assertThat(result).hasSize(1).contains(response);
+        assertThat(result.content()).hasSize(1).contains(response);
     }
 
     @Test
@@ -114,11 +118,11 @@ class ProfesionalServiceTest {
 
     @Test
     void deberia_actualizarProfesional_cuandoDatosValidos() {
-        var dto = new ProfesionalUpdateDTO("Ana", "López", "ana@test.com", Role.CUERPO_TECNICO);
+        var dto = new ProfesionalUpdateDTO("Ana", "López", "ana@test.com", "351-000-0000", Role.CUERPO_TECNICO);
         var entidad = new Profesional();
         entidad.setActivo(true);
         entidad.setEmail("ana@test.com");
-        var response = new ProfesionalResponseDTO(1L, "Ana", "López", "ana@test.com", Role.CUERPO_TECNICO, true, null);
+        var response = new ProfesionalResponseDTO(1L, "Ana", "López", "ana@test.com", "351-000-0000", Role.CUERPO_TECNICO, true, null);
 
         when(repository.findById(1L)).thenReturn(Optional.of(entidad));
         when(repository.save(any())).thenReturn(entidad);

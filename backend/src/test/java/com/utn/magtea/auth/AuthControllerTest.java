@@ -44,7 +44,7 @@ class AuthControllerTest {
     void deberia_retornarToken_cuandoCredencialesValidas() throws Exception {
         var request = new LoginRequest("admin@test.com", "pass1234");
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
@@ -57,7 +57,7 @@ class AuthControllerTest {
     void deberia_retornar401_cuandoPasswordIncorrecta() throws Exception {
         var request = new LoginRequest("admin@test.com", "wrongpassword");
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized());
@@ -67,7 +67,7 @@ class AuthControllerTest {
     void deberia_retornar401_cuandoEmailNoExiste() throws Exception {
         var request = new LoginRequest("noexiste@test.com", "pass1234");
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized());
@@ -77,7 +77,7 @@ class AuthControllerTest {
     void deberia_retornar400_cuandoDatosInvalidos() throws Exception {
         var request = new LoginRequest("", "");
 
-        mockMvc.perform(post("/api/auth/login")
+        mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
