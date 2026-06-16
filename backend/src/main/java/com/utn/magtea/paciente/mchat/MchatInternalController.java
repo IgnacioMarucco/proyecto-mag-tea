@@ -1,7 +1,6 @@
-package com.utn.magtea.mchat;
+package com.utn.magtea.paciente.mchat;
 
 import com.utn.magtea.common.ApiConstants;
-import com.utn.magtea.paciente.mchat.MchatFamiliaResponseDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

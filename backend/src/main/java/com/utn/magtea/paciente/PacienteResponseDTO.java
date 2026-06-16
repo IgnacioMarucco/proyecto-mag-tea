@@ -4,9 +4,9 @@ import com.utn.magtea.formulariointeres.ComoConocioProyecto;
 import com.utn.magtea.paciente.cars.CarsItemsResponseDTO;
 import com.utn.magtea.paciente.cars.CarsResultado;
 import com.utn.magtea.paciente.criterios.CriteriosAptitud;
-import com.utn.magtea.paciente.mchatseguimiento.MchatEstado;
-import com.utn.magtea.paciente.mchatseguimiento.MchatResultadoFinal;
-import com.utn.magtea.paciente.mchatseguimiento.MchatRiesgo;
+import com.utn.magtea.paciente.mchat.MchatEstado;
+import com.utn.magtea.paciente.mchat.MchatResultadoFinal;
+import com.utn.magtea.paciente.mchat.MchatRiesgo;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -74,7 +74,7 @@ public record PacienteResponseDTO(
         Integer carsPercentil,
         CarsResultado carsResultado,
         CarsItemsResponseDTO carsItems,
-        // Vineland
+        // Vineland (prefijos necesarios para distinguir en el DTO plano)
         Integer vinelandComunicacion,
         Integer vinelandAutovalimiento,
         Integer vinelandSocial,

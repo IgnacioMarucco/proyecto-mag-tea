@@ -1,4 +1,4 @@
-package com.utn.magtea.mchat;
+package com.utn.magtea.paciente.mchat;
 
 // true = Sí, false = No
 public record MchatSubmitDTO(

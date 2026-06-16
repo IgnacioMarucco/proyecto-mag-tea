@@ -14,7 +14,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class PacienteEvaluacionVineland extends Auditable {
+public class EvaluacionVineland extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

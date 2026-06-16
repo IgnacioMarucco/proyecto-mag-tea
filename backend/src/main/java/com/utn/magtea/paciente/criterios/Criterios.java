@@ -14,7 +14,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class PacienteCriterios extends Auditable {
+public class Criterios extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

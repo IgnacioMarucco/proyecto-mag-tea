@@ -16,7 +16,7 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @NoArgsConstructor
-public class PacienteEvaluacionCars extends Auditable {
+public class EvaluacionCars extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

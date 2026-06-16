@@ -1,7 +1,6 @@
-package com.utn.magtea.mchat;
+package com.utn.magtea.paciente.mchat;
 
 import com.utn.magtea.common.ApiConstants;
-import com.utn.magtea.paciente.mchat.MchatFamiliaResponseDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping(ApiConstants.V1 + "/public/mchat")
 @Tag(name = "M-CHAT (público)")
 @RequiredArgsConstructor
-public class MchatController {
+public class MchatPublicController {
 
     private final MchatService service;
 

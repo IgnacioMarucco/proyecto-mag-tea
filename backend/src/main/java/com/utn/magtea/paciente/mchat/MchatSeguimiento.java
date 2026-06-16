@@ -1,4 +1,4 @@
-package com.utn.magtea.paciente.mchatseguimiento;
+package com.utn.magtea.paciente.mchat;
 
 import com.utn.magtea.common.Auditable;
 import com.utn.magtea.paciente.Paciente;
@@ -14,7 +14,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class PacienteMchatSeguimiento extends Auditable {
+public class MchatSeguimiento extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,7 +24,7 @@ public class PacienteMchatSeguimiento extends Auditable {
     @JoinColumn(name = "paciente_id", nullable = false, unique = true)
     private Paciente paciente;
 
-    // true = Falla, false = Pasa
+    // true = Pasa, false = Falla
     @Column(nullable = false) private boolean item1;
     @Column(nullable = false) private boolean item2;
     @Column(nullable = false) private boolean item3;

@@ -1,4 +1,4 @@
-package com.utn.magtea.mchat;
+package com.utn.magtea.paciente.mchat;
 
 public record MchatPublicResponseDTO(
         String nombreNino,

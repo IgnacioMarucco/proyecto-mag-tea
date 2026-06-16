@@ -1,14 +1,9 @@
-package com.utn.magtea.mchat;
+package com.utn.magtea.paciente.mchat;
 
 import com.utn.magtea.common.exception.BusinessRuleException;
 import com.utn.magtea.common.exception.ResourceNotFoundException;
+import com.utn.magtea.paciente.Paciente;
 import com.utn.magtea.paciente.PacienteService;
-import com.utn.magtea.paciente.mchat.MchatFamilia;
-import com.utn.magtea.paciente.mchat.MchatFamiliaMapper;
-import com.utn.magtea.paciente.mchat.MchatFamiliaRepository;
-import com.utn.magtea.paciente.mchat.MchatFamiliaResponseDTO;
-import com.utn.magtea.paciente.mchatseguimiento.MchatResultadoFinal;
-import com.utn.magtea.paciente.mchatseguimiento.PacienteMchatInfoDTO;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,14 +20,14 @@ public class MchatService {
 
     @Transactional(readOnly = true)
     public MchatPublicResponseDTO validarToken(String token) {
-        PacienteMchatInfoDTO info = pacienteService.validarTokenMchat(token);
+        MchatInfoDTO info = pacienteService.validarTokenMchat(token);
         boolean yaCompletado = familiaRepository.existsByPaciente_Id(info.id());
         return new MchatPublicResponseDTO(info.nombreNino(), info.apellidoNino(), yaCompletado);
     }
 
     @Transactional
     public MchatFamiliaResponseDTO guardarRespuestas(String token, MchatSubmitDTO dto) {
-        PacienteMchatInfoDTO info = pacienteService.validarTokenMchat(token);
+        MchatInfoDTO info = pacienteService.validarTokenMchat(token);
 
         if (familiaRepository.existsByPaciente_Id(info.id())) {
             throw new BusinessRuleException("El formulario M-CHAT ya fue completado para este paciente");
@@ -41,7 +36,7 @@ public class MchatService {
         int score = calcularScore(dto);
 
         MchatFamilia familia = new MchatFamilia();
-        familia.setPaciente(em.getReference(com.utn.magtea.paciente.Paciente.class, info.id()));
+        familia.setPaciente(em.getReference(Paciente.class, info.id()));
         mapearRespuestas(familia, dto);
         familia.setScoreTotal(score);
         familia.setResultadoFinal(calcularResultado(score));
@@ -66,7 +61,7 @@ public class MchatService {
         MchatFamilia familia = familiaRepository.findByPaciente_Id(pacienteId)
                 .orElseGet(() -> {
                     MchatFamilia nueva = new MchatFamilia();
-                    nueva.setPaciente(em.getReference(com.utn.magtea.paciente.Paciente.class, pacienteId));
+                    nueva.setPaciente(em.getReference(Paciente.class, pacienteId));
                     return nueva;
                 });
 

@@ -1,6 +1,5 @@
 package com.utn.magtea.paciente.mchat;
 
-import com.utn.magtea.paciente.mchatseguimiento.MchatResultadoFinal;
 
 import java.time.LocalDateTime;
 

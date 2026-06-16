@@ -1,6 +1,6 @@
 package com.utn.magtea.paciente.criterios;
 
-public record PacienteCriteriosDTO(
+public record CriteriosDTO(
         boolean criterioTEADSMV,
         boolean criterioTGDDSMIV,
         boolean criterioEdad,
@@ -13,6 +13,5 @@ public record PacienteCriteriosDTO(
         boolean lesionesOcupantesEspacioSNC,
         boolean patologiaPsiquiatrica,
         boolean otrosSindromesGeneticos,
-        boolean pubertadPrecoz,
-        boolean consentimientoFirmado
+        boolean pubertadPrecoz
 ) {}

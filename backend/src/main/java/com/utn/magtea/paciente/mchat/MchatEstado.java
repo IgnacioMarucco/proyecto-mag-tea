@@ -1,4 +1,4 @@
-package com.utn.magtea.paciente.mchatseguimiento;
+package com.utn.magtea.paciente.mchat;
 
 public enum MchatEstado {
     PENDIENTE,

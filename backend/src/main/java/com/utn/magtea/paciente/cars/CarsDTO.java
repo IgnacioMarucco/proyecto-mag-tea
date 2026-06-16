@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 
 // Valores válidos por ítem: 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0
-public record PacienteCarsDTO(
+public record CarsDTO(
         @NotNull BigDecimal item1,  @NotNull BigDecimal item2,  @NotNull BigDecimal item3,
         @NotNull BigDecimal item4,  @NotNull BigDecimal item5,  @NotNull BigDecimal item6,
         @NotNull BigDecimal item7,  @NotNull BigDecimal item8,  @NotNull BigDecimal item9,

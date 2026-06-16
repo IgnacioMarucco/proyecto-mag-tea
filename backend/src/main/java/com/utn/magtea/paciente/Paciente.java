@@ -2,11 +2,11 @@ package com.utn.magtea.paciente;
 
 import com.utn.magtea.common.Auditable;
 import com.utn.magtea.formulariointeres.ComoConocioProyecto;
-import com.utn.magtea.paciente.cars.PacienteEvaluacionCars;
-import com.utn.magtea.paciente.criterios.PacienteCriterios;
+import com.utn.magtea.paciente.cars.EvaluacionCars;
+import com.utn.magtea.paciente.criterios.Criterios;
 import com.utn.magtea.paciente.mchat.MchatFamilia;
-import com.utn.magtea.paciente.mchatseguimiento.PacienteMchatSeguimiento;
-import com.utn.magtea.paciente.vineland.PacienteEvaluacionVineland;
+import com.utn.magtea.paciente.mchat.MchatSeguimiento;
+import com.utn.magtea.paciente.vineland.EvaluacionVineland;
 import jakarta.persistence.*;
 import org.hibernate.envers.Audited;
 import org.hibernate.envers.NotAudited;
@@ -101,15 +101,15 @@ public class Paciente extends Auditable {
     private MchatFamilia mchatFamilia;
 
     @OneToOne(mappedBy = "paciente", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
-    private PacienteCriterios criterios;
+    private Criterios criterios;
 
     @OneToOne(mappedBy = "paciente", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
-    private PacienteMchatSeguimiento mchatSeguimiento;
+    private MchatSeguimiento mchatSeguimiento;
 
     @OneToOne(mappedBy = "paciente", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
-    private PacienteEvaluacionCars evaluacionCars;
+    private EvaluacionCars evaluacionCars;
 
     @OneToOne(mappedBy = "paciente", fetch = FetchType.EAGER, cascade = CascadeType.ALL, orphanRemoval = true)
-    private PacienteEvaluacionVineland evaluacionVineland;
+    private EvaluacionVineland evaluacionVineland;
 
 }

@@ -1,4 +1,4 @@
-package com.utn.magtea.mchat;
+package com.utn.magtea.paciente.mchat;
 
 import java.util.Set;
 

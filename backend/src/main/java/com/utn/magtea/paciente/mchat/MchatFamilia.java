@@ -2,7 +2,7 @@ package com.utn.magtea.paciente.mchat;
 
 import com.utn.magtea.common.Auditable;
 import com.utn.magtea.paciente.Paciente;
-import com.utn.magtea.paciente.mchatseguimiento.MchatResultadoFinal;
+
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

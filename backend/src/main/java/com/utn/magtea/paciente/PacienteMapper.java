@@ -2,11 +2,10 @@ package com.utn.magtea.paciente;
 
 import com.utn.magtea.paciente.cars.CarsItemsResponseDTO;
 import com.utn.magtea.paciente.cars.CarsResultado;
-import com.utn.magtea.paciente.cars.PacienteEvaluacionCars;
+import com.utn.magtea.paciente.cars.EvaluacionCars;
+import com.utn.magtea.paciente.criterios.Criterios;
 import com.utn.magtea.paciente.criterios.CriteriosAptitud;
-import com.utn.magtea.paciente.criterios.PacienteCriterios;
-import com.utn.magtea.paciente.mchat.MchatFamilia;
-import com.utn.magtea.paciente.mchatseguimiento.MchatEstado;
+import com.utn.magtea.paciente.mchat.MchatEstado;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -18,7 +17,7 @@ import java.time.LocalDateTime;
 public interface PacienteMapper {
 
     default CriteriosAptitud calcularCriteriosAptitud(Paciente entity) {
-        PacienteCriterios c = entity.getCriterios();
+        Criterios c = entity.getCriterios();
         if (c == null) return null;
         boolean exclusion = c.isEpilepsia() || c.isParalisisCerebral() ||
                 c.isInfeccionesCongenitas() || c.isLesionesEstructuralesSNC() ||
@@ -46,7 +45,7 @@ public interface PacienteMapper {
         return MchatEstado.NO_ENVIADO;
     }
 
-    default CarsItemsResponseDTO toCarsItems(PacienteEvaluacionCars c) {
+    default CarsItemsResponseDTO toCarsItems(EvaluacionCars c) {
         return new CarsItemsResponseDTO(
                 c.getItem1(),  c.getItem2(),  c.getItem3(),  c.getItem4(),  c.getItem5(),
                 c.getItem6(),  c.getItem7(),  c.getItem8(),  c.getItem9(),  c.getItem10(),
@@ -72,7 +71,7 @@ public interface PacienteMapper {
     @Mapping(target = "mchatEstado",    expression = "java(calcularMchatEstado(entity))")
     @Mapping(target = "mchatScoreTotal",    expression = "java(entity.getMchatFamilia() != null ? entity.getMchatFamilia().getScoreTotal() : null)")
     @Mapping(target = "mchatResultadoFinal",expression = "java(entity.getMchatFamilia() != null ? entity.getMchatFamilia().getResultadoFinal() : null)")
-    @Mapping(target = "mchatResultado", expression = "java(entity.getMchatFamilia() == null ? null : entity.getMchatFamilia().getScoreTotal() <= 2 ? com.utn.magtea.paciente.mchatseguimiento.MchatRiesgo.BAJO_RIESGO : entity.getMchatFamilia().getScoreTotal() <= 7 ? com.utn.magtea.paciente.mchatseguimiento.MchatRiesgo.MEDIANO_RIESGO : com.utn.magtea.paciente.mchatseguimiento.MchatRiesgo.ALTO_RIESGO)")
+    @Mapping(target = "mchatResultado", expression = "java(entity.getMchatFamilia() == null ? null : entity.getMchatFamilia().getScoreTotal() <= 2 ? com.utn.magtea.paciente.mchat.MchatRiesgo.BAJO_RIESGO : entity.getMchatFamilia().getScoreTotal() <= 7 ? com.utn.magtea.paciente.mchat.MchatRiesgo.MEDIANO_RIESGO : com.utn.magtea.paciente.mchat.MchatRiesgo.ALTO_RIESGO)")
     @Mapping(target = "carsResultado",  expression = "java(calcularCarsResultado(entity))")
     // Criterios (desde sub-entidad)
     @Mapping(target = "criteriosRegistrados",          expression = "java(entity.getCriterios() != null)")

@@ -12,10 +12,10 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.utn.magtea.common.ApiConstants;
 import com.utn.magtea.common.PageResponse;
-import com.utn.magtea.paciente.cars.PacienteCarsDTO;
-import com.utn.magtea.paciente.criterios.PacienteCriteriosDTO;
-import com.utn.magtea.paciente.mchatseguimiento.PacienteMchatSeguimientoDTO;
-import com.utn.magtea.paciente.vineland.PacienteVinelandDTO;
+import com.utn.magtea.paciente.cars.CarsDTO;
+import com.utn.magtea.paciente.criterios.CriteriosDTO;
+import com.utn.magtea.paciente.mchat.MchatSeguimientoDTO;
+import com.utn.magtea.paciente.vineland.VinelandDTO;
 
 import java.util.List;
 
@@ -84,9 +84,9 @@ public class PacienteController {
 
     @PatchMapping("/{id}/criterios")
     @PreAuthorize("hasAnyRole('INVESTIGADOR_PRINCIPAL', 'CUERPO_MEDICO', 'ROTANTE_CLINICA')")
-    @Operation(summary = "Registrar criterios de inclusión/exclusión y consentimiento")
+    @Operation(summary = "Registrar criterios de inclusión/exclusión")
     public PacienteResponseDTO updateCriterios(@PathVariable Long id,
-                                               @RequestBody PacienteCriteriosDTO dto) {
+                                               @RequestBody CriteriosDTO dto) {
         return service.updateCriterios(id, dto);
     }
 
@@ -94,7 +94,7 @@ public class PacienteController {
     @PreAuthorize("hasAnyRole('INVESTIGADOR_PRINCIPAL', 'CUERPO_MEDICO', 'ROTANTE_CLINICA')")
     @Operation(summary = "Registrar resultado del seguimiento M-CHAT-R/F (solo si score 3-7)")
     public PacienteResponseDTO updateMchatSeguimiento(@PathVariable Long id,
-                                                      @RequestBody PacienteMchatSeguimientoDTO dto) {
+                                                      @RequestBody MchatSeguimientoDTO dto) {
         return service.updateMchatSeguimiento(id, dto);
     }
 
@@ -102,7 +102,7 @@ public class PacienteController {
     @PreAuthorize("hasAnyRole('INVESTIGADOR_PRINCIPAL', 'CUERPO_MEDICO', 'ROTANTE_CLINICA')")
     @Operation(summary = "Registrar puntuaciones CARS-2")
     public PacienteResponseDTO updateCars(@PathVariable Long id,
-                                          @RequestBody @Valid PacienteCarsDTO dto) {
+                                          @RequestBody @Valid CarsDTO dto) {
         return service.updateCars(id, dto);
     }
 
@@ -110,7 +110,7 @@ public class PacienteController {
     @PreAuthorize("hasAnyRole('INVESTIGADOR_PRINCIPAL', 'CUERPO_MEDICO', 'ROTANTE_CLINICA')")
     @Operation(summary = "Registrar puntuaciones Vineland")
     public PacienteResponseDTO updateVineland(@PathVariable Long id,
-                                              @RequestBody PacienteVinelandDTO dto) {
+                                              @RequestBody VinelandDTO dto) {
         return service.updateVineland(id, dto);
     }
 
