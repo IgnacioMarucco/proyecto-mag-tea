@@ -22,6 +22,7 @@ export interface ProfesionalResponse {
   nombre: string;
   apellido: string;
   email: string;
+  telefono: string | null;
   role: Role;
   activo: boolean;
   createdAt: string;
@@ -31,6 +32,7 @@ export interface ProfesionalCreate {
   nombre: string;
   apellido: string;
   email: string;
+  telefono: string;
   password: string;
   role: Role;
 }
@@ -39,5 +41,6 @@ export interface ProfesionalUpdate {
   nombre: string;
   apellido: string;
   email: string;
+  telefono: string;
   role: Role;
 }

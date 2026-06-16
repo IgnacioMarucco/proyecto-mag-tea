@@ -1,11 +1,26 @@
 import { ComoConocioProyecto } from './formulario-interes.model';
 
 export type Sexo = 'FEMENINO' | 'MASCULINO';
+export type TipoPaciente = 'CONTROL' | 'PROBLEMA';
 export type MchatResultadoFinal = 'POSITIVA' | 'NEGATIVA';
 export type MchatRiesgo = 'BAJO_RIESGO' | 'MEDIANO_RIESGO' | 'ALTO_RIESGO';
 export type CarsResultado = 'MINIMO_NO_TEA' | 'LEVE_MODERADO' | 'SEVERO';
 export type MchatEstado = 'PENDIENTE' | 'COMPLETADO' | 'EXPIRADO' | 'NO_ENVIADO';
 export type PacienteEstado = 'ADMITIDO' | 'MCHAT_RESPONDIDO' | 'EXTRACCION_PENDIENTE' | 'EXTRACCION_REALIZADA';
+export type CriteriosAptitud = 'APTO' | 'EXCLUIDO' | 'INCOMPLETO';
+
+export interface PacienteListItem {
+  id: number;
+  apellidoTutor: string;
+  nombreTutor: string;
+  apellidoNino: string;
+  nombreNino: string;
+  fechaNacimientoNino: string | null;
+  tipoPaciente: TipoPaciente;
+  pacienteEstado: PacienteEstado;
+  fechaPrimeraVisita: string | null;
+  fechaExtraccion: string | null;
+}
 
 export interface PacienteCreate {
   formularioInteresId?: number;
@@ -18,6 +33,22 @@ export interface PacienteCreate {
   fechaNacimientoNino?: string;
   sexo: Sexo;
   fechaPrimeraVisita: string;
+  notas?: string;
+  tipoPaciente: TipoPaciente;
+  criterioTEADSMV: boolean;
+  criterioTGDDSMIV: boolean;
+  criterioEdad: boolean;
+  epilepsia: boolean;
+  paralisisCerebral: boolean;
+  infeccionesCongenitas: boolean;
+  lesionesEstructuralesSNC: boolean;
+  facomatosis: boolean;
+  patologiasNeurometabolicas: boolean;
+  lesionesOcupantesEspacioSNC: boolean;
+  patologiaPsiquiatrica: boolean;
+  otrosSindromesGeneticos: boolean;
+  pubertadPrecoz: boolean;
+  consentimientoFirmado: boolean;
 }
 
 export interface PacienteUpdate {
@@ -30,6 +61,8 @@ export interface PacienteUpdate {
   fechaNacimientoNino?: string;
   sexo: Sexo;
   notas?: string;
+  fechaPrimeraVisita?: string;
+  fechaExtraccion?: string;
 }
 
 export interface PacienteCriterios {
@@ -60,6 +93,24 @@ export interface PacienteCars {
   item1: number;  item2: number;  item3: number;  item4: number;  item5: number;
   item6: number;  item7: number;  item8: number;  item9: number;  item10: number;
   item11: number; item12: number; item13: number; item14: number; item15: number;
+  obs1?: string;  obs2?: string;  obs3?: string;  obs4?: string;  obs5?: string;
+  obs6?: string;  obs7?: string;  obs8?: string;  obs9?: string;  obs10?: string;
+  obs11?: string; obs12?: string; obs13?: string; obs14?: string; obs15?: string;
+  tScore?: number | null;
+  percentil?: number | null;
+}
+
+export interface CarsItemsResponse {
+  item1: number | null;  item2: number | null;  item3: number | null;
+  item4: number | null;  item5: number | null;  item6: number | null;
+  item7: number | null;  item8: number | null;  item9: number | null;
+  item10: number | null; item11: number | null; item12: number | null;
+  item13: number | null; item14: number | null; item15: number | null;
+  obs1: string | null;   obs2: string | null;   obs3: string | null;
+  obs4: string | null;   obs5: string | null;   obs6: string | null;
+  obs7: string | null;   obs8: string | null;   obs9: string | null;
+  obs10: string | null;  obs11: string | null;  obs12: string | null;
+  obs13: string | null;  obs14: string | null;  obs15: string | null;
 }
 
 export interface PacienteVineland {
@@ -98,14 +149,18 @@ export interface PacienteResponse {
   nombreNino: string;
   fechaNacimientoNino: string | null;
   edadActual: number | null;
+  edadMeses: number | null;
   comoConocioProyecto: ComoConocioProyecto | null;
+  otroComoConocio: string | null;
   sexo: Sexo;
+  tipoPaciente: TipoPaciente;
   fechaPrimeraVisita: string | null;
   consentimientoFirmado: boolean;
   notas: string | null;
   pacienteEstado: PacienteEstado;
   mchatEstado: MchatEstado;
   criteriosRegistrados: boolean;
+  criteriosAptitud: CriteriosAptitud | null;
   criterioTEADSMV: boolean;
   criterioTGDDSMIV: boolean;
   criterioEdad: boolean;
@@ -132,7 +187,9 @@ export interface PacienteResponse {
   seguimientoItem19: boolean | null; seguimientoItem20: boolean | null;
   carsRawScore: number | null;
   carsTScore: number | null;
+  carsPercentil: number | null;
   carsResultado: CarsResultado | null;
+  carsItems: CarsItemsResponse | null;
   vinelandComunicacion: number | null;
   vinelandAutovalimiento: number | null;
   vinelandSocial: number | null;

@@ -16,7 +16,7 @@ export interface FormularioListParams {
 @Injectable({ providedIn: 'root' })
 export class FormularioInteresService {
   private readonly http = inject(HttpClient);
-  private readonly BASE = '/api/formularios-interes';
+  private readonly BASE = '/api/v1/formularios-interes';
 
   findAll(params: FormularioListParams = {}): Observable<PageResponse<FormularioInteresResponse>> {
     let p = new HttpParams()

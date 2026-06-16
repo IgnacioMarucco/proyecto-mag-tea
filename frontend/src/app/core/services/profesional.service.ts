@@ -16,7 +16,7 @@ export interface ProfesionalListParams {
 @Injectable({ providedIn: 'root' })
 export class ProfesionalService {
   private readonly http = inject(HttpClient);
-  private readonly BASE = '/api/profesionales';
+  private readonly BASE = '/api/v1/profesionales';
 
   findAll(params: ProfesionalListParams = {}): Observable<PageResponse<ProfesionalResponse>> {
     let p = new HttpParams()

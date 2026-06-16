@@ -20,7 +20,7 @@ export class AuthService {
   currentUser = signal<CurrentUser | null>(this.restoreUser());
 
   login(request: LoginRequest): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>('/api/auth/login', request).pipe(
+    return this.http.post<LoginResponse>('/api/v1/auth/login', request).pipe(
       tap(response => {
         localStorage.setItem(this.TOKEN_KEY, response.token);
         this.currentUser.set(this.decodeUser(response.token));

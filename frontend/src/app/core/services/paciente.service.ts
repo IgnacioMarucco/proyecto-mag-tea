@@ -1,11 +1,12 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { PageResponse } from '../models/page-response.model';
+import { PageResponse, PageParams } from '../models/page-response.model';
 import {
   PacienteCreate,
   PacienteUpdate,
   PacienteResponse,
+  PacienteListItem,
   PacienteCriterios,
   PacienteMchatSeguimiento,
   PacienteCars,
@@ -15,21 +16,17 @@ import {
   PacientePrimeraVisita,
 } from '../models/paciente.model';
 
-export interface PacienteListParams {
-  page?: number;
-  size?: number;
-  q?: string;
+export interface PacienteListParams extends PageParams {
   estados?: string[];
-  sortBy?: string;
-  sortDir?: string;
+  tipos?: string[];
 }
 
 @Injectable({ providedIn: 'root' })
 export class PacienteService {
   private readonly http = inject(HttpClient);
-  private readonly base = '/api/pacientes';
+  private readonly base = '/api/v1/pacientes';
 
-  findAll(params: PacienteListParams = {}): Observable<PageResponse<PacienteResponse>> {
+  findAll(params: PacienteListParams = {}): Observable<PageResponse<PacienteListItem>> {
     let p = new HttpParams()
       .set('page', params.page ?? 0)
       .set('size', params.size ?? 20);
@@ -37,7 +34,8 @@ export class PacienteService {
     if (params.sortBy)  p = p.set('sortBy', params.sortBy);
     if (params.sortDir) p = p.set('sortDir', params.sortDir);
     params.estados?.forEach(e => { p = p.append('estados', e); });
-    return this.http.get<PageResponse<PacienteResponse>>(this.base, { params: p });
+    params.tipos?.forEach(t  => { p = p.append('tipos',   t); });
+    return this.http.get<PageResponse<PacienteListItem>>(this.base, { params: p });
   }
 
   findById(id: number): Observable<PacienteResponse> {
