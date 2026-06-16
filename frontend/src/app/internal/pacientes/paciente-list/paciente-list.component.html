@@ -1,10 +1,11 @@
 <div class="p-8">
 
   <div class="flex items-center justify-between mb-6">
-    <div>
-      <h1 class="text-xs font-mono text-text-muted tracking-widest uppercase mb-1">Etapa Clínica</h1>
-      <h2 class="text-2xl font-semibold text-text">Pacientes</h2>
-    </div>
+    <app-page-header [crumbs]="crumbs()" />
+    <a routerLink="/internal/pacientes/nuevo"
+      class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors whitespace-nowrap">
+      <app-icon name="plus" class="w-4 h-4" /> Nuevo paciente
+    </a>
   </div>
 
   <app-list-toolbar
@@ -13,12 +14,11 @@
     [activeFilters]="activeFilters()"
     (searchChange)="onSearch($event)"
     (filtersChange)="onFiltersChange($event)"
-  >
-    <a routerLink="/internal/pacientes/nuevo"
-      class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors whitespace-nowrap">
-      <app-icon name="plus" class="w-4 h-4" /> Nuevo paciente
-    </a>
-  </app-list-toolbar>
+  />
+
+  <span aria-live="polite" class="sr-only">
+    {{ totalElements() }} {{ totalElements() === 1 ? 'paciente encontrado' : 'pacientes encontrados' }}
+  </span>
 
   <app-data-table
     [columns]="columns"
@@ -41,7 +41,11 @@
         </td>
 
         <td class="px-5 py-3.5 hidden sm:table-cell text-xs text-text-muted">
-          {{ formatEdad(p.fechaNacimientoNino) }}
+          {{ p.fechaNacimientoNino | edad }}
+        </td>
+
+        <td class="px-5 py-3.5 hidden sm:table-cell">
+          <app-status-badge [value]="p.tipoPaciente" [labels]="tipoLabels" [colorMap]="tipoColors" />
         </td>
 
         <td class="px-5 py-3.5">

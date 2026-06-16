@@ -9,11 +9,11 @@ import {
 import { PacienteResponse } from '../../../../core/models/paciente.model';
 import { StatusBadgeComponent } from '../../../../shared/status-badge/status-badge.component';
 import { MchatPreguntasComponent } from '../../../../shared/mchat-preguntas/mchat-preguntas.component';
-import { IconComponent } from '../../../../shared/icon/icon.component';
+import { ModalContainerComponent } from '../../../../shared/modal-container/modal-container.component';
 
 @Component({
   selector: 'app-mchat-section',
-  imports: [StatusBadgeComponent, MchatPreguntasComponent, IconComponent],
+  imports: [StatusBadgeComponent, MchatPreguntasComponent, ModalContainerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './mchat-section.component.html',
 })

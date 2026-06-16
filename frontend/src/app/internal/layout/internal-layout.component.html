@@ -1,43 +1,74 @@
 <div class="flex h-screen overflow-hidden bg-background font-sans">
 
   <!-- Sidebar -->
-  <aside class="w-60 flex flex-col flex-shrink-0 bg-sidebar border-r border-sidebar-border">
+  <aside
+    class="relative flex flex-col flex-shrink-0 bg-sidebar border-r border-sidebar-border transition-[width] duration-200 ease-in-out"
+    [class.w-60]="!collapsed()"
+    [class.w-16]="collapsed()"
+  >
+
+    <!-- Toggle button — borde superior derecho -->
+    <button
+      (click)="toggleCollapsed()"
+      class="absolute top-4 -right-3 z-20 flex items-center justify-center w-6 h-6 rounded-full
+             bg-sidebar border border-sidebar-border text-sidebar-muted
+             hover:text-white hover:border-primary/50 transition-colors shadow-sm"
+      [attr.aria-label]="collapsed() ? 'Expandir menú' : 'Colapsar menú'"
+    >
+      <lucide-angular [img]="toggleIcon()" [size]="13" [strokeWidth]="2" />
+    </button>
 
     <!-- Brand -->
-    <div class="px-5 py-5 border-b border-sidebar-border">
-      <img src="/assets/logo-magtea.png" alt="MAG-TEA" class="h-7 w-auto mb-1" />
-      <p class="text-sidebar-muted text-[10px] font-mono tracking-widest uppercase">
-        Sistema de Investigación
-      </p>
+    <div class="border-b border-sidebar-border flex items-center"
+         [class.px-5]="!collapsed()" [class.py-5]="!collapsed()"
+         [class.justify-center]="collapsed()" [class.py-4]="collapsed()">
+      @if (!collapsed()) {
+        <div>
+          <img src="/assets/logo-magtea.png" alt="MAG-TEA" class="h-7 w-auto mb-1" />
+          <p class="text-sidebar-muted text-[10px] font-mono tracking-widest uppercase">
+            Sistema de Investigación
+          </p>
+        </div>
+      } @else {
+        <img src="/assets/logo-magtea.png" alt="MAG-TEA" class="h-6 w-auto max-w-[36px] object-contain object-left" />
+      }
     </div>
 
     <!-- Nav -->
-    <nav class="flex-1 py-2 overflow-y-auto" aria-label="Navegación principal">
+    <nav class="flex-1 py-2 overflow-y-auto overflow-x-hidden" aria-label="Navegación principal">
       @for (section of visibleNavSections(); track section.label; let first = $first) {
 
-        <!-- Separador entre secciones -->
+        <!-- Separador -->
         @if (!first) {
-          <div class="mx-5 my-2 border-t border-sidebar-border"></div>
+          <div class="my-2 border-t border-sidebar-border" [class.mx-5]="!collapsed()" [class.mx-3]="collapsed()"></div>
         }
 
-        <!-- Label de sección -->
-        <p class="px-5 pt-2 pb-1 text-[10px] font-mono text-sidebar-muted uppercase tracking-widest select-none">
-          {{ section.label }}
-        </p>
+        <!-- Label de sección (solo expandido) -->
+        @if (!collapsed()) {
+          <p class="px-5 pt-2 pb-1 text-[10px] font-mono text-sidebar-muted uppercase tracking-widest select-none">
+            {{ section.label }}
+          </p>
+        } @else {
+          <div class="pt-2"></div>
+        }
 
-        <!-- Items de la sección -->
+        <!-- Items -->
         @for (item of section.items; track item.path) {
           <a
             [routerLink]="item.path"
             routerLinkActive="!text-white !border-l-2 !border-primary bg-primary/10"
             [routerLinkActiveOptions]="{ exact: false }"
-            class="flex items-center pl-4 pr-5 py-2.5 text-sm text-sidebar-muted
-                   border-l-2 border-transparent
-                   hover:text-white hover:bg-white/5
-                   transition-all duration-150"
+            class="flex items-center py-2.5 text-sm text-sidebar-muted border-l-2 border-transparent
+                   hover:text-white hover:bg-white/5 transition-all duration-150"
+            [class.pl-4]="!collapsed()" [class.pr-5]="!collapsed()"
+            [class.justify-center]="collapsed()" [class.px-0]="collapsed()"
             [attr.aria-label]="item.label"
+            [title]="collapsed() ? item.label : ''"
           >
-            {{ item.label }}
+            <lucide-angular [img]="item.icon" [size]="17" [strokeWidth]="1.5" class="flex-shrink-0" />
+            @if (!collapsed()) {
+              <span class="ml-2.5 truncate">{{ item.label }}</span>
+            }
           </a>
         }
 
@@ -45,18 +76,31 @@
     </nav>
 
     <!-- User -->
-    <div class="px-5 py-4 border-t border-sidebar-border">
-      <p class="text-white text-sm font-medium truncate" [title]="user()?.email ?? ''">
-        {{ user()?.email }}
-      </p>
-      <p class="text-accent text-[11px] font-mono mt-0.5">{{ roleLabel() }}</p>
-      <button
-        (click)="logout()"
-        class="mt-3 text-xs text-sidebar-muted hover:text-white transition-colors"
-        aria-label="Cerrar sesión"
-      >
-        Cerrar sesión →
-      </button>
+    <div class="border-t border-sidebar-border overflow-hidden"
+         [class.px-5]="!collapsed()" [class.py-4]="!collapsed()"
+         [class.flex]="collapsed()" [class.flex-col]="collapsed()" [class.items-center]="collapsed()" [class.py-4]="collapsed()" [class.gap-2]="collapsed()">
+      @if (!collapsed()) {
+        <p class="text-white text-sm font-medium truncate" [title]="user()?.email ?? ''">
+          {{ user()?.email }}
+        </p>
+        <p class="text-accent text-[11px] font-mono mt-0.5">{{ roleLabel() }}</p>
+        <button
+          (click)="logout()"
+          class="mt-3 text-xs text-sidebar-muted hover:text-white transition-colors"
+          aria-label="Cerrar sesión"
+        >
+          Cerrar sesión →
+        </button>
+      } @else {
+        <button
+          (click)="logout()"
+          class="text-sidebar-muted hover:text-white transition-colors"
+          aria-label="Cerrar sesión"
+          title="Cerrar sesión"
+        >
+          <lucide-angular [img]="LogOutIcon" [size]="17" [strokeWidth]="1.5" />
+        </button>
+      }
     </div>
 
   </aside>

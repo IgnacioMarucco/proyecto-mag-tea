@@ -26,7 +26,7 @@ export const PREGUNTAS_MCHAT = [
   '¿A su hijo o hija le gustan las actividades de movimiento? (Por ejemplo: hamacarse o jugar al "caballito" sobre sus rodillas)',
 ];
 
-// Preguntas donde la respuesta "Sí" es una falla (lógica inversa)
+// Preguntas donde Sí/Pasa es la respuesta patológica (falla)
 const INVERTIDAS = new Set([2, 5, 12]);
 
 @Component({
@@ -38,11 +38,11 @@ const INVERTIDAS = new Set([2, 5, 12]);
 export class MchatPreguntasComponent {
   private readonly fb = inject(FormBuilder);
 
-  // 'inicial' → Sí/No, lógica invertidas para display
-  // 'seguimiento' → Pasa/Falla, sin invertidas
+  // 'inicial' → Sí/No (familia) | 'seguimiento' → Pasa/Falla (profesional)
+  // En ambos modos: true = Sí/Pasa, false = No/Falla
   modo = input.required<'inicial' | 'seguimiento'>();
 
-  // Array de 20 booleans para pre-rellenar. null = sin datos previos.
+  // Array de 20 booleans para pre-rellenar (true=Sí/Pasa). null = sin datos, formulario vacío.
   respuestas  = input<boolean[] | null>(null);
 
   // Solo lectura: muestra las respuestas sin permitir edición
@@ -55,14 +55,12 @@ export class MchatPreguntasComponent {
   error       = input<string | null>(null);
   submitLabel = input<string>('Guardar');
   savingLabel = input<string>('Guardando…');
-  // Si se provee, aparece un botón Cancelar junto al de envío
   cancelLabel = input<string | null>(null);
 
   submitted = output<boolean[]>();
   cancelled = output<void>();
 
-  readonly preguntas  = PREGUNTAS_MCHAT;
-  readonly invertidas = INVERTIDAS;
+  readonly preguntas = PREGUNTAS_MCHAT;
 
   form = this.fb.group(
     Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`q${i + 1}`, [null as boolean | null]]))
@@ -76,8 +74,29 @@ export class MchatPreguntasComponent {
   readonly labelPositivo = computed(() => this.modo() === 'seguimiento' ? 'Pasa' : 'Sí');
   readonly labelNegativo = computed(() => this.modo() === 'seguimiento' ? 'Falla' : 'No');
 
+  protected itemValue(n: number): boolean | null {
+    const v = (this.formValue() as Record<string, boolean | null>)[`q${n}`];
+    return v === undefined ? null : v;
+  }
+
+  // true = Sí/Pasa, false = No/Falla. Invertidas (2,5,12): Sí/Pasa es la falla.
+  isFalla(n: number, value: boolean | null): boolean {
+    if (value === null) return false;
+    return INVERTIDAS.has(n) ? value : !value;
+  }
+
+  getLabel(n: number, value: boolean | null): string {
+    if (value === null) return '—';
+    if (this.modo() === 'seguimiento') return value ? 'Pasa' : 'Falla';
+    return value ? 'Sí' : 'No';
+  }
+
   readonly fallasCount = computed(() =>
-    Array.from({ length: 20 }, (_, i) => !!this.formValue()[`q${i + 1}`]).filter(Boolean).length
+    Array.from({ length: 20 }, (_, i) => {
+      const n = i + 1;
+      const val = (this.formValue() as Record<string, boolean | null>)[`q${n}`];
+      return this.isFalla(n, val ?? null);
+    }).filter(Boolean).length
   );
 
   constructor() {
@@ -85,23 +104,9 @@ export class MchatPreguntasComponent {
       const r = this.respuestas();
       if (r !== null) {
         this.form.patchValue(Object.fromEntries(r.map((val, i) => [`q${i + 1}`, val])));
-      } else if (this.modo() === 'seguimiento') {
-        this.form.patchValue(Object.fromEntries(Array.from({ length: 20 }, (_, i) => [`q${i + 1}`, false])));
       }
+      // Si null: el formulario queda vacío (deseleccionado) independientemente del modo
     });
-  }
-
-  // Determina si la respuesta para la pregunta n es una falla
-  isFalla(n: number, value: boolean | null): boolean {
-    if (value === null) return false;
-    if (this.modo() === 'seguimiento') return value;           // true = Falla directamente
-    return INVERTIDAS.has(n) ? value : !value;                 // inicial: lógica invertida
-  }
-
-  getLabel(n: number, value: boolean | null): string {
-    if (value === null) return '—';
-    if (this.modo() === 'seguimiento') return value ? 'Falla' : 'Pasa';
-    return value ? 'Sí' : 'No';
   }
 
   onSubmit(): void {

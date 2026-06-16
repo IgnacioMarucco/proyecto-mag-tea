@@ -1,10 +1,7 @@
 <div class="p-8">
 
   <div class="flex items-center justify-between mb-6">
-    <div>
-      <h1 class="text-xs font-mono text-text-muted tracking-widest uppercase mb-1">Etapa Clínica</h1>
-      <h2 class="text-2xl font-semibold text-text">Bandeja de formularios</h2>
-    </div>
+    <app-page-header [crumbs]="crumbs()" />
   </div>
 
   <app-list-toolbar
@@ -34,7 +31,7 @@
         </td>
 
         <td class="px-5 py-3.5 hidden sm:table-cell text-xs text-text-muted">
-          {{ formatEdad(f) }}
+          {{ f.fechaNacimientoNino | edad }}
         </td>
 
         <td class="px-5 py-3.5 hidden md:table-cell font-mono text-xs text-text-muted">
@@ -124,8 +121,8 @@
               <div>
                 <p class="text-xs text-text-muted mb-0.5">Fecha de nacimiento</p>
                 <p class="text-text">{{ f.fechaNacimientoNino }}
-                  @if (f.edadActual !== null) {
-                    <span class="text-text-muted">({{ formatEdad(f) }})</span>
+                  @if (f.fechaNacimientoNino) {
+                    <span class="text-text-muted">({{ f.fechaNacimientoNino | edad }})</span>
                   }
                 </p>
               </div>

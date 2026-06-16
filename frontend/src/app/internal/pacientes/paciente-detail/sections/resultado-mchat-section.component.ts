@@ -3,11 +3,11 @@ import { PacienteService } from '../../../../core/services/paciente.service';
 import { PacienteResponse } from '../../../../core/models/paciente.model';
 import { StatusBadgeComponent } from '../../../../shared/status-badge/status-badge.component';
 import { MchatPreguntasComponent } from '../../../../shared/mchat-preguntas/mchat-preguntas.component';
-import { IconComponent } from '../../../../shared/icon/icon.component';
+import { ModalContainerComponent } from '../../../../shared/modal-container/modal-container.component';
 
 @Component({
   selector: 'app-resultado-mchat-section',
-  imports: [StatusBadgeComponent, MchatPreguntasComponent, IconComponent],
+  imports: [StatusBadgeComponent, MchatPreguntasComponent, ModalContainerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './resultado-mchat-section.component.html',
 })
@@ -26,19 +26,12 @@ export class ResultadoMchatSectionComponent {
     return score != null && score >= 3 && score <= 7;
   });
 
-  readonly seguimientoItemsAsArray = computed((): boolean[] => {
+  readonly seguimientoItemsAsArray = computed((): boolean[] | null => {
     const p = this.paciente();
+    if (p.mchatSeguimientoFallas === null) return null;
     return Array.from({ length: 20 }, (_, i) => !!(p as any)[`seguimientoItem${i + 1}`]);
   });
 
-  readonly riesgoLabels: Record<string, string> = {
-    BAJO_RIESGO: 'Bajo riesgo', MEDIANO_RIESGO: 'Riesgo mediano', ALTO_RIESGO: 'Alto riesgo',
-  };
-  readonly riesgoColors: Record<string, string> = {
-    BAJO_RIESGO:    'bg-accent-light text-accent',
-    MEDIANO_RIESGO: 'bg-warning-light text-warning',
-    ALTO_RIESGO:    'bg-danger-light text-danger',
-  };
   readonly resultadoFinalLabels: Record<string, string> = {
     POSITIVA: 'Pesquisa positiva', NEGATIVA: 'Pesquisa negativa',
   };

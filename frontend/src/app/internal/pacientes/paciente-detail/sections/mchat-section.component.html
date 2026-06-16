@@ -1,15 +1,14 @@
 @let p = paciente();
 
-<section class="bg-surface border border-border rounded-lg">
-  <div class="flex items-center justify-between px-6 py-4 border-b border-border">
+<section class="bg-surface border border-border rounded-lg overflow-hidden">
+  <div class="flex items-center justify-between px-6 py-4 border-b border-border bg-background">
     <div class="flex items-center gap-3 flex-wrap">
       <h2 class="text-sm font-semibold text-text">M-CHAT-R — Respuestas de la familia</h2>
       <app-status-badge [value]="p.mchatEstado"
         [labels]="mchatEstadoLabels" [colorMap]="mchatEstadoColors" />
       @if (p.mchatEstado === 'COMPLETADO' && p.mchatScoreTotal !== null) {
-        <span class="text-xs text-text-muted">·</span>
-        <span class="text-sm font-semibold text-text">
-          {{ p.mchatScoreTotal }}<span class="text-xs font-normal text-text-muted"> / 20</span>
+        <span class="font-mono text-xs bg-background border border-border rounded px-2 py-0.5 text-text tabular-nums">
+          {{ p.mchatScoreTotal }} / 20
         </span>
         @if (p.mchatResultado) {
           <app-status-badge [value]="p.mchatResultado" [labels]="riesgoLabels" [colorMap]="riesgoColors" />
@@ -25,7 +24,7 @@
       }
       <button type="button" (click)="openModal()"
         class="text-xs px-3 py-1.5 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors cursor-pointer">
-        Respuestas
+        Ver respuestas
       </button>
     </div>
   </div>
@@ -43,26 +42,15 @@
 </section>
 
 @if (showModal()) {
-<div class="fixed inset-0 bg-sidebar/50 flex items-start justify-center z-50 p-5 overflow-y-auto"
-     (click)="showModal.set(false)">
-  <div class="bg-surface border border-border rounded-lg w-full max-w-2xl my-8 shadow-md"
-       (click)="$event.stopPropagation()">
-    <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border sticky top-0 bg-surface rounded-t-lg">
-      <h3 class="text-base font-semibold text-text">M-CHAT-R — Respuestas</h3>
-      <div class="flex items-center gap-2">
-        @if (!editMode() && p.mchatEstado === 'COMPLETADO') {
-          <button type="button" (click)="enterEditMode()"
-            class="text-xs px-3 py-1.5 border border-border rounded-md text-text-muted hover:text-text transition-colors cursor-pointer">
-            Editar
-          </button>
-        }
-        <button (click)="showModal.set(false)" aria-label="Cerrar"
-          class="text-text-muted hover:text-text cursor-pointer">
-          <app-icon name="x-mark" class="w-5 h-5" />
+  <app-modal-container title="M-CHAT-R — Respuestas" size="lg" (closed)="showModal.set(false)">
+    <div modal-header-actions>
+      @if (!editMode() && p.mchatEstado === 'COMPLETADO') {
+        <button type="button" (click)="enterEditMode()"
+          class="text-xs px-3 py-1.5 border border-border rounded-md text-text-muted hover:text-text transition-colors cursor-pointer">
+          Editar
         </button>
-      </div>
+      }
     </div>
-
     @if (mchatRespuestasLoading()) {
       <p class="px-6 py-8 text-sm text-text-muted text-center">Cargando respuestas…</p>
     } @else if (editMode()) {
@@ -85,6 +73,5 @@
           [readonly]="true" />
       </div>
     }
-  </div>
-</div>
+  </app-modal-container>
 }

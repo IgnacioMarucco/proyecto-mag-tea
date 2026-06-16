@@ -7,30 +7,26 @@ import {
   input,
   signal,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { PacienteService } from '../../../core/services/paciente.service';
 import { PacienteResponse } from '../../../core/models/paciente.model';
 import { StatusBadgeComponent } from '../../../shared/status-badge/status-badge.component';
-import { IconComponent } from '../../../shared/icon/icon.component';
 import { DatosBasicosSectionComponent } from './sections/datos-basicos-section.component';
-import { ConsentimientoSectionComponent } from './sections/consentimiento-section.component';
 import { MchatSectionComponent } from './sections/mchat-section.component';
-import { CriteriosSectionComponent } from './sections/criterios-section.component';
 import { ResultadoMchatSectionComponent } from './sections/resultado-mchat-section.component';
 import { CarsSectionComponent } from './sections/cars-section.component';
 import { VinelandSectionComponent } from './sections/vineland-section.component';
 import { ExtraccionSectionComponent } from './sections/extraccion-section.component';
+import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 
 @Component({
   selector: 'app-paciente-detail',
   imports: [
     RouterLink,
     StatusBadgeComponent,
-    IconComponent,
+    PageHeaderComponent,
     DatosBasicosSectionComponent,
-    ConsentimientoSectionComponent,
     MchatSectionComponent,
-    CriteriosSectionComponent,
     ResultadoMchatSectionComponent,
     CarsSectionComponent,
     VinelandSectionComponent,
@@ -43,21 +39,22 @@ export class PacienteDetailComponent {
   readonly id = input.required<string>();
 
   private readonly pacienteService = inject(PacienteService);
+  private readonly route = inject(ActivatedRoute);
 
   paciente  = signal<PacienteResponse | null>(null);
   loading   = signal(true);
   loadError = signal<string | null>(null);
 
-  criterioCumplido = computed(() => {
+  criterioCumplido      = computed(() => this.paciente()?.criteriosAptitud === 'APTO');
+  isControl             = computed(() => this.paciente()?.tipoPaciente === 'CONTROL');
+  consentimientoFirmado = computed(() => this.paciente()?.consentimientoFirmado ?? false);
+  requiereSeguimiento   = computed(() => this.paciente()?.mchatResultado === 'MEDIANO_RIESGO');
+
+  readonly crumbs = computed<Crumb[]>(() => {
+    const base: Crumb[] = this.route.snapshot.data['crumbs'] ?? [];
     const p = this.paciente();
-    if (!p || !p.criteriosRegistrados) return false;
-    const inclusion = p.criterioTEADSMV && p.criterioTGDDSMIV && p.criterioEdad;
-    const exclusion =
-      p.epilepsia || p.paralisisCerebral || p.infeccionesCongenitas ||
-      p.lesionesEstructuralesSNC || p.facomatosis || p.patologiasNeurometabolicas ||
-      p.lesionesOcupantesEspacioSNC || p.patologiaPsiquiatrica ||
-      p.otrosSindromesGeneticos || p.pubertadPrecoz;
-    return !!(inclusion && !exclusion);
+    if (!p) return base;
+    return [...base.slice(0, -1), { label: `${p.apellidoNino}, ${p.nombreNino}` }];
   });
 
   constructor() {

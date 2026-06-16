@@ -1,37 +1,30 @@
 @let p = paciente();
 
-<section class="bg-surface border border-border rounded-lg">
-  <div class="flex items-center justify-between px-6 py-4 border-b border-border">
-    <div class="flex items-center gap-3">
+<section class="bg-surface border border-border rounded-lg overflow-hidden">
+  <div class="flex items-center justify-between px-6 py-4 border-b border-border bg-background">
+    <div class="flex items-center gap-2 flex-wrap">
       <h2 class="text-sm font-semibold text-text">Segunda visita — Extracción de sangre</h2>
-      @if (p.fechaExtraccion) {
-        <span class="text-xs text-text-muted">·</span>
-        <span class="text-xs text-text-muted">Fecha de extracción:
-          <span class="text-sm font-semibold text-text">{{ formatDate(p.fechaExtraccion) }}</span>
-        </span>
-      } @else {
+      @if (!p.fechaExtraccion) {
         <span class="text-xs text-text-muted">Sin registrar</span>
       }
     </div>
     <button type="button" (click)="openModal()"
       class="text-xs px-3 py-1.5 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors cursor-pointer shrink-0">
-      @if (p.fechaExtraccion) { Editar fecha } @else { Registrar extracción }
+      @if (p.fechaExtraccion) { Editar } @else { Registrar }
     </button>
   </div>
+  @if (p.fechaExtraccion) {
+    <div class="px-6 py-4 text-sm">
+      <div>
+        <p class="text-xs text-text-muted mb-0.5">Fecha de extracción</p>
+        <p class="text-text">{{ formatDate(p.fechaExtraccion) }}</p>
+      </div>
+    </div>
+  }
 </section>
 
 @if (showModal()) {
-<div class="fixed inset-0 bg-sidebar/50 flex items-center justify-center z-50 p-5"
-     (click)="showModal.set(false)">
-  <div class="bg-surface border border-border rounded-lg w-full max-w-sm shadow-md"
-       (click)="$event.stopPropagation()">
-    <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border">
-      <h3 class="text-base font-semibold text-text">Segunda visita — Extracción</h3>
-      <button (click)="showModal.set(false)" aria-label="Cerrar"
-        class="text-text-muted hover:text-text cursor-pointer">
-        <app-icon name="x-mark" class="w-5 h-5" />
-      </button>
-    </div>
+  <app-modal-container title="Segunda visita — Extracción" size="sm" (closed)="showModal.set(false)">
     <form [formGroup]="form" (ngSubmit)="save()" class="px-6 py-5 space-y-4">
       <div>
         <label for="fechaExtraccion" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
@@ -53,6 +46,5 @@
         </button>
       </div>
     </form>
-  </div>
-</div>
+  </app-modal-container>
 }

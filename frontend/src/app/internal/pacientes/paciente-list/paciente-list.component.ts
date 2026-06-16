@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
-import { BehaviorSubject, catchError, of, switchMap } from 'rxjs';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { BehaviorSubject, catchError, map, of, switchMap } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { PacienteService, PacienteListParams } from '../../../core/services/paciente.service';
 import { ListToolbarComponent, FilterGroup } from '../../../shared/list-toolbar/list-toolbar.component';
@@ -9,22 +9,30 @@ import { DataTableComponent, TableColumn } from '../../../shared/data-table/data
 import { StatusBadgeComponent } from '../../../shared/status-badge/status-badge.component';
 import { RowActionsComponent, RowAction } from '../../../shared/row-actions/row-actions.component';
 import { PaginatorComponent } from '../../../shared/paginator/paginator.component';
-import { PacienteResponse } from '../../../core/models/paciente.model';
+import { PacienteListItem } from '../../../core/models/paciente.model';
 import { SortState } from '../../../shared/sort.utils';
 import { IconComponent } from '../../../shared/icon/icon.component';
+import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-header.component';
+import { EdadPipe } from '../../../core/pipes/edad.pipe';
 
 const PAGE_SIZE = 20;
 const ALL_ESTADOS = ['ADMITIDO', 'MCHAT_RESPONDIDO', 'EXTRACCION_PENDIENTE', 'EXTRACCION_REALIZADA'];
 
 @Component({
   selector: 'app-paciente-list',
-  imports: [RouterLink, ListToolbarComponent, ConfirmModalComponent, DataTableComponent, StatusBadgeComponent, RowActionsComponent, PaginatorComponent, IconComponent],
+  imports: [RouterLink, ListToolbarComponent, ConfirmModalComponent, DataTableComponent, StatusBadgeComponent, RowActionsComponent, PaginatorComponent, IconComponent, PageHeaderComponent, EdadPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './paciente-list.component.html',
 })
 export class PacienteListComponent {
   private readonly service = inject(PacienteService);
   private readonly router  = inject(Router);
+  private readonly route   = inject(ActivatedRoute);
+
+  readonly crumbs = toSignal(
+    this.route.data.pipe(map(d => d['crumbs'] as Crumb[] ?? [])),
+    { initialValue: [] as Crumb[] }
+  );
 
   private readonly params$ = new BehaviorSubject<PacienteListParams>({
     page: 0, size: PAGE_SIZE, sortBy: 'createdAt', sortDir: 'desc',
@@ -61,15 +69,35 @@ export class PacienteListComponent {
         { key: 'EXTRACCION_REALIZADA', label: 'Extracción realizada' },
       ],
     },
+    {
+      key: 'tipo',
+      label: 'Tipo',
+      multiSelect: true,
+      options: [
+        { key: 'PROBLEMA', label: 'Caso problema' },
+        { key: 'CONTROL',  label: 'Control' },
+      ],
+    },
   ];
 
   readonly columns: TableColumn[] = [
     { label: 'Tutor/a' },
     { label: 'Niño/a' },
     { label: 'Edad',   hidden: 'sm' },
+    { label: 'Tipo',   hidden: 'sm' },
     { label: 'Estado' },
     { label: 'Fecha',  hidden: 'md', sortKey: 'createdAt' },
   ];
+
+  readonly tipoLabels: Record<string, string> = {
+    CONTROL:  'Control',
+    PROBLEMA: 'Caso problema',
+  };
+
+  readonly tipoColors: Record<string, string> = {
+    CONTROL:  'bg-background text-text-muted border border-border',
+    PROBLEMA: 'bg-primary-light text-primary',
+  };
 
   readonly estadoLabels: Record<string, string> = {
     ADMITIDO:             'Admitido',
@@ -106,10 +134,13 @@ export class PacienteListComponent {
     this.activeFilters.set(filters);
     const estadoVal = filters['estado'];
     const estados = Array.isArray(estadoVal) ? estadoVal : [];
+    const tipoVal = filters['tipo'];
+    const tipos = Array.isArray(tipoVal) ? tipoVal : [];
     this.params$.next({
       ...this.params$.value,
       page: 0,
       estados: estados.length && estados.length < ALL_ESTADOS.length ? estados : undefined,
+      tipos:   tipos.length < 2 ? tipos : undefined,
     });
   }
 
@@ -131,18 +162,7 @@ export class PacienteListComponent {
     return !!(p['q'] || (p['estados'] as string[] | undefined)?.length);
   }
 
-  formatEdad(fechaNacimiento: string | null | undefined): string {
-    if (!fechaNacimiento) return '—';
-    const birth = new Date(fechaNacimiento + 'T00:00:00');
-    const now   = new Date();
-    let years  = now.getFullYear() - birth.getFullYear();
-    let months = now.getMonth()    - birth.getMonth();
-    if (now.getDate() < birth.getDate()) months--;
-    if (months < 0) { years--; months += 12; }
-    return months > 0 ? `${years}a ${months}m` : `${years} años`;
-  }
-
-  proximaFecha(p: PacienteResponse): { label: string; valor: string } | null {
+proximaFecha(p: PacienteListItem): { label: string; valor: string } | null {
     switch (p.pacienteEstado) {
       case 'ADMITIDO':
       case 'MCHAT_RESPONDIDO':
@@ -169,9 +189,9 @@ export class PacienteListComponent {
     });
   }
 
-  getActionsFor(p: PacienteResponse): RowAction[] {
+  getActionsFor(p: PacienteListItem): RowAction[] {
     return [
-      { label: 'Ver detalle', style: 'primary', onClick: () => this.router.navigate(['/internal/pacientes', p.id]) },
+      { label: 'Detalles', style: 'primary', onClick: () => this.router.navigate(['/internal/pacientes', p.id]) },
       { label: 'Editar',      style: 'default', onClick: () => this.router.navigate(['/internal/pacientes', p.id, 'editar']) },
       { label: 'Dar de baja', style: 'danger',  disabled: this.deleting() === p.id, onClick: () => this.requestDelete(p.id) },
     ];

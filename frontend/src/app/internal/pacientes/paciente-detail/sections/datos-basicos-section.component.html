@@ -1,93 +1,212 @@
 @let p = paciente();
 
-<section class="bg-surface border border-border rounded-lg">
-  <div class="flex items-center justify-between px-6 py-4 border-b border-border">
+<section class="bg-surface border border-border rounded-lg overflow-hidden">
+
+  <!-- Header -->
+  <div class="flex items-center justify-between px-6 py-4 border-b border-border bg-background">
     <h2 class="text-sm font-semibold text-text">Datos básicos</h2>
-    <a [routerLink]="['/internal/pacientes', paciente().id, 'editar']"
-       class="text-xs px-3 py-1.5 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors cursor-pointer">
-      Editar datos
-    </a>
-  </div>
-  <div class="px-6 py-5 grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 text-sm">
-    <div class="flex gap-2">
-      <span class="text-text-muted w-36 shrink-0">Tutor/a</span>
-      <span class="text-text font-medium">{{ p.apellidoTutor }}, {{ p.nombreTutor }}</span>
-    </div>
-    <div class="flex items-center gap-2">
-      <span class="text-text-muted w-36 shrink-0">Niño/a</span>
-      <span class="text-text font-medium">{{ p.apellidoNino }}, {{ p.nombreNino }}</span>
-      <app-status-badge [value]="p.sexo"
-        [labels]="{ FEMENINO: 'Femenino', MASCULINO: 'Masculino' }"
-        [colorMap]="{ FEMENINO: 'bg-primary-light text-primary', MASCULINO: 'bg-primary-light text-primary' }" />
-    </div>
-    <div class="flex gap-2">
-      <span class="text-text-muted w-36 shrink-0">Correo</span>
-      <span class="text-text font-mono text-xs">{{ p.correoTutor }}</span>
-    </div>
-    <div class="flex gap-2">
-      <span class="text-text-muted w-36 shrink-0">Teléfono</span>
-      <span class="text-text">{{ p.telefono || '—' }}</span>
-    </div>
-    <div class="flex gap-2">
-      <span class="text-text-muted w-36 shrink-0">Nacimiento</span>
-      <span class="text-text">{{ formatDate(p.fechaNacimientoNino) }}</span>
-    </div>
-    <div class="flex gap-2">
-      <span class="text-text-muted w-36 shrink-0">Edad</span>
-      <span class="text-text">{{ p.edadActual !== null ? p.edadActual + ' años' : '—' }}</span>
-    </div>
-    <div class="flex items-center gap-2">
-      <span class="text-text-muted w-36 shrink-0">Fecha visita</span>
-      <span class="text-text">{{ formatDateTime(p.fechaPrimeraVisita) }}</span>
-      <button type="button" (click)="openModal()" aria-label="Editar fecha de visita"
-        class="ml-1 text-text-muted hover:text-primary transition-colors cursor-pointer">
-        <app-icon name="pencil" class="w-3.5 h-3.5" />
-      </button>
-    </div>
-    <div class="flex gap-2">
-      <span class="text-text-muted w-36 shrink-0">Fecha extracción</span>
-      <span class="text-text">{{ formatDate(p.fechaExtraccion) }}</span>
-    </div>
-    @if (p.notas) {
-      <div class="md:col-span-2 flex gap-2">
-        <span class="text-text-muted w-36 shrink-0">Notas</span>
-        <p class="text-text text-xs whitespace-pre-wrap">{{ p.notas }}</p>
-      </div>
+    @if (activeTab() === 'datos') {
+      <a [routerLink]="['/internal/pacientes', p.id, 'editar']"
+         class="text-xs px-3 py-1.5 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors cursor-pointer">
+        Editar datos
+      </a>
     }
   </div>
+
+  <!-- Tab bar -->
+  <div class="flex justify-center border-b border-border bg-background px-2">
+    @for (tab of [
+      { key: 'datos',          label: 'Datos' },
+      { key: 'criterios',      label: 'Criterios' },
+      { key: 'consentimiento', label: 'Consentimiento' }
+    ]; track tab.key) {
+      <button type="button" (click)="activeTab.set($any(tab.key))"
+        class="px-4 py-3 text-xs font-mono tracking-wider uppercase transition-colors border-b-2 -mb-px cursor-pointer"
+        [class.border-primary]="activeTab() === tab.key"
+        [class.text-primary]="activeTab() === tab.key"
+        [class.font-semibold]="activeTab() === tab.key"
+        [class.border-transparent]="activeTab() !== tab.key"
+        [class.text-text-muted]="activeTab() !== tab.key"
+        [class.hover:text-text]="activeTab() !== tab.key">
+        {{ tab.label }}
+      </button>
+    }
+  </div>
+
+  <!-- ── Pestaña: Datos ── -->
+  @if (activeTab() === 'datos') {
+    <div class="px-6 py-5 space-y-5 text-sm">
+
+      <!-- Fila 1: personas y contacto -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
+        <div>
+          <p class="text-xs text-text-muted mb-0.5">Tutor/a</p>
+          <p class="text-text">{{ p.apellidoTutor }}, {{ p.nombreTutor }}</p>
+        </div>
+        <div>
+          <p class="text-xs text-text-muted mb-0.5">Niño/a</p>
+          <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="text-text">{{ p.apellidoNino }}, {{ p.nombreNino }}</span>
+            <app-status-badge [value]="p.sexo"
+              [labels]="{ FEMENINO: 'Femenino', MASCULINO: 'Masculino' }"
+              [colorMap]="{ FEMENINO: 'bg-primary-light text-primary', MASCULINO: 'bg-primary-light text-primary' }" />
+          </div>
+        </div>
+        <div>
+          <p class="text-xs text-text-muted mb-0.5">Correo</p>
+          <p class="text-text break-all">{{ p.correoTutor }}</p>
+        </div>
+        <div>
+          <p class="text-xs text-text-muted mb-0.5">Teléfono</p>
+          <p class="text-text">{{ p.telefono || '—' }}</p>
+        </div>
+      </div>
+
+      <!-- Fila 2: fechas y datos numéricos -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
+        <div>
+          <p class="text-xs text-text-muted mb-0.5">Nacimiento</p>
+          <p class="text-text">{{ formatDate(p.fechaNacimientoNino) }}</p>
+        </div>
+        <div>
+          <p class="text-xs text-text-muted mb-0.5">Edad actual</p>
+          <p class="text-text">{{ p.fechaNacimientoNino | edad }}</p>
+          @if (p.fechaPrimeraVisita) {
+            <p class="text-xs text-text-muted mt-1">En la visita: {{ p.fechaNacimientoNino | edad:p.fechaPrimeraVisita }}</p>
+          }
+        </div>
+        <div>
+          <p class="text-xs text-text-muted mb-0.5">Fecha visita</p>
+          <p class="text-text">{{ formatDateTime(p.fechaPrimeraVisita) }}</p>
+        </div>
+        <div>
+          <p class="text-xs text-text-muted mb-0.5">Fecha extracción</p>
+          <p class="text-text">{{ formatDate(p.fechaExtraccion) }}</p>
+        </div>
+      </div>
+
+      <!-- Notas -->
+      @if (p.notas) {
+        <div class="border-t border-border pt-4">
+          <p class="text-xs text-text-muted mb-1">Notas / Observaciones</p>
+          <p #notesEl class="text-text text-sm"
+             [class.line-clamp-2]="!notesExpanded()"
+             [class.whitespace-pre-wrap]="notesExpanded()">{{ p.notas }}</p>
+          @if (isOverflowing()) {
+            <button type="button" (click)="notesExpanded.update(v => !v)"
+              class="mt-1.5 flex items-center gap-0.5 text-xs text-text-muted hover:text-text transition-colors cursor-pointer">
+              {{ notesExpanded() ? 'Ver menos' : 'Ver más' }}
+              <svg class="w-3.5 h-3.5 transition-transform duration-200" [class.rotate-180]="notesExpanded()"
+                   viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06z" clip-rule="evenodd" />
+              </svg>
+            </button>
+          }
+        </div>
+      }
+
+    </div>
+  }
+
+  <!-- ── Pestaña: Criterios ── -->
+  @if (activeTab() === 'criterios') {
+    <div class="px-6 py-5 text-sm">
+      @if (!p.criteriosRegistrados) {
+        <app-criterios-section [paciente]="p" (updated)="updated.emit($event)" />
+      } @else {
+        <div class="flex items-center gap-3 mb-5">
+          <p class="text-xs font-mono text-text-muted uppercase tracking-wider">Resultado</p>
+          @if (p.criteriosAptitud) {
+            <app-status-badge [value]="p.criteriosAptitud"
+              [labels]="criteriosEstadoLabels"
+              [colorMap]="criteriosEstadoColors" />
+          }
+        </div>
+
+        <div class="space-y-5">
+          <div>
+            <p class="text-xs font-mono text-text-muted uppercase tracking-wider mb-2">Criterios de inclusión</p>
+            <div class="space-y-1.5">
+              @for (c of [
+                { key: 'criterioTEADSMV',  label: 'Criterios clínicos TEA según DSM-V' },
+                { key: 'criterioTGDDSMIV', label: 'Criterios clínicos TGD según DSM-IV' },
+                { key: 'criterioEdad',     label: 'Edad entre 2 y 8 años' }
+              ]; track c.key) {
+                <div class="flex items-center gap-2.5 px-2 py-1.5 rounded-md"
+                  [class.bg-accent-light]="getCriterioValue(c.key)">
+                  <input type="checkbox" [checked]="getCriterioValue(c.key)" disabled
+                    class="w-4 h-4 rounded border-border accent-primary shrink-0 cursor-not-allowed" />
+                  <span class="text-text">{{ c.label }}</span>
+                </div>
+              }
+            </div>
+          </div>
+
+          <div>
+            <p class="text-xs font-mono text-text-muted uppercase tracking-wider mb-2">Criterios de exclusión</p>
+            <div class="space-y-1.5">
+              @for (c of [
+                { key: 'epilepsia',                   label: 'Epilepsia' },
+                { key: 'paralisisCerebral',           label: 'Parálisis cerebral (cualquier causa)' },
+                { key: 'infeccionesCongenitas',       label: 'Infecciones congénitas' },
+                { key: 'lesionesEstructuralesSNC',    label: 'Lesiones estructurales del SNC' },
+                { key: 'facomatosis',                 label: 'Facomatosis' },
+                { key: 'patologiasNeurometabolicas',  label: 'Patologías neurometabólicas' },
+                { key: 'lesionesOcupantesEspacioSNC', label: 'Lesiones ocupantes de espacio en el SNC' },
+                { key: 'patologiaPsiquiatrica',       label: 'Patología psiquiátrica (sospecha o confirmada)' },
+                { key: 'otrosSindromesGeneticos',     label: 'Otros síndromes genéticos o cromosómicos' },
+                { key: 'pubertadPrecoz',              label: 'Pubertad precoz' }
+              ]; track c.key) {
+                <div class="flex items-center gap-2.5 px-2 py-1.5 rounded-md"
+                  [class.bg-danger-light]="getCriterioValue(c.key)">
+                  <input type="checkbox" [checked]="getCriterioValue(c.key)" disabled
+                    class="w-4 h-4 rounded border-border accent-danger shrink-0 cursor-not-allowed" />
+                  <span class="text-text">{{ c.label }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ── Pestaña: Consentimiento ── -->
+  @if (activeTab() === 'consentimiento') {
+    <div class="px-6 py-5 text-sm">
+      @if (p.consentimientoFirmado) {
+        <div class="flex items-center gap-3">
+          <app-status-badge value="FIRMADO"
+            [labels]="{ FIRMADO: 'Consentimiento firmado' }"
+            [colorMap]="{ FIRMADO: 'bg-accent-light text-accent' }" />
+          <p class="text-xs text-text-muted">Registrado. No puede modificarse.</p>
+        </div>
+      } @else {
+        <div class="rounded-md bg-warning/10 border border-warning/30 px-4 py-3 mb-5">
+          <p class="text-sm text-warning font-medium mb-1">Consentimiento pendiente</p>
+          <p class="text-xs text-warning/80">El consentimiento informado es requisito para habilitar las secciones de evaluación clínica. Una vez registrado no puede revertirse.</p>
+        </div>
+        <button type="button" (click)="showConfirmModal.set(true)"
+          class="px-5 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors cursor-pointer">
+          Registrar firma de consentimiento
+        </button>
+        @if (confirmError()) {
+          <p class="mt-3 text-xs text-danger" role="alert">{{ confirmError() }}</p>
+        }
+      }
+    </div>
+  }
+
 </section>
 
-@if (showModal()) {
-<div class="fixed inset-0 bg-sidebar/50 flex items-center justify-center z-50 p-5"
-     (click)="showModal.set(false)">
-  <div class="bg-surface border border-border rounded-lg w-full max-w-sm shadow-md"
-       (click)="$event.stopPropagation()">
-    <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border">
-      <h3 class="text-base font-semibold text-text">Fecha de la primera visita</h3>
-      <button (click)="showModal.set(false)" aria-label="Cerrar"
-        class="text-text-muted hover:text-text cursor-pointer">
-        <app-icon name="x-mark" class="w-5 h-5" />
-      </button>
-    </div>
-    <form [formGroup]="form" (ngSubmit)="save()" class="px-6 py-5">
-      <label class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
-        Fecha y hora
-      </label>
-      <input type="datetime-local" formControlName="fechaPrimeraVisita"
-        class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text
-               focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" />
-      @if (saveError()) {
-        <p class="mt-3 text-xs text-danger" role="alert">{{ saveError() }}</p>
-      }
-      <div class="flex justify-end gap-3 mt-5 pt-4 border-t border-border">
-        <button type="button" (click)="showModal.set(false)"
-          class="px-4 py-2 text-sm text-text-muted hover:text-text transition-colors cursor-pointer">Cancelar</button>
-        <button type="submit" [disabled]="saving()"
-          class="px-5 py-2 text-sm font-medium bg-primary text-white rounded-md hover:bg-primary-dark disabled:opacity-50 cursor-pointer">
-          {{ saving() ? 'Guardando…' : 'Guardar' }}
-        </button>
-      </div>
-    </form>
-  </div>
-</div>
+@if (showConfirmModal()) {
+  <app-confirm-modal
+    title="¿Registrar firma de consentimiento?"
+    message="Esta acción es irreversible. El consentimiento quedará registrado como firmado y no podrá deshacerse."
+    confirmLabel="Sí, registrar"
+    cancelLabel="Cancelar"
+    [danger]="false"
+    (confirmed)="confirmConsent()"
+    (cancelled)="showConfirmModal.set(false)"
+  />
 }

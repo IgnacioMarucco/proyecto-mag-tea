@@ -1,11 +1,18 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import {
+  LucideAngularModule,
+  type LucideIconData,
+  Inbox, Users, Droplets, Layers, Rat, Briefcase, ChartBar,
+  LogOut, PanelLeftClose, PanelLeftOpen,
+} from 'lucide-angular';
 import { AuthService } from '../../core/services/auth.service';
 import { Role, ROLE_LABELS } from '../../core/models/profesional.model';
 
 interface NavItem {
   label: string;
   path: string;
+  icon: LucideIconData;
   allowedRoles: Role[];
 }
 
@@ -21,11 +28,13 @@ const NAV_SECTIONS: NavSection[] = [
       {
         label: 'Bandeja',
         path: '/internal/bandeja',
+        icon: Inbox,
         allowedRoles: ['SECRETARIA', 'CUERPO_MEDICO', 'ROTANTE_CLINICA', 'INVESTIGADOR_PRINCIPAL'],
       },
       {
         label: 'Pacientes',
         path: '/internal/pacientes',
+        icon: Users,
         allowedRoles: ['CUERPO_TECNICO', 'CUERPO_MEDICO', 'ROTANTE_CLINICA', 'ROTANTE_BASICA', 'INVESTIGADOR_PRINCIPAL'],
       },
     ],
@@ -36,16 +45,19 @@ const NAV_SECTIONS: NavSection[] = [
       {
         label: 'Sueros',
         path: '/internal/sueros',
+        icon: Droplets,
         allowedRoles: ['CUERPO_TECNICO', 'ROTANTE_BASICA', 'INVESTIGADOR_PRINCIPAL'],
       },
       {
         label: 'Pools',
         path: '/internal/pools',
+        icon: Layers,
         allowedRoles: ['CUERPO_TECNICO', 'ROTANTE_BASICA', 'INVESTIGADOR_PRINCIPAL'],
       },
       {
         label: 'Modelos Animales',
         path: '/internal/modelos-animales',
+        icon: Rat,
         allowedRoles: ['CUERPO_TECNICO', 'ROTANTE_BASICA', 'INVESTIGADOR_PRINCIPAL'],
       },
     ],
@@ -56,11 +68,13 @@ const NAV_SECTIONS: NavSection[] = [
       {
         label: 'Profesionales',
         path: '/internal/profesionales',
+        icon: Briefcase,
         allowedRoles: ['INVESTIGADOR_PRINCIPAL'],
       },
       {
         label: 'Reportes',
         path: '/internal/reportes',
+        icon: ChartBar,
         allowedRoles: ['INVESTIGADOR_PRINCIPAL'],
       },
     ],
@@ -69,7 +83,7 @@ const NAV_SECTIONS: NavSection[] = [
 
 @Component({
   selector: 'app-internal-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, LucideAngularModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './internal-layout.component.html',
 })
@@ -78,12 +92,26 @@ export class InternalLayoutComponent {
 
   user = this.authService.currentUser;
 
-  roleLabel = computed(() => {
+  readonly collapsed = signal(localStorage.getItem('sidebar-collapsed') === 'true');
+  readonly toggleIcon = computed(() => this.collapsed() ? PanelLeftOpen : PanelLeftClose);
+  readonly LogOutIcon = LogOut;
+
+  constructor() {
+    effect(() => {
+      localStorage.setItem('sidebar-collapsed', String(this.collapsed()));
+    });
+  }
+
+  toggleCollapsed(): void {
+    this.collapsed.update(v => !v);
+  }
+
+  readonly roleLabel = computed(() => {
     const role = this.user()?.role;
     return role ? ROLE_LABELS[role] : '';
   });
 
-  visibleNavSections = computed(() => {
+  readonly visibleNavSections = computed(() => {
     const role = this.user()?.role;
     if (!role) return [];
     return NAV_SECTIONS

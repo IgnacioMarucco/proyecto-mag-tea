@@ -2,11 +2,11 @@ import { ChangeDetectionStrategy, Component, inject, input, output, signal } fro
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { PacienteService } from '../../../../core/services/paciente.service';
 import { PacienteResponse } from '../../../../core/models/paciente.model';
-import { IconComponent } from '../../../../shared/icon/icon.component';
+import { ModalContainerComponent } from '../../../../shared/modal-container/modal-container.component';
 
 @Component({
   selector: 'app-vineland-section',
-  imports: [ReactiveFormsModule, IconComponent],
+  imports: [ReactiveFormsModule, ModalContainerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './vineland-section.component.html',
 })

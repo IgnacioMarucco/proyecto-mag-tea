@@ -6,24 +6,31 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, NgOptimizedImage } from '@angular/common';
+import { Meta, Title } from '@angular/platform-browser';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormularioInteresService } from '../../core/services/formulario-interes.service';
 import { FormularioInteresCreate, ComoConocioProyecto } from '../../core/models/formulario-interes.model';
+import { DonacionService } from '../../core/services/donacion.service';
 
 @Component({
   selector: 'app-landing',
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [CommonModule, NgOptimizedImage, ReactiveFormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './landing.component.html',
 })
 export class LandingComponent implements AfterViewInit, OnDestroy {
   activeSection = 'proyecto';
+  readonly portalInternoUrl = (() => {
+    const { protocol, hostname, port } = window.location;
+    return `${protocol}//app.${hostname}${port ? ':' + port : ''}/login`;
+  })();
   private observer: IntersectionObserver | null = null;
 
   private readonly fb = inject(FormBuilder);
   private readonly formularioService = inject(FormularioInteresService);
+  private readonly donacionService = inject(DonacionService);
 
   form = this.fb.group({
     apellidoTutor: ['', [Validators.required]],
@@ -44,6 +51,16 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
   showOtroField = toSignal(this.form.get('comoConocioProyecto')!.valueChanges, {
     initialValue: '',
   });
+
+  constructor() {
+    inject(Title).setTitle('MAG-TEA — Investigación sobre anticuerpos y TEA');
+    inject(Meta).addTags([
+      { name: 'description', content: 'Proyecto de investigación sobre anticuerpos anti-MAG y TEA en niños de 2 a 8 años. Centro Wernicke + CIQUIBIC, Córdoba.' },
+      { property: 'og:title', content: 'MAG-TEA — Investigación sobre anticuerpos y TEA' },
+      { property: 'og:description', content: 'Estudiamos la relación entre anticuerpos anti-MAG y el Trastorno del Espectro Autista. Sumate como familia participante desde Córdoba.' },
+      { property: 'og:type', content: 'website' },
+    ]);
+  }
 
   ngAfterViewInit(): void {
     const sections = Array.from(document.querySelectorAll('section[id]')) as HTMLElement[];
@@ -137,4 +154,41 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
   ];
 
   readonly donationAmounts = [2000, 5000, 10000];
+
+  selectedAmount = signal<number | null>(null);
+  customAmount = signal<number | null>(null);
+  donacionState = signal<'idle' | 'loading'>('idle');
+  donanteName = signal<string>('');
+  donanteEmail = signal<string>('');
+
+  selectAmount(amount: number): void {
+    this.selectedAmount.set(amount);
+    this.customAmount.set(null);
+  }
+
+  onCustomAmountChange(event: Event): void {
+    const value = (event.target as HTMLInputElement).valueAsNumber;
+    this.customAmount.set(isNaN(value) ? null : value);
+    this.selectedAmount.set(null);
+  }
+
+  donar(): void {
+    const monto = this.selectedAmount() ?? this.customAmount();
+    if (!monto || monto <= 0) return;
+
+    this.donacionState.set('loading');
+    const dto = {
+      monto,
+      ...(this.donanteName().trim() && { donante: this.donanteName().trim() }),
+      ...(this.donanteEmail().trim() && { correo: this.donanteEmail().trim() }),
+    };
+    this.donacionService.iniciar(dto).subscribe({
+      next: ({ initPoint }) => {
+        window.location.href = initPoint;
+      },
+      error: () => {
+        this.donacionState.set('idle');
+      },
+    });
+  }
 }

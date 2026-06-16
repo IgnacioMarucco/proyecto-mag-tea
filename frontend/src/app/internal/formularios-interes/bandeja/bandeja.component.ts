@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
-import { BehaviorSubject, catchError, of, switchMap } from 'rxjs';
+import { ActivatedRoute, Router } from '@angular/router';
+import { BehaviorSubject, catchError, map, of, switchMap } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormularioInteresService, FormularioListParams } from '../../../core/services/formulario-interes.service';
 import { EstadoFormulario, FormularioInteresResponse } from '../../../core/models/formulario-interes.model';
@@ -11,19 +11,27 @@ import { StatusBadgeComponent } from '../../../shared/status-badge/status-badge.
 import { RowActionsComponent, RowAction } from '../../../shared/row-actions/row-actions.component';
 import { PaginatorComponent } from '../../../shared/paginator/paginator.component';
 import { SortState } from '../../../shared/sort.utils';
+import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-header.component';
+import { EdadPipe } from '../../../core/pipes/edad.pipe';
 
 const PAGE_SIZE = 20;
 const ALL_ESTADOS = ['PENDIENTE', 'CONTACTADO', 'ADMITIDO', 'DESCARTADO'];
 
 @Component({
   selector: 'app-bandeja',
-  imports: [ListToolbarComponent, ConfirmModalComponent, DataTableComponent, StatusBadgeComponent, RowActionsComponent, PaginatorComponent],
+  imports: [ListToolbarComponent, ConfirmModalComponent, DataTableComponent, StatusBadgeComponent, RowActionsComponent, PaginatorComponent, PageHeaderComponent, EdadPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './bandeja.component.html',
 })
 export class BandejaComponent {
   private readonly service = inject(FormularioInteresService);
   private readonly router  = inject(Router);
+  private readonly route   = inject(ActivatedRoute);
+
+  readonly crumbs = toSignal(
+    this.route.data.pipe(map(d => d['crumbs'] as Crumb[] ?? [])),
+    { initialValue: [] as Crumb[] }
+  );
 
   private readonly params$ = new BehaviorSubject<FormularioListParams>({
     page: 0, size: PAGE_SIZE, sortBy: 'fechaContacto', sortDir: 'desc',
@@ -142,13 +150,7 @@ export class BandejaComponent {
     return !!(p['q'] || (p['estados'] as string[] | undefined)?.length);
   }
 
-  formatEdad(f: FormularioInteresResponse): string {
-    if (f.edadActual === null) return '—';
-    const meses = f.edadMeses ?? 0;
-    return meses > 0 ? `${f.edadActual}a ${meses}m` : `${f.edadActual} años`;
-  }
-
-  getActionsFor(f: FormularioInteresResponse): RowAction[] {
+getActionsFor(f: FormularioInteresResponse): RowAction[] {
     const procesando = this.procesando();
     return [
       { label: 'Ver detalles', onClick: () => this.verDetalles(f) },

@@ -1,12 +1,13 @@
 @if (readonly()) {
 
-  <!-- Vista de solo lectura (acordeón de respuestas) -->
+  <!-- Vista de solo lectura -->
   @if (respuestas(); as r) {
-    <ol class="space-y-2">
-      @for (preg of preguntas; track $index) {
+    <ol class="space-y-0.5">
+      @for (preg of preguntas; track $index; let isEven = $even) {
         @let n = $index + 1;
         @let val = r[$index];
-        <li class="flex items-start gap-3 text-sm">
+        <li class="flex items-start gap-3 text-sm py-2 border-b border-border/50 last:border-0 -mx-1 px-1 rounded"
+            [class.bg-background]="isEven">
           <span class="text-text-muted shrink-0 w-5 text-right">{{ n }}.</span>
           <span class="text-text-muted grow text-xs leading-snug">{{ preg }}</span>
           <span class="shrink-0 font-medium text-xs"
@@ -23,26 +24,37 @@
 
   <!-- Formulario editable -->
   <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate>
-    <div class="space-y-4">
-      @for (preg of preguntas; track $index) {
+    <div class="space-y-0.5">
+      @for (preg of preguntas; track $index; let isEven = $even) {
         @let n = $index + 1;
-        <div class="flex items-start gap-3">
-          <span class="text-text-muted text-xs w-5 text-right shrink-0 mt-0.5">{{ n }}.</span>
-          <p class="text-sm text-text grow leading-snug">
-            {{ preg }}
-          </p>
-          <div class="flex gap-2 shrink-0">
-            <label class="flex items-center gap-1 cursor-pointer"
-              [class.text-accent]="modo() === 'seguimiento'">
-              <!-- inicial: Sí=true | seguimiento: Pasa=false -->
-              <input type="radio" [formControlName]="'q' + n" [value]="modo() === 'inicial'" class="accent-primary" />
-              <span class="text-xs">{{ labelPositivo() }}</span>
+        @let val = itemValue(n);
+        <div class="flex items-start gap-3 py-2 border-b border-border/50 last:border-0 -mx-1 px-1 rounded"
+             [class.bg-background]="isEven">
+          <span class="text-text-muted text-xs w-5 text-right shrink-0 mt-2">{{ n }}.</span>
+          <p class="text-sm text-text grow leading-snug mt-0.5">{{ preg }}</p>
+          <div class="flex rounded overflow-hidden border border-border shrink-0 text-xs mt-0.5">
+            <!-- Positivo: Sí / Pasa → true -->
+            <label class="cursor-pointer select-none">
+              <input type="radio" class="sr-only" [formControlName]="'q' + n" [value]="true" />
+              <span class="flex px-3 py-1.5 transition-colors"
+                [class.bg-primary]="modo() === 'inicial' && val === true"
+                [class.bg-accent]="modo() === 'seguimiento' && val === true"
+                [class.text-white]="val === true"
+                [class.text-text-muted]="val !== true">
+                {{ labelPositivo() }}
+              </span>
             </label>
-            <label class="flex items-center gap-1 cursor-pointer"
-              [class.text-danger]="modo() === 'seguimiento'">
-              <!-- inicial: No=false | seguimiento: Falla=true -->
-              <input type="radio" [formControlName]="'q' + n" [value]="modo() !== 'inicial'" class="accent-primary" />
-              <span class="text-xs">{{ labelNegativo() }}</span>
+            <span class="border-l border-border self-stretch"></span>
+            <!-- Negativo: No / Falla → false -->
+            <label class="cursor-pointer select-none">
+              <input type="radio" class="sr-only" [formControlName]="'q' + n" [value]="false" />
+              <span class="flex px-3 py-1.5 transition-colors"
+                [class.bg-primary]="modo() === 'inicial' && val === false"
+                [class.bg-danger]="modo() === 'seguimiento' && val === false"
+                [class.text-white]="val === false"
+                [class.text-text-muted]="val !== false">
+                {{ labelNegativo() }}
+              </span>
             </label>
           </div>
         </div>

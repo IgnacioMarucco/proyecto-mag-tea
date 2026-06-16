@@ -8,19 +8,16 @@
 } @else if (paciente(); as p) {
 
 <div class="p-8 pb-0">
-  <a routerLink="/internal/pacientes"
-     class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-text-muted border border-border rounded-md hover:text-text hover:border-text-muted transition-colors mb-4">
-    <app-icon name="arrow-left" class="w-3.5 h-3.5" /> Pacientes
-  </a>
   <div class="mb-6">
-    <p class="text-xs font-mono text-text-muted tracking-widest uppercase mb-1">Etapa Clínica</p>
-    <div class="flex items-center gap-3 flex-wrap">
-      <h1 class="text-2xl font-semibold text-text">{{ p.apellidoNino }}, {{ p.nombreNino }}</h1>
+    <app-page-header [crumbs]="crumbs()">
       <span class="font-mono text-xs text-text-muted bg-surface border border-border rounded px-2 py-0.5">{{ p.codigoNumerico }}</span>
+      <app-status-badge [value]="p.tipoPaciente"
+        [labels]="{ CONTROL: 'Control', PROBLEMA: 'Caso problema' }"
+        [colorMap]="{ CONTROL: 'bg-background text-text-muted border border-border', PROBLEMA: 'bg-primary-light text-primary' }" />
       <app-status-badge [value]="p.pacienteEstado"
         [labels]="{ ADMITIDO: 'Admitido', MCHAT_RESPONDIDO: 'M-CHAT respondido', EXTRACCION_PENDIENTE: 'Extracción pendiente', EXTRACCION_REALIZADA: 'Extracción realizada' }"
         [colorMap]="{ ADMITIDO: 'bg-background text-text-muted border border-border', MCHAT_RESPONDIDO: 'bg-warning/10 text-warning', EXTRACCION_PENDIENTE: 'bg-primary-light text-primary', EXTRACCION_REALIZADA: 'bg-accent-light text-accent' }" />
-    </div>
+    </app-page-header>
   </div>
 </div>
 
@@ -28,26 +25,50 @@
 
   <app-datos-basicos-section [paciente]="p" (updated)="onUpdated($event)" />
 
-  <app-consentimiento-section [paciente]="p" (updated)="onUpdated($event)" />
+  @if (!isControl()) {
+    <app-mchat-section [paciente]="p" (updated)="onUpdated($event)" />
+  }
 
-  <app-mchat-section [paciente]="p" (updated)="onUpdated($event)" />
-
-  <app-criterios-section [paciente]="p" (updated)="onUpdated($event)" />
-
-  @if (criterioCumplido()) {
-    <app-resultado-mchat-section [paciente]="p" (updated)="onUpdated($event)" />
-    <app-cars-section [paciente]="p" (updated)="onUpdated($event)" />
-    <app-vineland-section [paciente]="p" (updated)="onUpdated($event)" />
-    <app-extraccion-section [paciente]="p" (updated)="onUpdated($event)" />
-  } @else if (p.criteriosRegistrados) {
-    <div class="bg-danger-light border border-danger/20 rounded-lg px-6 py-4 text-sm text-danger">
-      El paciente no puede continuar en el protocolo porque no cumple los criterios de inclusión/exclusión.
-      Las secciones de evaluación clínica están deshabilitadas.
+  @if (!consentimientoFirmado()) {
+    <div class="bg-background border border-border rounded-lg px-6 py-4 text-sm text-text-muted">
+      Registrá el consentimiento informado (pestaña "Consentimiento" de arriba) para habilitar las secciones de evaluación clínica.
     </div>
   } @else {
-    <div class="bg-background border border-border rounded-lg px-6 py-4 text-sm text-text-muted">
-      Registrá los criterios de inclusión/exclusión (sección 4) para habilitar las secciones de evaluación clínica.
-    </div>
+    @if (criterioCumplido()) {
+      @if (!isControl()) {
+        @if (requiereSeguimiento()) {
+          @defer (when requiereSeguimiento()) {
+            <app-resultado-mchat-section [paciente]="p" (updated)="onUpdated($event)" />
+          } @placeholder {
+            <div class="h-20 rounded-lg bg-surface border border-border animate-pulse"></div>
+          }
+        }
+        @defer (when criterioCumplido()) {
+          <app-cars-section [paciente]="p" (updated)="onUpdated($event)" />
+        } @placeholder {
+          <div class="h-32 rounded-lg bg-surface border border-border animate-pulse"></div>
+        }
+        @defer (when criterioCumplido()) {
+          <app-vineland-section [paciente]="p" (updated)="onUpdated($event)" />
+        } @placeholder {
+          <div class="h-24 rounded-lg bg-surface border border-border animate-pulse"></div>
+        }
+      }
+      @defer (on viewport) {
+        <app-extraccion-section [paciente]="p" (updated)="onUpdated($event)" />
+      } @placeholder {
+        <div class="h-20 rounded-lg bg-surface border border-border animate-pulse"></div>
+      }
+    } @else if (p.criteriosRegistrados) {
+      <div class="bg-danger-light border border-danger/20 rounded-lg px-6 py-4 text-sm text-danger">
+        El paciente no puede continuar en el protocolo porque no cumple los criterios de inclusión/exclusión.
+        Las secciones de evaluación clínica están deshabilitadas.
+      </div>
+    } @else {
+      <div class="bg-background border border-border rounded-lg px-6 py-4 text-sm text-text-muted">
+        Registrá los criterios de inclusión/exclusión (pestaña "Criterios" de arriba) para habilitar las secciones de evaluación clínica.
+      </div>
+    }
   }
 
 </div>

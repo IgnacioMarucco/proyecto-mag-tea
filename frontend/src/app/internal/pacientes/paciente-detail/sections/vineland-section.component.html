@@ -1,48 +1,50 @@
 @let p = paciente();
 
-<section class="bg-surface border border-border rounded-lg">
-  <div class="flex items-center justify-between px-6 py-4 border-b border-border">
-    <div class="flex items-center gap-3 flex-wrap">
-      <h2 class="text-sm font-semibold text-text">Vineland</h2>
-      @if (p.vinelandComunicacion !== null || p.vinelandAutovalimiento !== null) {
-        @for (sub of [
-          { label: 'Comunicación',     value: p.vinelandComunicacion },
-          { label: 'Autovalimiento',   value: p.vinelandAutovalimiento },
-          { label: 'Social',           value: p.vinelandSocial },
-          { label: 'Motor',            value: p.vinelandMotor },
-          { label: 'CCA',              value: p.vinelandCocienteFinal },
-          { label: 'C. Desadaptativa', value: p.vinelandConductaDesadaptativa },
-          { label: 'Internalizante',   value: p.vinelandInternalizante },
-          { label: 'Externalizante',   value: p.vinelandExternalizante }
-        ]; track sub.label; let first = $first) {
-          @if (!first) { <span class="text-xs text-text-muted">·</span> }
-          <span class="text-xs text-text-muted">{{ sub.label }}:
-            <span class="text-sm font-semibold text-text">{{ sub.value ?? '—' }}</span>
+<section class="bg-surface border border-border rounded-lg overflow-hidden">
+  <div class="flex items-center justify-between px-6 py-4 border-b border-border bg-background">
+    <div class="flex items-center gap-2 flex-wrap">
+      <h2 class="text-sm font-semibold text-text">Vineland-II</h2>
+      @if (p.vinelandComunicacion === null && p.vinelandAutovalimiento === null) {
+        <span class="text-xs text-text-muted">Sin registrar</span>
+      } @else {
+        @if (p.vinelandCocienteFinal !== null) {
+          <span class="font-mono text-xs bg-background border border-border rounded px-2 py-0.5 text-text tabular-nums">
+            CCA: {{ p.vinelandCocienteFinal }}
           </span>
         }
-      } @else {
-        <span class="text-xs text-text-muted">Sin datos cargados</span>
       }
     </div>
     <button type="button" (click)="openModal()"
       class="text-xs px-3 py-1.5 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors cursor-pointer shrink-0">
-      @if (p.vinelandComunicacion !== null) { Editar Vineland } @else { Cargar Vineland }
+      @if (p.vinelandComunicacion !== null) { Editar Vineland } @else { Registrar Vineland }
     </button>
   </div>
+
+  @if (p.vinelandComunicacion !== null || p.vinelandAutovalimiento !== null) {
+    <div class="px-6 py-4">
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-3 text-sm">
+        @for (sub of [
+          { label: 'Comunicación',                  value: p.vinelandComunicacion },
+          { label: 'Autovalimiento',                value: p.vinelandAutovalimiento },
+          { label: 'Socialización',                 value: p.vinelandSocial },
+          { label: 'Motor',                         value: p.vinelandMotor },
+          { label: 'Cociente Adaptativo (CCA)',     value: p.vinelandCocienteFinal },
+          { label: 'C. Desadaptativa',              value: p.vinelandConductaDesadaptativa },
+          { label: 'Internalizante',                value: p.vinelandInternalizante },
+          { label: 'Externalizante',                value: p.vinelandExternalizante }
+        ]; track sub.label) {
+          <div>
+            <p class="text-xs text-text-muted mb-0.5">{{ sub.label }}</p>
+            <p class="font-semibold text-text">{{ sub.value ?? '—' }}</p>
+          </div>
+        }
+      </div>
+    </div>
+  }
 </section>
 
 @if (showModal()) {
-<div class="fixed inset-0 bg-sidebar/50 flex items-center justify-center z-50 p-5"
-     (click)="showModal.set(false)">
-  <div class="bg-surface border border-border rounded-lg w-full max-w-md shadow-md"
-       (click)="$event.stopPropagation()">
-    <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border">
-      <h3 class="text-base font-semibold text-text">Escala Vineland-II</h3>
-      <button (click)="showModal.set(false)" aria-label="Cerrar"
-        class="text-text-muted hover:text-text cursor-pointer">
-        <app-icon name="x-mark" class="w-5 h-5" />
-      </button>
-    </div>
+  <app-modal-container title="Escala Vineland-II" size="md" (closed)="showModal.set(false)">
     <form [formGroup]="form" (ngSubmit)="save()" class="px-6 py-5 space-y-4">
       @for (sub of [
         { key: 'vinelandComunicacion',          label: 'Comunicación' },
@@ -75,6 +77,5 @@
         </button>
       </div>
     </form>
-  </div>
-</div>
+  </app-modal-container>
 }

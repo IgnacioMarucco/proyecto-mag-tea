@@ -5,7 +5,7 @@
   <div class="max-w-5xl mx-auto px-4 sm:px-6 flex items-center justify-between h-16">
 
     <!-- Logo -->
-    <img src="/assets/logo-magtea.png" alt="MAG-TEA" class="h-8 w-auto" />
+    <img ngSrc="/assets/logo-magtea.png" alt="Logo MAG-TEA" class="h-8 w-auto" width="120" height="32" priority />
 
     <!-- Nav — visible siempre -->
     <nav class="flex items-center gap-7" aria-label="Navegación principal">
@@ -293,21 +293,44 @@
       <div class="grid grid-cols-3 gap-3 mb-4">
         @for (amount of donationAmounts; track amount) {
           <button type="button"
-            class="py-3.5 rounded-lg border border-border font-mono text-sm font-medium text-text bg-surface hover:border-primary hover:text-primary transition-colors cursor-pointer">
+            (click)="selectAmount(amount)"
+            [class]="selectedAmount() === amount
+              ? 'py-3.5 rounded-lg border-2 border-primary font-mono text-sm font-medium text-primary bg-surface cursor-pointer transition-colors'
+              : 'py-3.5 rounded-lg border border-border font-mono text-sm font-medium text-text bg-surface hover:border-primary hover:text-primary transition-colors cursor-pointer'">
             ${{ amount | number:'1.0-0' }}
           </button>
         }
       </div>
       <div class="mb-5">
         <label class="block font-mono text-xs text-text-muted uppercase tracking-wider mb-1.5">Otro monto</label>
-        <input type="number" placeholder="$ ..."
+        <input type="number" min="1" placeholder="$ ..."
+          (input)="onCustomAmountChange($event)"
           class="w-full px-3 py-2 text-sm bg-background border border-border rounded-md text-text placeholder-text-muted/40 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" />
       </div>
-      <a href="#"
-        class="flex items-center justify-center w-full py-3.5 rounded-md text-white text-sm font-semibold transition-opacity hover:opacity-90 cursor-pointer"
+
+      <div class="border-t border-border pt-4 mb-5 space-y-3">
+        <p class="font-mono text-xs text-text-muted uppercase tracking-wider">Datos opcionales</p>
+        <input type="text" placeholder="Tu nombre"
+          [value]="donanteName()"
+          (input)="donanteName.set($any($event.target).value)"
+          class="w-full px-3 py-2 text-sm bg-background border border-border rounded-md text-text placeholder-text-muted/40 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" />
+        <input type="email" placeholder="Tu correo"
+          [value]="donanteEmail()"
+          (input)="donanteEmail.set($any($event.target).value)"
+          class="w-full px-3 py-2 text-sm bg-background border border-border rounded-md text-text placeholder-text-muted/40 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" />
+      </div>
+
+      <button type="button"
+        (click)="donar()"
+        [disabled]="donacionState() === 'loading' || (!selectedAmount() && !customAmount())"
+        class="flex items-center justify-center w-full py-3.5 rounded-md text-white text-sm font-semibold transition-opacity hover:opacity-90 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         style="background-color: #009ee3;">
-        Donar con Mercado Pago
-      </a>
+        @if (donacionState() === 'loading') {
+          Procesando...
+        } @else {
+          Donar con Mercado Pago
+        }
+      </button>
       <p class="text-xs text-text-muted text-center mt-3">
         Pago seguro · Te redirigimos a Mercado Pago para completar la donación.
       </p>
@@ -329,16 +352,22 @@
 
     <div>
       <div class="mb-3">
-        <img src="/assets/logo-magtea.png" alt="MAG-TEA" class="h-8 w-auto" />
+        <img ngSrc="/assets/logo-magtea.png" alt="Logo MAG-TEA" class="h-8 w-auto" width="120" height="32" />
       </div>
       <p class="text-sm text-sidebar-muted leading-relaxed max-w-xs">
         Proyecto de investigación sobre anticuerpos anti-MAG y Trastorno del Espectro Autista.
       </p>
     </div>
 
-    <p class="font-mono text-xs text-sidebar-muted tracking-widest uppercase text-left sm:text-right">
-      Centro Wernicke<br>CIQUIBIC · Córdoba
-    </p>
+    <div class="flex flex-col items-start sm:items-end gap-2">
+      <p class="font-mono text-xs text-sidebar-muted tracking-widest uppercase">
+        Centro Wernicke<br>CIQUIBIC · Córdoba
+      </p>
+      <a [href]="portalInternoUrl"
+         class="text-xs text-sidebar-muted/40 hover:text-sidebar-muted/70 transition-colors duration-200">
+        Acceso Investigadores
+      </a>
+    </div>
 
   </div>
 </footer>

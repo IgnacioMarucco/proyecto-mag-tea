@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { BehaviorSubject, switchMap, catchError, of } from 'rxjs';
+import { BehaviorSubject, catchError, map, of, switchMap } from 'rxjs';
 import { ProfesionalService } from '../../../core/services/profesional.service';
 import { ROLE_LABELS, Role, ProfesionalResponse } from '../../../core/models/profesional.model';
 import { ListToolbarComponent, FilterGroup } from '../../../shared/list-toolbar/list-toolbar.component';
@@ -12,16 +12,23 @@ import { RowActionsComponent, RowAction } from '../../../shared/row-actions/row-
 import { PaginatorComponent } from '../../../shared/paginator/paginator.component';
 import { SortState } from '../../../shared/sort.utils';
 import { IconComponent } from '../../../shared/icon/icon.component';
+import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 
 @Component({
   selector: 'app-profesional-list',
-  imports: [RouterLink, ListToolbarComponent, ConfirmModalComponent, DataTableComponent, StatusBadgeComponent, RowActionsComponent, PaginatorComponent, IconComponent],
+  imports: [RouterLink, ListToolbarComponent, ConfirmModalComponent, DataTableComponent, StatusBadgeComponent, RowActionsComponent, PaginatorComponent, IconComponent, PageHeaderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './profesional-list.component.html',
 })
 export class ProfesionalListComponent {
   private readonly service = inject(ProfesionalService);
   private readonly router  = inject(Router);
+  private readonly route   = inject(ActivatedRoute);
+
+  readonly crumbs = toSignal(
+    this.route.data.pipe(map(d => d['crumbs'] as Crumb[] ?? [])),
+    { initialValue: [] as Crumb[] }
+  );
 
   private readonly params$ = new BehaviorSubject<{
     page: number; size: number; q?: string; rol?: string; sortBy: string; sortDir: string;

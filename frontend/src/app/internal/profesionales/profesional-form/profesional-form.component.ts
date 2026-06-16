@@ -1,13 +1,15 @@
 import { ChangeDetectionStrategy, Component, effect, inject, input, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import { map } from 'rxjs';
+import { toSignal } from '@angular/core/rxjs-interop';
 import { ProfesionalService } from '../../../core/services/profesional.service';
 import { ROLE_LABELS, ROLES, ProfesionalCreate, ProfesionalUpdate } from '../../../core/models/profesional.model';
-import { IconComponent } from '../../../shared/icon/icon.component';
+import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 
 @Component({
   selector: 'app-profesional-form',
-  imports: [ReactiveFormsModule, RouterLink, IconComponent],
+  imports: [ReactiveFormsModule, PageHeaderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './profesional-form.component.html',
 })
@@ -15,6 +17,12 @@ export class ProfesionalFormComponent {
   private readonly fb = inject(FormBuilder);
   private readonly service = inject(ProfesionalService);
   private readonly router = inject(Router);
+  private readonly route  = inject(ActivatedRoute);
+
+  readonly crumbs = toSignal(
+    this.route.data.pipe(map(d => d['crumbs'] as Crumb[] ?? [])),
+    { initialValue: [] as Crumb[] }
+  );
 
   id = input<string>();
 
@@ -25,6 +33,7 @@ export class ProfesionalFormComponent {
     nombre: ['', Validators.required],
     apellido: ['', Validators.required],
     email: ['', [Validators.required, Validators.email]],
+    telefono: ['', Validators.required],
     password: ['', [Validators.minLength(8)]],
     role: ['', Validators.required],
   });

@@ -1,13 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { startWith } from 'rxjs';
 import { PacienteService } from '../../../../core/services/paciente.service';
 import { PacienteResponse } from '../../../../core/models/paciente.model';
-import { StatusBadgeComponent } from '../../../../shared/status-badge/status-badge.component';
-import { IconComponent } from '../../../../shared/icon/icon.component';
+import { ModalContainerComponent } from '../../../../shared/modal-container/modal-container.component';
 
 @Component({
   selector: 'app-criterios-section',
-  imports: [ReactiveFormsModule, StatusBadgeComponent, IconComponent],
+  imports: [ReactiveFormsModule, ModalContainerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './criterios-section.component.html',
 })
@@ -38,18 +39,18 @@ export class CriteriosSectionComponent {
     pubertadPrecoz:              [false],
   });
 
-  readonly criteriosEstado = computed(() => {
-    const p = this.paciente();
-    if (!p.criteriosRegistrados) return null;
-    const hasExclusion =
-      p.epilepsia || p.paralisisCerebral || p.infeccionesCongenitas ||
-      p.lesionesEstructuralesSNC || p.facomatosis || p.patologiasNeurometabolicas ||
-      p.lesionesOcupantesEspacioSNC || p.patologiaPsiquiatrica ||
-      p.otrosSindromesGeneticos || p.pubertadPrecoz;
-    if (hasExclusion) return 'EXCLUIDO';
-    if (p.criterioTEADSMV && p.criterioTGDDSMIV && p.criterioEdad) return 'APTO';
-    return 'INCOMPLETO';
-  });
+  private readonly formValue = toSignal(
+    this.form.valueChanges.pipe(startWith(this.form.value)),
+    { initialValue: this.form.value }
+  );
+
+  protected fieldValue(key: string): boolean {
+    return !!((this.formValue() as Record<string, unknown>)[key]);
+  }
+
+  readonly criteriosEstado = () => this.paciente().criteriosRegistrados
+    ? this.paciente().criteriosAptitud
+    : null;
 
   readonly estadoLabels: Record<string, string> = {
     APTO: 'Apto para el protocolo', EXCLUIDO: 'Excluido del protocolo', INCOMPLETO: 'Criterios incompletos',
@@ -85,7 +86,6 @@ export class CriteriosSectionComponent {
     if (this.saving()) return;
     this.saving.set(true);
     this.saveError.set(null);
-    // Preserva consentimientoFirmado actual para no sobreescribirlo
     const dto = { ...this.form.value, consentimientoFirmado: this.paciente().consentimientoFirmado } as any;
     this.service.patchCriterios(this.paciente().id, dto).subscribe({
       next: p  => { this.updated.emit(p); this.showModal.set(false); this.saving.set(false); },
