@@ -4,6 +4,11 @@ import com.utn.magtea.formulariointeres.ComoConocioProyecto;
 import com.utn.magtea.formulariointeres.EstadoFormulario;
 import com.utn.magtea.formulariointeres.FormularioInteres;
 import com.utn.magtea.formulariointeres.FormularioInteresRepository;
+import com.utn.magtea.paciente.*;
+import com.utn.magtea.paciente.criterios.PacienteCriterios;
+import com.utn.magtea.paciente.mchat.MchatFamilia;
+import com.utn.magtea.paciente.mchat.MchatFamiliaRepository;
+import com.utn.magtea.paciente.mchatseguimiento.MchatResultadoFinal;
 import com.utn.magtea.profesional.Profesional;
 import com.utn.magtea.profesional.ProfesionalRepository;
 import com.utn.magtea.profesional.Role;
@@ -15,6 +20,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
@@ -23,6 +29,8 @@ public class DataInitializer implements ApplicationRunner {
 
     private final ProfesionalRepository profesionalRepository;
     private final FormularioInteresRepository formularioRepository;
+    private final PacienteRepository pacienteRepository;
+    private final MchatFamiliaRepository mchatFamiliaRepository;
     private final PasswordEncoder passwordEncoder;
 
     @Value("${app.init.admin-email:admin@magtea.com}")
@@ -47,21 +55,23 @@ public class DataInitializer implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         seedProfesionales();
         seedFormularios();
+        seedPacientes();
     }
 
     private void seedProfesionales() {
-        seedProfesional("Admin", "Sistema", adminEmail, adminPassword, Role.INVESTIGADOR_PRINCIPAL);
-        seedProfesional("Ignacio", "Marucc", seedInvestigadorEmail, seedInvestigadorPassword, Role.INVESTIGADOR_PRINCIPAL);
-        seedProfesional("Secretaria", "Demo", seedSecretariaEmail, seedSecretariaPassword, Role.SECRETARIA);
+        seedProfesional("Admin", "Sistema", adminEmail, adminPassword, "351-000-0000", Role.INVESTIGADOR_PRINCIPAL);
+        seedProfesional("Ignacio", "Marucco", seedInvestigadorEmail, seedInvestigadorPassword, "351-000-0001", Role.INVESTIGADOR_PRINCIPAL);
+        seedProfesional("Secretaria", "Demo", seedSecretariaEmail, seedSecretariaPassword, "351-000-0002", Role.SECRETARIA);
     }
 
-    private void seedProfesional(String nombre, String apellido, String email, String password, Role role) {
+    private void seedProfesional(String nombre, String apellido, String email, String password, String telefono, Role role) {
         if (profesionalRepository.findByEmail(email).isEmpty()) {
             var p = new Profesional();
             p.setNombre(nombre);
             p.setApellido(apellido);
             p.setEmail(email);
             p.setPassword(passwordEncoder.encode(password));
+            p.setTelefono(telefono);
             p.setRole(role);
             profesionalRepository.save(p);
         }
@@ -102,6 +112,80 @@ public class DataInitializer implements ApplicationRunner {
         );
 
         formularioRepository.saveAll(formularios);
+    }
+
+    private void seedPacientes() {
+        if (pacienteRepository.count() > 0) return;
+
+        // PROBLEMA - APTO - ADMITIDO (M-CHAT pendiente)
+        pacienteRepository.save(buildPaciente(
+            "Flores", "Cecilia", "ignaciomarucco@gmail.com", "11-4700-1122",
+            "Flores", "Mateo", LocalDate.of(2021, 2, 18), Sexo.MASCULINO,
+            TipoPaciente.PROBLEMA, "SEED0001"
+        ));
+
+        // PROBLEMA - APTO - MCHAT_RESPONDIDO (score 12 → ALTO_RIESGO → POSITIVA)
+        Paciente p2 = buildPaciente(
+            "Jiménez", "Héctor", "ignaciomarucco@gmail.com", "351-620-4433",
+            "Jiménez", "Valentina", LocalDate.of(2020, 7, 31), Sexo.FEMENINO,
+            TipoPaciente.PROBLEMA, "SEED0002"
+        );
+        p2.setEstadoClinico(PacienteEstado.MCHAT_RESPONDIDO);
+        Paciente savedP2 = pacienteRepository.save(p2);
+        MchatFamilia familiaP2 = new MchatFamilia();
+        familiaP2.setPaciente(savedP2);
+        familiaP2.setScoreTotal(12);
+        familiaP2.setResultadoFinal(MchatResultadoFinal.POSITIVA);
+        mchatFamiliaRepository.save(familiaP2);
+
+        // CONTROL - APTO - ADMITIDO (extracción pendiente de coordinar)
+        pacienteRepository.save(buildPaciente(
+            "Torres", "Ricardo", "ignaciomarucco@gmail.com", "351-300-9988",
+            "Torres", "Camila", LocalDate.of(2021, 7, 6), Sexo.FEMENINO,
+            TipoPaciente.CONTROL, "SEED0003"
+        ));
+
+        // CONTROL - APTO - EXTRACCION_PENDIENTE
+        Paciente p4 = buildPaciente(
+            "Medina", "Patricia", "ignaciomarucco@gmail.com", "11-5800-3344",
+            "Medina", "Julián", LocalDate.of(2021, 11, 20), Sexo.MASCULINO,
+            TipoPaciente.CONTROL, "SEED0004"
+        );
+        p4.setFechaExtraccion(LocalDate.of(2026, 7, 1));
+        p4.setEstadoClinico(PacienteEstado.EXTRACCION_PENDIENTE);
+        pacienteRepository.save(p4);
+    }
+
+    private Paciente buildPaciente(
+            String apellidoTutor, String nombreTutor, String correo, String telefono,
+            String apellidoNino, String nombreNino, LocalDate fechaNac, Sexo sexo,
+            TipoPaciente tipo, String codigo) {
+        Paciente p = new Paciente();
+        p.setApellidoTutor(apellidoTutor);
+        p.setNombreTutor(nombreTutor);
+        p.setCorreoTutor(correo);
+        p.setTelefono(telefono);
+        p.setApellidoNino(apellidoNino);
+        p.setNombreNino(nombreNino);
+        p.setFechaNacimientoNino(fechaNac);
+        p.setSexo(sexo);
+        p.setTipoPaciente(tipo);
+        p.setCodigoNumerico(codigo);
+        p.setFechaContacto(LocalDate.of(2026, 4, 15));
+        p.setFechaPrimeraVisita(LocalDateTime.of(2026, 4, 20, 10, 0));
+        p.setConsentimientoFirmado(true);
+        p.setEstadoClinico(PacienteEstado.ADMITIDO);
+
+        PacienteCriterios c = new PacienteCriterios();
+        c.setPaciente(p);
+        c.setCriterioEdad(true);
+        if (tipo == TipoPaciente.PROBLEMA) {
+            c.setCriterioTEADSMV(true);
+            c.setCriterioTGDDSMIV(true);
+        }
+        p.setCriterios(c);
+
+        return p;
     }
 
     private FormularioInteres f(
