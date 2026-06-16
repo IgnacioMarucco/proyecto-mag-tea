@@ -6,14 +6,14 @@ import com.utn.magtea.common.exception.ResourceNotFoundException;
 import com.utn.magtea.formulariointeres.ComoConocioProyecto;
 import com.utn.magtea.formulariointeres.FormularioInteres;
 import com.utn.magtea.formulariointeres.FormularioInteresService;
-import com.utn.magtea.paciente.cars.PacienteCarsDTO;
-import com.utn.magtea.paciente.criterios.PacienteCriteriosDTO;
+import com.utn.magtea.paciente.cars.CarsDTO;
+import com.utn.magtea.paciente.criterios.CriteriosDTO;
+import com.utn.magtea.paciente.mchat.MchatEstado;
 import com.utn.magtea.paciente.mchat.MchatFamilia;
-import com.utn.magtea.paciente.mchatseguimiento.MchatEstado;
-import com.utn.magtea.paciente.mchatseguimiento.MchatResultadoFinal;
-import com.utn.magtea.paciente.mchatseguimiento.PacienteMchatSeguimiento;
-import com.utn.magtea.paciente.mchatseguimiento.PacienteMchatSeguimientoDTO;
-import com.utn.magtea.paciente.vineland.PacienteVinelandDTO;
+import com.utn.magtea.paciente.mchat.MchatResultadoFinal;
+import com.utn.magtea.paciente.mchat.MchatSeguimiento;
+import com.utn.magtea.paciente.mchat.MchatSeguimientoDTO;
+import com.utn.magtea.paciente.vineland.VinelandDTO;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -216,8 +216,8 @@ class PacienteServiceTest {
     @Test
     void deberia_actualizarCriterios_yMarcarRegistrado() {
         var entidad = pacienteActivo(1L);
-        var dto = new PacienteCriteriosDTO(true, true, true,
-                false, false, false, false, false, false, false, false, false, false, true);
+        var dto = new CriteriosDTO(true, true, true,
+                false, false, false, false, false, false, false, false, false, false);
 
         when(repository.findById(1L)).thenReturn(Optional.of(entidad));
         when(repository.save(entidad)).thenReturn(entidad);
@@ -227,14 +227,13 @@ class PacienteServiceTest {
 
         assertThat(entidad.getCriterios()).isNotNull();
         assertThat(entidad.getCriterios().isCriterioTEADSMV()).isTrue();
-        assertThat(entidad.isConsentimientoFirmado()).isTrue();
     }
 
     @Test
     void deberia_actualizarCriterios_conCriterioExclusion() {
         var entidad = pacienteActivo(1L);
-        var dto = new PacienteCriteriosDTO(true, true, true,
-                true, false, false, false, false, false, false, false, false, false, false);
+        var dto = new CriteriosDTO(true, true, true,
+                true, false, false, false, false, false, false, false, false, false);
 
         when(repository.findById(1L)).thenReturn(Optional.of(entidad));
         when(repository.save(entidad)).thenReturn(entidad);
@@ -340,7 +339,7 @@ class PacienteServiceTest {
 
     @Test
     void deberia_lanzarExcepcion_alActualizarCars_cuandoValorInvalido() {
-        var dto = new PacienteCarsDTO(
+        var dto = new CarsDTO(
                 new BigDecimal("1.0"), new BigDecimal("1.5"), new BigDecimal("2.0"),
                 new BigDecimal("2.5"), new BigDecimal("3.0"), new BigDecimal("3.5"),
                 new BigDecimal("4.0"), new BigDecimal("1.0"), new BigDecimal("1.5"),
@@ -376,7 +375,7 @@ class PacienteServiceTest {
         when(repository.findById(1L)).thenReturn(Optional.of(entidad));
 
         assertThatThrownBy(() -> service.updateVineland(1L,
-                new PacienteVinelandDTO(null, null, null, null, null, null, null, null)))
+                new VinelandDTO(null, null, null, null, null, null, null, null)))
                 .isInstanceOf(BusinessRuleException.class)
                 .hasMessageContaining("control");
     }
@@ -473,7 +472,7 @@ class PacienteServiceTest {
         var familia = new MchatFamilia();
         familia.setScoreTotal(5);
         entidad.setMchatFamilia(familia);
-        var seg = new PacienteMchatSeguimiento();
+        var seg = new MchatSeguimiento();
         seg.setItem1(true);
         seg.setFallas(1);
         entidad.setMchatSeguimiento(seg);
@@ -492,7 +491,7 @@ class PacienteServiceTest {
         var familia = new MchatFamilia();
         familia.setScoreTotal(1);
         entidad.setMchatFamilia(familia);
-        var seg = new PacienteMchatSeguimiento();
+        var seg = new MchatSeguimiento();
         seg.setItem1(true);
         seg.setFallas(2);
         entidad.setMchatSeguimiento(seg);
@@ -510,7 +509,7 @@ class PacienteServiceTest {
         var familia = new MchatFamilia();
         familia.setScoreTotal(15);
         entidad.setMchatFamilia(familia);
-        var seg = new PacienteMchatSeguimiento();
+        var seg = new MchatSeguimiento();
         seg.setItem1(true);
         entidad.setMchatSeguimiento(seg);
 
@@ -559,7 +558,7 @@ class PacienteServiceTest {
 
     // true=Pasa, false=Falla; ítems invertidos (2,5,12): true=Falla, false=Pasa
     // Usa ítems no invertidos 1,3,4,6... para acumular fallas (valor false)
-    private PacienteMchatSeguimientoDTO seguimientoConFallas(int cantFallas) {
+    private MchatSeguimientoDTO seguimientoConFallas(int cantFallas) {
         boolean i1  = cantFallas < 1;  boolean i2  = false;
         boolean i3  = cantFallas < 2;  boolean i4  = cantFallas < 3;
         boolean i5  = false;           boolean i6  = cantFallas < 4;
@@ -570,13 +569,13 @@ class PacienteServiceTest {
         boolean i15 = cantFallas < 12; boolean i16 = cantFallas < 13;
         boolean i17 = cantFallas < 14; boolean i18 = cantFallas < 15;
         boolean i19 = cantFallas < 16; boolean i20 = cantFallas < 17;
-        return new PacienteMchatSeguimientoDTO(i1, i2, i3, i4, i5, i6, i7, i8, i9, i10,
+        return new MchatSeguimientoDTO(i1, i2, i3, i4, i5, i6, i7, i8, i9, i10,
                 i11, i12, i13, i14, i15, i16, i17, i18, i19, i20);
     }
 
-    private PacienteCarsDTO carsDTO(double valorPorItem) {
+    private CarsDTO carsDTO(double valorPorItem) {
         BigDecimal v = BigDecimal.valueOf(valorPorItem);
-        return new PacienteCarsDTO(v, v, v, v, v, v, v, v, v, v, v, v, v, v, v,
+        return new CarsDTO(v, v, v, v, v, v, v, v, v, v, v, v, v, v, v,
                 null, null, null, null, null, null, null, null, null, null,
                 null, null, null, null, null, null, null);
     }

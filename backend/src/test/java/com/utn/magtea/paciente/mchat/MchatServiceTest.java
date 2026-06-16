@@ -1,15 +1,9 @@
-package com.utn.magtea.mchat;
+package com.utn.magtea.paciente.mchat;
 
 import com.utn.magtea.common.exception.BusinessRuleException;
 import com.utn.magtea.common.exception.ResourceNotFoundException;
 import com.utn.magtea.paciente.Paciente;
 import com.utn.magtea.paciente.PacienteService;
-import com.utn.magtea.paciente.mchat.MchatFamilia;
-import com.utn.magtea.paciente.mchat.MchatFamiliaMapper;
-import com.utn.magtea.paciente.mchat.MchatFamiliaRepository;
-import com.utn.magtea.paciente.mchat.MchatFamiliaResponseDTO;
-import com.utn.magtea.paciente.mchatseguimiento.MchatResultadoFinal;
-import com.utn.magtea.paciente.mchatseguimiento.PacienteMchatInfoDTO;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,7 +32,7 @@ class MchatServiceTest {
 
     @Test
     void deberia_validarToken_cuandoTokenValido_sinCompletar() {
-        var info = new PacienteMchatInfoDTO(1L, "Nombre", "Niño");
+        var info = new MchatInfoDTO(1L, "Nombre", "Niño");
 
         when(pacienteService.validarTokenMchat("token-abc")).thenReturn(info);
         when(familiaRepository.existsByPaciente_Id(1L)).thenReturn(false);
@@ -52,7 +46,7 @@ class MchatServiceTest {
 
     @Test
     void deberia_validarToken_cuandoTokenValido_yaCompletado() {
-        var info = new PacienteMchatInfoDTO(1L, "Nombre", "Niño");
+        var info = new MchatInfoDTO(1L, "Nombre", "Niño");
 
         when(pacienteService.validarTokenMchat("token-abc")).thenReturn(info);
         when(familiaRepository.existsByPaciente_Id(1L)).thenReturn(true);
@@ -73,7 +67,7 @@ class MchatServiceTest {
 
     @Test
     void deberia_guardarRespuestas_cuandoPrimeraVez() {
-        var info = new PacienteMchatInfoDTO(1L, "Nombre", "Niño");
+        var info = new MchatInfoDTO(1L, "Nombre", "Niño");
         var dto = todosCorrectos();
         var pacienteMock = mock(Paciente.class);
 
@@ -93,7 +87,7 @@ class MchatServiceTest {
 
     @Test
     void deberia_lanzarExcepcion_alGuardar_cuandoYaCompletado() {
-        var info = new PacienteMchatInfoDTO(1L, "Nombre", "Niño");
+        var info = new MchatInfoDTO(1L, "Nombre", "Niño");
 
         when(pacienteService.validarTokenMchat("token-abc")).thenReturn(info);
         when(familiaRepository.existsByPaciente_Id(1L)).thenReturn(true);
