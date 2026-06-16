@@ -40,6 +40,11 @@ app:
   mchat:
     token-expiry-days: 30
 
+mp:
+  access-token: ${MP_ACCESS_TOKEN:}
+  back-url-base: ${MP_BACK_URL_BASE:http://localhost:4200}
+  notification-url: ${MP_NOTIFICATION_URL:}
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
