@@ -5,15 +5,22 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import com.utn.magtea.common.ApiConstants;
 import com.utn.magtea.common.PageResponse;
+import com.utn.magtea.paciente.cars.PacienteCarsDTO;
+import com.utn.magtea.paciente.criterios.PacienteCriteriosDTO;
+import com.utn.magtea.paciente.mchatseguimiento.PacienteMchatSeguimientoDTO;
+import com.utn.magtea.paciente.vineland.PacienteVinelandDTO;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/pacientes")
+@RequestMapping(ApiConstants.V1 + "/pacientes")
 @Tag(name = "Pacientes")
 @RequiredArgsConstructor
 public class PacienteController {
@@ -23,14 +30,15 @@ public class PacienteController {
     @GetMapping
     @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'ROTANTE_CLINICA', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Listar pacientes activos con paginación")
-    public PageResponse<PacienteResponseDTO> findAll(
+    public PageResponse<PacienteListDTO> findAll(
             @RequestParam(defaultValue = "0")          int page,
             @RequestParam(defaultValue = "20")         int size,
             @RequestParam(required = false)            String q,
             @RequestParam(required = false)            List<PacienteEstado> estados,
+            @RequestParam(required = false)            List<TipoPaciente> tipos,
             @RequestParam(defaultValue = "createdAt")  String sortBy,
             @RequestParam(defaultValue = "desc")       String sortDir) {
-        return service.findAll(page, size, q, estados, sortBy, sortDir);
+        return service.findAll(page, size, q, estados, tipos, sortBy, sortDir);
     }
 
     @GetMapping("/{id}")
@@ -41,11 +49,13 @@ public class PacienteController {
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('SECRETARIA', 'CUERPO_MEDICO', 'ROTANTE_CLINICA', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Registrar paciente")
-    public PacienteResponseDTO create(@RequestBody @Valid PacienteCreateDTO dto) {
-        return service.create(dto);
+    public ResponseEntity<PacienteResponseDTO> create(@RequestBody @Valid PacienteCreateDTO dto) {
+        PacienteResponseDTO created = service.create(dto);
+        var location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}").buildAndExpand(created.id()).toUri();
+        return ResponseEntity.created(location).body(created);
     }
 
     @PutMapping("/{id}")

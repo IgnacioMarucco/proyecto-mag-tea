@@ -1,26 +1,30 @@
-package com.utn.magtea.mchat;
+package com.utn.magtea.paciente.mchat;
 
 import com.utn.magtea.common.Auditable;
+import com.utn.magtea.paciente.Paciente;
+import com.utn.magtea.paciente.mchatseguimiento.MchatResultadoFinal;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.envers.Audited;
 
+@Audited
 @Entity
-@Table(name = "mchat_respuestas")
+@Table(name = "mchat_familia")
 @Getter
 @Setter
 @NoArgsConstructor
-public class MchatRespuestas extends Auditable {
+public class MchatFamilia extends Auditable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
-    private Long pacienteId;
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "paciente_id", nullable = false, unique = true)
+    private Paciente paciente;
 
-    // true = Sí, false = No
     private boolean p1;
     private boolean p2;
     private boolean p3;
@@ -44,4 +48,7 @@ public class MchatRespuestas extends Auditable {
 
     @Column(nullable = false)
     private int scoreTotal;
+
+    @Enumerated(EnumType.STRING)
+    private MchatResultadoFinal resultadoFinal;
 }

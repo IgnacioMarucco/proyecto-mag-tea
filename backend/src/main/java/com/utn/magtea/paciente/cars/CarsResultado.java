@@ -1,4 +1,4 @@
-package com.utn.magtea.paciente;
+package com.utn.magtea.paciente.cars;
 
 public enum CarsResultado {
     MINIMO_NO_TEA, LEVE_MODERADO, SEVERO

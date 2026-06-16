@@ -1,7 +1,14 @@
 package com.utn.magtea.paciente;
 
 import com.utn.magtea.formulariointeres.ComoConocioProyecto;
+import com.utn.magtea.paciente.cars.CarsItemsResponseDTO;
+import com.utn.magtea.paciente.cars.CarsResultado;
+import com.utn.magtea.paciente.criterios.CriteriosAptitud;
+import com.utn.magtea.paciente.mchatseguimiento.MchatEstado;
+import com.utn.magtea.paciente.mchatseguimiento.MchatResultadoFinal;
+import com.utn.magtea.paciente.mchatseguimiento.MchatRiesgo;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -18,8 +25,11 @@ public record PacienteResponseDTO(
         String nombreNino,
         LocalDate fechaNacimientoNino,
         Integer edadActual,
+        Integer edadMeses,
         ComoConocioProyecto comoConocioProyecto,
+        String otroComoConocio,
         Sexo sexo,
+        TipoPaciente tipoPaciente,
         LocalDateTime fechaPrimeraVisita,
         boolean consentimientoFirmado,
         String notas,
@@ -29,6 +39,7 @@ public record PacienteResponseDTO(
         MchatEstado mchatEstado,
         // Criterios
         boolean criteriosRegistrados,
+        CriteriosAptitud criteriosAptitud,
         // Criterios inclusión
         boolean criterioTEADSMV,
         boolean criterioTGDDSMIV,
@@ -58,9 +69,11 @@ public record PacienteResponseDTO(
         Boolean seguimientoItem16, Boolean seguimientoItem17, Boolean seguimientoItem18,
         Boolean seguimientoItem19, Boolean seguimientoItem20,
         // CARS-2
-        Double carsRawScore,
-        Double carsTScore,
+        BigDecimal carsRawScore,
+        BigDecimal carsTScore,
+        Integer carsPercentil,
         CarsResultado carsResultado,
+        CarsItemsResponseDTO carsItems,
         // Vineland
         Integer vinelandComunicacion,
         Integer vinelandAutovalimiento,

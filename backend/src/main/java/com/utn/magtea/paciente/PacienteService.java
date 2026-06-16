@@ -6,6 +6,18 @@ import com.utn.magtea.common.exception.BusinessRuleException;
 import com.utn.magtea.common.exception.ResourceNotFoundException;
 import com.utn.magtea.formulariointeres.FormularioInteres;
 import com.utn.magtea.formulariointeres.FormularioInteresService;
+import com.utn.magtea.mchat.MchatScoringUtil;
+import com.utn.magtea.paciente.cars.PacienteCarsDTO;
+import com.utn.magtea.paciente.cars.PacienteEvaluacionCars;
+import com.utn.magtea.paciente.criterios.PacienteCriterios;
+import com.utn.magtea.paciente.criterios.PacienteCriteriosDTO;
+import com.utn.magtea.paciente.mchat.MchatFamilia;
+import com.utn.magtea.paciente.mchatseguimiento.MchatResultadoFinal;
+import com.utn.magtea.paciente.mchatseguimiento.PacienteMchatInfoDTO;
+import com.utn.magtea.paciente.mchatseguimiento.PacienteMchatSeguimiento;
+import com.utn.magtea.paciente.mchatseguimiento.PacienteMchatSeguimientoDTO;
+import com.utn.magtea.paciente.vineland.PacienteEvaluacionVineland;
+import com.utn.magtea.paciente.vineland.PacienteVinelandDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -16,10 +28,12 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -28,7 +42,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class PacienteService {
 
-    private static final Set<Double>  CARS_VALORES_VALIDOS = Set.of(1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0);
+    private static final List<BigDecimal> CARS_VALORES_VALIDOS = List.of(
+            new BigDecimal("1.0"), new BigDecimal("1.5"), new BigDecimal("2.0"),
+            new BigDecimal("2.5"), new BigDecimal("3.0"), new BigDecimal("3.5"),
+            new BigDecimal("4.0"));
     private static final Set<String>  SORT_FIELDS_VALIDOS  = Set.of("createdAt", "apellidoNino", "apellidoTutor", "nombreNino");
 
     private final PacienteRepository repository;
@@ -41,13 +58,14 @@ public class PacienteService {
     private int tokenExpiryDays;
 
     @Transactional(readOnly = true)
-    public PageResponse<PacienteResponseDTO> findAll(int page, int size, String q,
-                                                     List<PacienteEstado> estados,
-                                                     String sortBy, String sortDir) {
+    public PageResponse<PacienteListDTO> findAll(int page, int size, String q,
+                                                  List<PacienteEstado> estados,
+                                                  List<TipoPaciente> tipos,
+                                                  String sortBy, String sortDir) {
         Sort sort = buildSort(sortBy, sortDir, "createdAt");
-        Page<Paciente> result = repository.findAll(buildSpec(q, estados), PageRequest.of(page, size, sort));
+        Page<Paciente> result = repository.findAll(buildSpec(q, estados, tipos), PageRequest.of(page, size, sort));
         return new PageResponse<>(
-                result.map(mapper::toDTO).getContent(),
+                result.map(mapper::toListDTO).getContent(),
                 result.getTotalElements(),
                 result.getTotalPages(),
                 result.getNumber(),
@@ -66,30 +84,55 @@ public class PacienteService {
         paciente.setCodigoNumerico(generarCodigoNumerico());
         paciente.setFechaContacto(LocalDate.now());
         paciente.setFechaPrimeraVisita(dto.fechaPrimeraVisita());
+        paciente.setNotas(dto.notas());
+        paciente.setConsentimientoFirmado(dto.consentimientoFirmado());
 
         if (dto.formularioInteresId() != null) {
             FormularioInteres formulario = formularioService.admitir(dto.formularioInteresId());
             paciente.setFormularioInteresId(formulario.getId());
             paciente.setFechaContacto(formulario.getFechaContacto());
             paciente.setComoConocioProyecto(formulario.getComoConocioProyecto());
+            paciente.setOtroComoConocio(formulario.getOtroComoConocio());
         }
 
-        paciente.setMchatToken(UUID.randomUUID().toString());
-        paciente.setMchatTokenExpiry(LocalDateTime.now(clock).plusDays(tokenExpiryDays));
+        PacienteCriterios criterios = new PacienteCriterios();
+        criterios.setPaciente(paciente);
+        criterios.setCriterioTEADSMV(dto.criterioTEADSMV());
+        criterios.setCriterioTGDDSMIV(dto.criterioTGDDSMIV());
+        criterios.setCriterioEdad(dto.criterioEdad());
+        criterios.setEpilepsia(dto.epilepsia());
+        criterios.setParalisisCerebral(dto.paralisisCerebral());
+        criterios.setInfeccionesCongenitas(dto.infeccionesCongenitas());
+        criterios.setLesionesEstructuralesSNC(dto.lesionesEstructuralesSNC());
+        criterios.setFacomatosis(dto.facomatosis());
+        criterios.setPatologiasNeurometabolicas(dto.patologiasNeurometabolicas());
+        criterios.setLesionesOcupantesEspacioSNC(dto.lesionesOcupantesEspacioSNC());
+        criterios.setPatologiaPsiquiatrica(dto.patologiaPsiquiatrica());
+        criterios.setOtrosSindromesGeneticos(dto.otrosSindromesGeneticos());
+        criterios.setPubertadPrecoz(dto.pubertadPrecoz());
+        paciente.setCriterios(criterios);
+
         paciente.setEstadoClinico(PacienteEstado.ADMITIDO);
+
+        if (dto.tipoPaciente() == TipoPaciente.PROBLEMA) {
+            paciente.setMchatToken(UUID.randomUUID().toString());
+            paciente.setMchatTokenExpiry(LocalDateTime.now(clock).plusDays(tokenExpiryDays));
+        }
 
         Paciente saved = repository.save(paciente);
 
-        try {
-            mailService.enviarLinkMchat(
-                    saved.getCorreoTutor(),
-                    saved.getNombreTutor(),
-                    saved.getApellidoNino(),
-                    saved.getNombreNino(),
-                    saved.getMchatToken()
-            );
-        } catch (Exception e) {
-            log.warn("No se pudo enviar el mail M-CHAT para paciente {}: {}", saved.getId(), e.getMessage());
+        if (dto.tipoPaciente() == TipoPaciente.PROBLEMA) {
+            try {
+                mailService.enviarLinkMchat(
+                        saved.getCorreoTutor(),
+                        saved.getNombreTutor(),
+                        saved.getApellidoNino(),
+                        saved.getNombreNino(),
+                        saved.getMchatToken()
+                );
+            } catch (Exception e) {
+                log.warn("No se pudo enviar el mail M-CHAT para paciente {}: {}", saved.getId(), e.getMessage());
+            }
         }
 
         return mapper.toDTO(saved);
@@ -107,6 +150,8 @@ public class PacienteService {
         paciente.setFechaNacimientoNino(dto.fechaNacimientoNino());
         paciente.setSexo(dto.sexo());
         paciente.setNotas(dto.notas());
+        if (dto.fechaPrimeraVisita() != null) paciente.setFechaPrimeraVisita(dto.fechaPrimeraVisita());
+        if (dto.fechaExtraccion() != null) paciente.setFechaExtraccion(dto.fechaExtraccion());
         return mapper.toDTO(repository.save(paciente));
     }
 
@@ -127,21 +172,23 @@ public class PacienteService {
     @Transactional
     public PacienteResponseDTO updateCriterios(Long id, PacienteCriteriosDTO dto) {
         Paciente paciente = findActiveById(id);
-        paciente.setCriterioTEADSMV(dto.criterioTEADSMV());
-        paciente.setCriterioTGDDSMIV(dto.criterioTGDDSMIV());
-        paciente.setCriterioEdad(dto.criterioEdad());
-        paciente.setEpilepsia(dto.epilepsia());
-        paciente.setParalisisCerebral(dto.paralisisCerebral());
-        paciente.setInfeccionesCongenitas(dto.infeccionesCongenitas());
-        paciente.setLesionesEstructuralesSNC(dto.lesionesEstructuralesSNC());
-        paciente.setFacomatosis(dto.facomatosis());
-        paciente.setPatologiasNeurometabolicas(dto.patologiasNeurometabolicas());
-        paciente.setLesionesOcupantesEspacioSNC(dto.lesionesOcupantesEspacioSNC());
-        paciente.setPatologiaPsiquiatrica(dto.patologiaPsiquiatrica());
-        paciente.setOtrosSindromesGeneticos(dto.otrosSindromesGeneticos());
-        paciente.setPubertadPrecoz(dto.pubertadPrecoz());
+        PacienteCriterios criterios = Optional.ofNullable(paciente.getCriterios())
+                .orElseGet(() -> { var c = new PacienteCriterios(); c.setPaciente(paciente); return c; });
+        criterios.setCriterioTEADSMV(dto.criterioTEADSMV());
+        criterios.setCriterioTGDDSMIV(dto.criterioTGDDSMIV());
+        criterios.setCriterioEdad(dto.criterioEdad());
+        criterios.setEpilepsia(dto.epilepsia());
+        criterios.setParalisisCerebral(dto.paralisisCerebral());
+        criterios.setInfeccionesCongenitas(dto.infeccionesCongenitas());
+        criterios.setLesionesEstructuralesSNC(dto.lesionesEstructuralesSNC());
+        criterios.setFacomatosis(dto.facomatosis());
+        criterios.setPatologiasNeurometabolicas(dto.patologiasNeurometabolicas());
+        criterios.setLesionesOcupantesEspacioSNC(dto.lesionesOcupantesEspacioSNC());
+        criterios.setPatologiaPsiquiatrica(dto.patologiaPsiquiatrica());
+        criterios.setOtrosSindromesGeneticos(dto.otrosSindromesGeneticos());
+        criterios.setPubertadPrecoz(dto.pubertadPrecoz());
+        paciente.setCriterios(criterios);
         paciente.setConsentimientoFirmado(dto.consentimientoFirmado());
-        paciente.setCriteriosRegistrados(true);
         return mapper.toDTO(repository.save(paciente));
     }
 
@@ -149,27 +196,30 @@ public class PacienteService {
     public PacienteResponseDTO updateMchatSeguimiento(Long id, PacienteMchatSeguimientoDTO dto) {
         Paciente paciente = findActiveById(id);
 
-        if (paciente.getMchatScoreTotal() == null
-                || paciente.getMchatScoreTotal() < 3
-                || paciente.getMchatScoreTotal() > 7) {
+        if (paciente.getTipoPaciente() == TipoPaciente.CONTROL) {
+            throw new BusinessRuleException(
+                    "El seguimiento M-CHAT no aplica para pacientes caso control");
+        }
+        MchatFamilia familia = paciente.getMchatFamilia();
+        if (familia == null || familia.getScoreTotal() < 3 || familia.getScoreTotal() > 7) {
             throw new BusinessRuleException(
                     "El seguimiento M-CHAT solo aplica cuando el score está entre 3 y 7");
         }
 
-        paciente.setSeguimientoItem1(dto.item1());   paciente.setSeguimientoItem2(dto.item2());
-        paciente.setSeguimientoItem3(dto.item3());   paciente.setSeguimientoItem4(dto.item4());
-        paciente.setSeguimientoItem5(dto.item5());   paciente.setSeguimientoItem6(dto.item6());
-        paciente.setSeguimientoItem7(dto.item7());   paciente.setSeguimientoItem8(dto.item8());
-        paciente.setSeguimientoItem9(dto.item9());   paciente.setSeguimientoItem10(dto.item10());
-        paciente.setSeguimientoItem11(dto.item11()); paciente.setSeguimientoItem12(dto.item12());
-        paciente.setSeguimientoItem13(dto.item13()); paciente.setSeguimientoItem14(dto.item14());
-        paciente.setSeguimientoItem15(dto.item15()); paciente.setSeguimientoItem16(dto.item16());
-        paciente.setSeguimientoItem17(dto.item17()); paciente.setSeguimientoItem18(dto.item18());
-        paciente.setSeguimientoItem19(dto.item19()); paciente.setSeguimientoItem20(dto.item20());
+        PacienteMchatSeguimiento seg = Optional.ofNullable(paciente.getMchatSeguimiento())
+                .orElseGet(() -> { var s = new PacienteMchatSeguimiento(); s.setPaciente(paciente); return s; });
+        seg.setItem1(dto.item1());   seg.setItem2(dto.item2());   seg.setItem3(dto.item3());
+        seg.setItem4(dto.item4());   seg.setItem5(dto.item5());   seg.setItem6(dto.item6());
+        seg.setItem7(dto.item7());   seg.setItem8(dto.item8());   seg.setItem9(dto.item9());
+        seg.setItem10(dto.item10()); seg.setItem11(dto.item11()); seg.setItem12(dto.item12());
+        seg.setItem13(dto.item13()); seg.setItem14(dto.item14()); seg.setItem15(dto.item15());
+        seg.setItem16(dto.item16()); seg.setItem17(dto.item17()); seg.setItem18(dto.item18());
+        seg.setItem19(dto.item19()); seg.setItem20(dto.item20());
 
         int fallas = contarFallas(dto);
-        paciente.setMchatSeguimientoFallas(fallas);
-        paciente.setMchatResultadoFinal(fallas <= 1
+        seg.setFallas(fallas);
+        paciente.setMchatSeguimiento(seg);
+        familia.setResultadoFinal(fallas <= 1
                 ? MchatResultadoFinal.NEGATIVA
                 : MchatResultadoFinal.POSITIVA);
 
@@ -180,26 +230,50 @@ public class PacienteService {
     public PacienteResponseDTO updateCars(Long id, PacienteCarsDTO dto) {
         validarItemsCars(dto);
         Paciente paciente = findActiveById(id);
+        if (paciente.getTipoPaciente() == TipoPaciente.CONTROL) {
+            throw new BusinessRuleException("CARS-2 no aplica para pacientes caso control");
+        }
 
-        double rawScore = dto.item1() + dto.item2() + dto.item3() + dto.item4() + dto.item5()
-                + dto.item6() + dto.item7() + dto.item8() + dto.item9() + dto.item10()
-                + dto.item11() + dto.item12() + dto.item13() + dto.item14() + dto.item15();
+        BigDecimal rawScore = dto.item1().add(dto.item2()).add(dto.item3()).add(dto.item4()).add(dto.item5())
+                .add(dto.item6()).add(dto.item7()).add(dto.item8()).add(dto.item9()).add(dto.item10())
+                .add(dto.item11()).add(dto.item12()).add(dto.item13()).add(dto.item14()).add(dto.item15());
 
-        paciente.setCarsRawScore(rawScore);
+        PacienteEvaluacionCars cars = Optional.ofNullable(paciente.getEvaluacionCars())
+                .orElseGet(() -> { var c = new PacienteEvaluacionCars(); c.setPaciente(paciente); return c; });
+        cars.setItem1(dto.item1());   cars.setItem2(dto.item2());   cars.setItem3(dto.item3());
+        cars.setItem4(dto.item4());   cars.setItem5(dto.item5());   cars.setItem6(dto.item6());
+        cars.setItem7(dto.item7());   cars.setItem8(dto.item8());   cars.setItem9(dto.item9());
+        cars.setItem10(dto.item10()); cars.setItem11(dto.item11()); cars.setItem12(dto.item12());
+        cars.setItem13(dto.item13()); cars.setItem14(dto.item14()); cars.setItem15(dto.item15());
+        cars.setObs1(dto.obs1());     cars.setObs2(dto.obs2());     cars.setObs3(dto.obs3());
+        cars.setObs4(dto.obs4());     cars.setObs5(dto.obs5());     cars.setObs6(dto.obs6());
+        cars.setObs7(dto.obs7());     cars.setObs8(dto.obs8());     cars.setObs9(dto.obs9());
+        cars.setObs10(dto.obs10());   cars.setObs11(dto.obs11());   cars.setObs12(dto.obs12());
+        cars.setObs13(dto.obs13());   cars.setObs14(dto.obs14());   cars.setObs15(dto.obs15());
+        cars.setRawScore(rawScore);
+        cars.setTScore(dto.tScore());
+        cars.setPercentil(dto.percentil());
+        paciente.setEvaluacionCars(cars);
         return mapper.toDTO(repository.save(paciente));
     }
 
     @Transactional
     public PacienteResponseDTO updateVineland(Long id, PacienteVinelandDTO dto) {
         Paciente paciente = findActiveById(id);
-        paciente.setVinelandComunicacion(dto.vinelandComunicacion());
-        paciente.setVinelandAutovalimiento(dto.vinelandAutovalimiento());
-        paciente.setVinelandSocial(dto.vinelandSocial());
-        paciente.setVinelandMotor(dto.vinelandMotor());
-        paciente.setVinelandCocienteFinal(dto.vinelandCocienteFinal());
-        paciente.setVinelandConductaDesadaptativa(dto.vinelandConductaDesadaptativa());
-        paciente.setVinelandInternalizante(dto.vinelandInternalizante());
-        paciente.setVinelandExternalizante(dto.vinelandExternalizante());
+        if (paciente.getTipoPaciente() == TipoPaciente.CONTROL) {
+            throw new BusinessRuleException("Vineland no aplica para pacientes caso control");
+        }
+        PacienteEvaluacionVineland vineland = Optional.ofNullable(paciente.getEvaluacionVineland())
+                .orElseGet(() -> { var v = new PacienteEvaluacionVineland(); v.setPaciente(paciente); return v; });
+        vineland.setComunicacion(dto.vinelandComunicacion());
+        vineland.setAutovalimiento(dto.vinelandAutovalimiento());
+        vineland.setSocial(dto.vinelandSocial());
+        vineland.setMotor(dto.vinelandMotor());
+        vineland.setCocienteFinal(dto.vinelandCocienteFinal());
+        vineland.setConductaDesadaptativa(dto.vinelandConductaDesadaptativa());
+        vineland.setInternalizante(dto.vinelandInternalizante());
+        vineland.setExternalizante(dto.vinelandExternalizante());
+        paciente.setEvaluacionVineland(vineland);
         return mapper.toDTO(repository.save(paciente));
     }
 
@@ -207,13 +281,16 @@ public class PacienteService {
     public PacienteResponseDTO updateSegundaVisita(Long id, PacienteSegundaVisitaDTO dto) {
         Paciente paciente = findActiveById(id);
         paciente.setFechaExtraccion(dto.fechaExtraccion());
-        paciente.refreshEstadoClinico();
+        paciente.setEstadoClinico(calcularEstado(paciente));
         return mapper.toDTO(repository.save(paciente));
     }
 
     @Transactional
     public PacienteResponseDTO reenviarMchat(Long id) {
         Paciente paciente = findActiveById(id);
+        if (paciente.getTipoPaciente() == TipoPaciente.CONTROL) {
+            throw new BusinessRuleException("El formulario M-CHAT no aplica para pacientes caso control");
+        }
         paciente.setMchatToken(UUID.randomUUID().toString());
         paciente.setMchatTokenExpiry(LocalDateTime.now(clock).plusDays(tokenExpiryDays));
         Paciente saved = repository.save(paciente);
@@ -240,6 +317,41 @@ public class PacienteService {
         repository.save(paciente);
     }
 
+    @Transactional(readOnly = true)
+    public PacienteMchatInfoDTO validarTokenMchat(String token) {
+        Paciente p = repository.findByMchatToken(token)
+                .filter(paciente -> paciente.getMchatTokenExpiry() != null
+                        && paciente.getMchatTokenExpiry().isAfter(LocalDateTime.now(clock)))
+                .orElseThrow(() -> new ResourceNotFoundException("El enlace no es válido o ha expirado"));
+        return new PacienteMchatInfoDTO(p.getId(), p.getNombreNino(), p.getApellidoNino());
+    }
+
+    @Transactional
+    public void procesarMchatPublico(Long pacienteId) {
+        Paciente paciente = findActiveById(pacienteId);
+        if (paciente.getTipoPaciente() == TipoPaciente.CONTROL) {
+            throw new BusinessRuleException("El formulario M-CHAT no aplica para pacientes caso control");
+        }
+        paciente.setMchatToken(null);
+        paciente.setMchatTokenExpiry(null);
+        paciente.setEstadoClinico(calcularEstado(paciente));
+        repository.save(paciente);
+    }
+
+    @Transactional
+    public void actualizarMchatInterno(Long pacienteId) {
+        Paciente paciente = findActiveById(pacienteId);
+        if (paciente.getTipoPaciente() == TipoPaciente.CONTROL) {
+            throw new BusinessRuleException("El formulario M-CHAT no aplica para pacientes caso control");
+        }
+        MchatFamilia familia = paciente.getMchatFamilia();
+        if (familia != null && (familia.getScoreTotal() < 3 || familia.getScoreTotal() > 7)) {
+            paciente.setMchatSeguimiento(null);
+        }
+        paciente.setEstadoClinico(calcularEstado(paciente));
+        repository.save(paciente);
+    }
+
     private Paciente findActiveById(Long id) {
         return repository.findById(id)
                 .filter(Paciente::isActivo)
@@ -247,10 +359,11 @@ public class PacienteService {
                         "Paciente con id " + id + " no existe"));
     }
 
-    private Specification<Paciente> buildSpec(String q, List<PacienteEstado> estados) {
+    private Specification<Paciente> buildSpec(String q, List<PacienteEstado> estados, List<TipoPaciente> tipos) {
         Specification<Paciente> spec = activoTrue();
         if (q != null && !q.isBlank()) spec = spec.and(searchText(q));
         if (estados != null && !estados.isEmpty()) spec = spec.and(estadoIn(estados));
+        if (tipos   != null && !tipos.isEmpty())   spec = spec.and(tipoIn(tipos));
         return spec;
     }
 
@@ -272,6 +385,10 @@ public class PacienteService {
         return (root, query, cb) -> root.get("estadoClinico").in(estados);
     }
 
+    private Specification<Paciente> tipoIn(List<TipoPaciente> tipos) {
+        return (root, query, cb) -> root.get("tipoPaciente").in(tipos);
+    }
+
     private Sort buildSort(String sortBy, String sortDir, String defaultField) {
         String field = SORT_FIELDS_VALIDOS.contains(sortBy) ? sortBy : defaultField;
         Sort.Direction dir = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
@@ -287,29 +404,32 @@ public class PacienteService {
     }
 
     private int contarFallas(PacienteMchatSeguimientoDTO dto) {
-        int fallas = 0;
-        if (dto.item1())  fallas++; if (dto.item2())  fallas++; if (dto.item3())  fallas++;
-        if (dto.item4())  fallas++; if (dto.item5())  fallas++; if (dto.item6())  fallas++;
-        if (dto.item7())  fallas++; if (dto.item8())  fallas++; if (dto.item9())  fallas++;
-        if (dto.item10()) fallas++; if (dto.item11()) fallas++; if (dto.item12()) fallas++;
-        if (dto.item13()) fallas++; if (dto.item14()) fallas++; if (dto.item15()) fallas++;
-        if (dto.item16()) fallas++; if (dto.item17()) fallas++; if (dto.item18()) fallas++;
-        if (dto.item19()) fallas++; if (dto.item20()) fallas++;
-        return fallas;
+        return MchatScoringUtil.calcularScore(dto.toBooleanArray());
     }
 
     private void validarItemsCars(PacienteCarsDTO dto) {
-        Double[] items = {
+        BigDecimal[] items = {
             dto.item1(), dto.item2(), dto.item3(), dto.item4(), dto.item5(),
             dto.item6(), dto.item7(), dto.item8(), dto.item9(), dto.item10(),
             dto.item11(), dto.item12(), dto.item13(), dto.item14(), dto.item15()
         };
         for (int i = 0; i < items.length; i++) {
-            if (!CARS_VALORES_VALIDOS.contains(items[i])) {
+            BigDecimal item = items[i];
+            if (item == null || CARS_VALORES_VALIDOS.stream().noneMatch(v -> v.compareTo(item) == 0)) {
                 throw new BusinessRuleException(
                         "Valor inválido en ítem " + (i + 1) + " de CARS-2: " + items[i]
                         + ". Valores permitidos: 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0");
             }
         }
     }
+
+    private PacienteEstado calcularEstado(Paciente p) {
+        if (p.getFechaExtraccion() != null)
+            return PacienteEstado.EXTRACCION_PENDIENTE;
+        if (p.getTipoPaciente() == TipoPaciente.PROBLEMA && p.getMchatFamilia() != null)
+            return PacienteEstado.MCHAT_RESPONDIDO;
+        return PacienteEstado.ADMITIDO;
+    }
+
 }
+

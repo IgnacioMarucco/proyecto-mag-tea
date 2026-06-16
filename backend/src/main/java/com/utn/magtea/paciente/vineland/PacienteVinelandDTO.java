@@ -1,4 +1,4 @@
-package com.utn.magtea.paciente;
+package com.utn.magtea.paciente.vineland;
 
 public record PacienteVinelandDTO(
         Integer vinelandComunicacion,

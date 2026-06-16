@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public record PacienteUpdateDTO(
         @NotBlank(message = "El apellido del tutor es obligatorio") String apellidoTutor,
@@ -16,5 +17,7 @@ public record PacienteUpdateDTO(
         @NotBlank(message = "El nombre del niño/a es obligatorio") String nombreNino,
         LocalDate fechaNacimientoNino,
         @NotNull(message = "El sexo es obligatorio") Sexo sexo,
-        String notas
+        String notas,
+        LocalDateTime fechaPrimeraVisita,
+        LocalDate fechaExtraccion
 ) {}
