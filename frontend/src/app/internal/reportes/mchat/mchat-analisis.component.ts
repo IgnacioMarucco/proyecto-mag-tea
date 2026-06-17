@@ -1,8 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { NgxEchartsDirective } from 'ngx-echarts';
-import { catchError, of } from 'rxjs';
-import { ReportesService } from '../reportes.service';
+import { MchatData } from '../reportes.models';
 import type { Distribucion } from '../reportes.models';
 import type { EChartsOption } from 'echarts';
 import { MCHAT_PREGUNTAS } from '../../../shared/constants/mchat.constants';
@@ -20,14 +18,9 @@ function colorPorScore(score: number): string {
   templateUrl: './mchat-analisis.component.html',
 })
 export class MchatAnalisisComponent {
-  private readonly service = inject(ReportesService);
+  readonly data = input.required<MchatData | null | undefined>();
 
-  readonly data = toSignal(
-    this.service.getMchat().pipe(catchError(() => of(null))),
-    { initialValue: undefined }
-  );
-
-  readonly histogramaOptions = () => {
+  readonly histogramaOptions = computed(() => {
     const d = this.data();
     if (!d) return null;
     const labels = d.distribucionScores.map(s => s.label);
@@ -52,9 +45,9 @@ export class MchatAnalisisComponent {
         barMaxWidth: 30,
       }],
     } as EChartsOption;
-  };
+  });
 
-  readonly resultadoOptions = () => {
+  readonly resultadoOptions = computed(() => {
     const d = this.data();
     if (!d) return null;
     return {
@@ -72,10 +65,10 @@ export class MchatAnalisisComponent {
         color: ['#ef4444', '#22c55e'],
       }],
     } as EChartsOption;
-  };
+  });
 
-  readonly itemsTamizajeOptions = () => this.buildItemsChart(this.data()?.itemsFalladosTamizaje);
-  readonly itemsSeguimientoOptions = () => this.buildItemsChart(this.data()?.itemsFalladosSeguimiento);
+  readonly itemsTamizajeOptions = computed(() => this.buildItemsChart(this.data()?.itemsFalladosTamizaje));
+  readonly itemsSeguimientoOptions = computed(() => this.buildItemsChart(this.data()?.itemsFalladosSeguimiento));
 
   private buildItemsChart(items: Distribucion[] | undefined): EChartsOption | null {
     if (!items) return null;
@@ -110,12 +103,7 @@ export class MchatAnalisisComponent {
             borderRadius: [0, 4, 4, 0],
           },
         })),
-        label: {
-          show: true,
-          position: 'right',
-          formatter: '{c}',
-          fontSize: 10,
-        },
+        label: { show: true, position: 'right', formatter: '{c}', fontSize: 10 },
       }],
     };
   }

@@ -1,37 +1,22 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { NgxEchartsDirective } from 'ngx-echarts';
-import { catchError, map, of } from 'rxjs';
-import { ReportesService } from '../reportes.service';
+import { EmbudoData } from '../reportes.models';
 import type { EChartsOption } from 'echarts';
 
 @Component({
   selector: 'app-embudo-reclutamiento',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgxEchartsDirective],
-  template: `
-    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h3 class="mb-4 text-sm font-semibold text-slate-700">Embudo de Reclutamiento</h3>
-      @if (options()) {
-        <div echarts [options]="options()!" [autoResize]="true" class="h-72 w-full"></div>
-      } @else if (options() === null) {
-        <p class="text-sm text-slate-400">Sin datos disponibles</p>
-      } @else {
-        <div class="h-72 animate-pulse rounded bg-slate-50"></div>
-      }
-    </div>
-  `,
+  templateUrl: './embudo-reclutamiento.component.html',
 })
 export class EmbudoReclutamientoComponent {
-  private readonly service = inject(ReportesService);
+  readonly data = input.required<EmbudoData | null | undefined>();
 
-  readonly options = toSignal(
-    this.service.getEmbudo().pipe(
-      map(data => this.buildOptions(data.etapas)),
-      catchError(() => of(null))
-    ),
-    { initialValue: undefined }
-  );
+  readonly options = computed(() => {
+    const d = this.data();
+    if (!d) return d;
+    return this.buildOptions(d.etapas);
+  });
 
   private buildOptions(etapas: { nombre: string; n: number; porcentajeRespecto1raEtapa: number }[]): EChartsOption {
     return {
@@ -45,10 +30,7 @@ export class EmbudoReclutamientoComponent {
         maxSize: '100%',
         label: { show: true, position: 'inside', formatter: '{b}: {c}' },
         itemStyle: { borderWidth: 0 },
-        data: etapas.map(e => ({
-          name: e.nombre,
-          value: e.n,
-        })),
+        data: etapas.map(e => ({ name: e.nombre, value: e.n })),
         color: ['#6366f1', '#818cf8', '#a5b4fc', '#c7d2fe', '#ddd6fe', '#ede9fe'],
       }],
     };

@@ -4,21 +4,19 @@ import com.utn.magtea.formulariointeres.ComoConocioProyecto;
 import com.utn.magtea.formulariointeres.EstadoFormulario;
 import com.utn.magtea.formulariointeres.FormularioInteresRepository;
 import com.utn.magtea.paciente.Paciente;
+import com.utn.magtea.paciente.PacienteEstado;
 import com.utn.magtea.paciente.PacienteRepository;
 import com.utn.magtea.paciente.Sexo;
 import com.utn.magtea.paciente.TipoPaciente;
 import com.utn.magtea.paciente.cars.EvaluacionCars;
-import com.utn.magtea.paciente.cars.EvaluacionCarsRepository;
 import com.utn.magtea.paciente.mchat.MchatFamilia;
-import com.utn.magtea.paciente.mchat.MchatFamiliaRepository;
 import com.utn.magtea.paciente.mchat.MchatResultadoFinal;
 import com.utn.magtea.paciente.mchat.MchatScoringUtil;
 import com.utn.magtea.paciente.mchat.MchatSeguimiento;
-import com.utn.magtea.paciente.mchat.MchatSeguimientoRepository;
 import com.utn.magtea.paciente.vineland.EvaluacionVineland;
-import com.utn.magtea.paciente.vineland.EvaluacionVinelandRepository;
 import com.utn.magtea.reporte.dto.CarsAnaliticaDTO;
 import com.utn.magtea.reporte.dto.CorrelacionPuntoDTO;
+import com.utn.magtea.reporte.dto.DashboardAnaliticaDTO;
 import com.utn.magtea.reporte.dto.DemograficoDTO;
 import com.utn.magtea.reporte.dto.DistribucionDTO;
 import com.utn.magtea.reporte.dto.EmbudoDTO;
@@ -26,15 +24,22 @@ import com.utn.magtea.reporte.dto.EtapaDTO;
 import com.utn.magtea.reporte.dto.MchatAnaliticaDTO;
 import com.utn.magtea.reporte.dto.ResumenGeneralDTO;
 import com.utn.magtea.reporte.dto.VinelandAnaliticaDTO;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Service
 @RequiredArgsConstructor
@@ -42,21 +47,101 @@ public class ReporteService {
 
     private final PacienteRepository pacienteRepository;
     private final FormularioInteresRepository formularioRepository;
-    private final MchatFamiliaRepository mchatFamiliaRepository;
-    private final MchatSeguimientoRepository mchatSeguimientoRepository;
-    private final EvaluacionCarsRepository evaluacionCarsRepository;
-    private final EvaluacionVinelandRepository evaluacionVinelandRepository;
+
+    private static final double[] CARS_BIN_EDGES = {
+        15.0, 18.0, 21.0, 24.0, 27.0, 30.0, 33.0, 36.5, 40.0, 44.0, 48.0, 52.0, 56.0, 60.0
+    };
+
+    // Límites en meses para cada grupo etario del filtro (clave = año cumplido)
+    private static final Map<Integer, int[]> EDAD_GRUPOS_MESES = Map.of(
+        2, new int[]{18,  35},
+        3, new int[]{36,  47},
+        4, new int[]{48,  59},
+        5, new int[]{60, 120}
+    );
+
+    // ══ Endpoint consolidado ══
 
     @Transactional(readOnly = true)
-    public ResumenGeneralDTO getResumen() {
-        long totalFormularios      = formularioRepository.countByActivoTrue();
-        long contactados           = formularioRepository.countByEstadoAndActivoTrue(EstadoFormulario.CONTACTADO);
-        long admitidos             = formularioRepository.countByEstadoAndActivoTrue(EstadoFormulario.ADMITIDO);
-        long pacientesTotal        = pacienteRepository.countByActivoTrue();
-        long pacientesProblema     = pacienteRepository.countByTipoPacienteAndActivoTrue(TipoPaciente.PROBLEMA);
-        long pacientesControl      = pacienteRepository.countByTipoPacienteAndActivoTrue(TipoPaciente.CONTROL);
-        long mchatCompletados      = pacienteRepository.countMchatCompletados();
-        long extraccionesRealizadas = pacienteRepository.countExtraccionRealizada();
+    public DashboardAnaliticaDTO getDashboard(String tipoPaciente, List<Integer> edades) {
+        List<Paciente> filtrados = filtrarPacientes(tipoPaciente, edades);
+
+        long totalFormularios = formularioRepository.countByActivoTrue();
+        long contactados = formularioRepository.countByEstadoAndActivoTrue(EstadoFormulario.CONTACTADO)
+                         + formularioRepository.countByEstadoAndActivoTrue(EstadoFormulario.ADMITIDO);
+        long admitidos = formularioRepository.countByEstadoAndActivoTrue(EstadoFormulario.ADMITIDO);
+        List<Object[]> derivRows = formularioRepository.distribucionComoConocio();
+
+        return new DashboardAnaliticaDTO(
+                computeResumen(filtrados, totalFormularios, contactados, admitidos),
+                computeEmbudo(filtrados, totalFormularios, contactados),
+                computeDemografico(filtrados, derivRows),
+                computeMchat(filtrados),
+                computeCars(filtrados),
+                computeVineland(filtrados)
+        );
+    }
+
+    // ══ Correlaciones (endpoint separado — el par se elige dinámicamente en el frontend) ══
+
+    @Transactional(readOnly = true)
+    public List<CorrelacionPuntoDTO> getCorrelaciones(String ejeX, String ejeY,
+            String tipoPaciente, List<Integer> edades) {
+        List<Paciente> filtrados = filtrarPacientes(tipoPaciente, edades).stream()
+            .filter(p -> p.getFechaNacimientoNino() != null)
+            .toList();
+
+        List<CorrelacionPuntoDTO> puntos = new ArrayList<>();
+        for (Paciente p : filtrados) {
+            Double x = extraerValorEje(p, ejeX);
+            Double y = extraerValorEje(p, ejeY);
+            if (x != null && y != null) {
+                puntos.add(new CorrelacionPuntoDTO(x, y, p.getCodigoNumerico()));
+            }
+        }
+        return puntos;
+    }
+
+    // ══ Filtrado en DB ══
+
+    private List<Paciente> filtrarPacientes(String tipoPaciente, List<Integer> edades) {
+        TipoPaciente tipo = (tipoPaciente != null && !tipoPaciente.isBlank()
+                             && !tipoPaciente.equals("TODOS"))
+                            ? TipoPaciente.valueOf(tipoPaciente) : null;
+        return pacienteRepository.findAll(buildReportSpec(tipo, edades));
+    }
+
+    private Specification<Paciente> buildReportSpec(TipoPaciente tipo, List<Integer> edades) {
+        Specification<Paciente> spec = (root, query, cb) -> cb.isTrue(root.get("activo"));
+        if (tipo != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("tipoPaciente"), tipo));
+        }
+        if (edades != null && !edades.isEmpty()) {
+            LocalDate hoy = LocalDate.now();
+            spec = spec.and((root, query, cb) -> {
+                List<Predicate> rangos = edades.stream()
+                    .map(EDAD_GRUPOS_MESES::get)
+                    .filter(Objects::nonNull)
+                    .map(r -> cb.between(root.get("fechaNacimientoNino"),
+                                         hoy.minusMonths(r[1]),
+                                         hoy.minusMonths(r[0])))
+                    .map(p -> (Predicate) p)
+                    .toList();
+                return rangos.size() == 1 ? rangos.get(0) : cb.or(rangos.toArray(new Predicate[0]));
+            });
+        }
+        return spec;
+    }
+
+    // ══ Métodos de cómputo privados ══
+
+    private ResumenGeneralDTO computeResumen(List<Paciente> filtrados,
+                                              long totalFormularios, long contactados, long admitidos) {
+        long pacientesTotal         = filtrados.size();
+        long pacientesProblema      = filtrados.stream().filter(p -> p.getTipoPaciente() == TipoPaciente.PROBLEMA).count();
+        long pacientesControl       = filtrados.stream().filter(p -> p.getTipoPaciente() == TipoPaciente.CONTROL).count();
+        long mchatCompletados       = filtrados.stream().filter(p -> PacienteEstado.MCHAT_COMPLETADOS.contains(p.getEstadoClinico())).count();
+        long extraccionesRealizadas = filtrados.stream().filter(p -> p.getEstadoClinico() == PacienteEstado.EXTRACCION_REALIZADA).count();
 
         return new ResumenGeneralDTO(
             totalFormularios, contactados, admitidos,
@@ -65,18 +150,13 @@ public class ReporteService {
         );
     }
 
-    @Transactional(readOnly = true)
-    public EmbudoDTO getEmbudo() {
-        long formularios   = formularioRepository.countByActivoTrue();
-        long contactados   = formularioRepository.countByEstadoAndActivoTrue(EstadoFormulario.CONTACTADO)
-                           + formularioRepository.countByEstadoAndActivoTrue(EstadoFormulario.ADMITIDO);
-        long admitidos     = pacienteRepository.countByTipoPacienteAndActivoTrue(TipoPaciente.PROBLEMA);
-        long mchat         = pacienteRepository.countMchatCompletados();
-        long extPendiente  = pacienteRepository.countExtraccionPendiente();
-        long extRealizada  = pacienteRepository.countExtraccionRealizada();
+    private EmbudoDTO computeEmbudo(List<Paciente> filtrados, long formularios, long contactados) {
+        long admitidos    = filtrados.size();
+        long mchat        = filtrados.stream().filter(p -> PacienteEstado.MCHAT_COMPLETADOS.contains(p.getEstadoClinico())).count();
+        long extPendiente = filtrados.stream().filter(p -> PacienteEstado.CON_EXTRACCION.contains(p.getEstadoClinico())).count();
+        long extRealizada = filtrados.stream().filter(p -> p.getEstadoClinico() == PacienteEstado.EXTRACCION_REALIZADA).count();
 
         double base = formularios > 0 ? formularios : 1;
-
         List<EtapaDTO> etapas = List.of(
             new EtapaDTO("Formularios recibidos", formularios, 100.0),
             new EtapaDTO("Contactados",           contactados,  round(contactados  / base * 100)),
@@ -88,18 +168,16 @@ public class ReporteService {
         return new EmbudoDTO(etapas);
     }
 
-    @Transactional(readOnly = true)
-    public DemograficoDTO getDemografico() {
-        List<Object[]> sexoRows = pacienteRepository.countBySexo();
-        long totalSexo = sexoRows.stream().mapToLong(r -> (Long) r[1]).sum();
-        List<DistribucionDTO> sexo = sexoRows.stream()
-            .map(r -> new DistribucionDTO(
-                ((Sexo) r[0]).name(),
-                (Long) r[1],
-                round((Long) r[1] / (double) totalSexo * 100)))
+    private DemograficoDTO computeDemografico(List<Paciente> filtrados, List<Object[]> derivRows) {
+        Map<Sexo, Long> sexoFreq = filtrados.stream()
+            .filter(p -> p.getSexo() != null)
+            .collect(Collectors.groupingBy(Paciente::getSexo, Collectors.counting()));
+        long totalSexo = sexoFreq.values().stream().mapToLong(Long::longValue).sum();
+        List<DistribucionDTO> sexo = sexoFreq.entrySet().stream()
+            .map(e -> new DistribucionDTO(e.getKey().name(), e.getValue(),
+                totalSexo > 0 ? round(e.getValue() / (double) totalSexo * 100) : 0))
             .toList();
 
-        List<Object[]> derivRows = formularioRepository.distribucionComoConocio();
         long totalDeriv = derivRows.stream().mapToLong(r -> (Long) r[1]).sum();
         List<DistribucionDTO> derivacion = derivRows.stream()
             .map(r -> new DistribucionDTO(
@@ -111,41 +189,44 @@ public class ReporteService {
         return new DemograficoDTO(sexo, derivacion);
     }
 
-    @Transactional(readOnly = true)
-    public MchatAnaliticaDTO getMchat() {
-        // Distribución de scores
-        List<Object[]> scoreRows = mchatFamiliaRepository.distribucionScores();
-        List<MchatFamilia> todos = mchatFamiliaRepository.findAllProblema();
+    private MchatAnaliticaDTO computeMchat(List<Paciente> filtrados) {
+        List<MchatFamilia> todos = filtrados.stream()
+            .map(Paciente::getMchatFamilia)
+            .filter(Objects::nonNull)
+            .toList();
         long totalConMchat = todos.size();
 
-        long totalScores = scoreRows.stream().mapToLong(r -> (Long) r[1]).sum();
-        List<DistribucionDTO> distribucionScores = scoreRows.stream()
-            .map(r -> new DistribucionDTO(
-                String.valueOf(r[0]),
-                (Long) r[1],
-                round((Long) r[1] / (double) totalScores * 100)))
+        Map<Integer, Long> scoreFreq = todos.stream()
+            .collect(Collectors.groupingBy(MchatFamilia::getScoreTotal, Collectors.counting()));
+        List<DistribucionDTO> distribucionScores = IntStream.rangeClosed(0, 20)
+            .mapToObj(i -> {
+                long count = scoreFreq.getOrDefault(i, 0L);
+                return new DistribucionDTO(
+                    String.valueOf(i), count,
+                    totalConMchat > 0 ? round(count / (double) totalConMchat * 100) : 0);
+            })
             .toList();
 
-        // Resultado final
-        List<Object[]> resultadoRows = mchatFamiliaRepository.distribucionResultadoFinal();
-        long totalResultado = resultadoRows.stream().mapToLong(r -> (Long) r[1]).sum();
-        List<DistribucionDTO> resultadoFinal = resultadoRows.stream()
-            .map(r -> new DistribucionDTO(
-                ((MchatResultadoFinal) r[0]).name(),
-                (Long) r[1],
-                round((Long) r[1] / (double) totalResultado * 100)))
+        Map<MchatResultadoFinal, Long> resultadoFreq = todos.stream()
+            .filter(m -> m.getResultadoFinal() != null)
+            .collect(Collectors.groupingBy(MchatFamilia::getResultadoFinal, Collectors.counting()));
+        long totalResultado = resultadoFreq.values().stream().mapToLong(Long::longValue).sum();
+        List<DistribucionDTO> resultadoFinal = resultadoFreq.entrySet().stream()
+            .map(e -> new DistribucionDTO(e.getKey().name(), e.getValue(),
+                totalResultado > 0 ? round(e.getValue() / (double) totalResultado * 100) : 0))
             .toList();
 
-        // Seguimiento (riesgo medio = score 3-7)
         long riesgoMedio = todos.stream().filter(m -> m.getScoreTotal() >= 3 && m.getScoreTotal() <= 7).count();
-        List<MchatSeguimiento> seguimientos = mchatSeguimientoRepository.findAllProblema();
+
+        List<MchatSeguimiento> seguimientos = filtrados.stream()
+            .map(Paciente::getMchatSeguimiento)
+            .filter(Objects::nonNull)
+            .toList();
         long totalConSeguimiento = seguimientos.size();
-        long riesgoMedioConSeguimiento = totalConSeguimiento;
         long riesgoMedioPositiva = seguimientos.stream()
             .filter(s -> MchatScoringUtil.calcularScore(itemsArray(s)) >= 2).count();
         long riesgoMedioNegativa = totalConSeguimiento - riesgoMedioPositiva;
 
-        // Ítems fallados — tamizaje (MchatFamilia)
         int[] fallasTamizaje = new int[20];
         for (MchatFamilia m : todos) {
             boolean[] resp = familiaArray(m);
@@ -157,7 +238,6 @@ public class ReporteService {
         }
         List<DistribucionDTO> itemsFalladosTamizaje = buildItemsDistribucion(fallasTamizaje, totalConMchat);
 
-        // Ítems fallados — seguimiento (MchatSeguimiento)
         int[] fallasSeguimiento = new int[20];
         for (MchatSeguimiento s : seguimientos) {
             boolean[] resp = itemsArray(s);
@@ -171,49 +251,42 @@ public class ReporteService {
 
         return new MchatAnaliticaDTO(
             distribucionScores, resultadoFinal,
-            totalConMchat, riesgoMedio, riesgoMedioConSeguimiento,
+            totalConMchat, riesgoMedio, totalConSeguimiento,
             riesgoMedioPositiva, riesgoMedioNegativa,
             itemsFalladosTamizaje, totalConSeguimiento, itemsFalladosSeguimiento
         );
     }
 
-    @Transactional(readOnly = true)
-    public CarsAnaliticaDTO getCars() {
-        List<EvaluacionCars> todos = evaluacionCarsRepository.findAllProblema();
-        List<EvaluacionCars> conScore = todos.stream()
-            .filter(e -> e.getRawScore() != null).toList();
+    private CarsAnaliticaDTO computeCars(List<Paciente> filtrados) {
+        List<EvaluacionCars> conScore = filtrados.stream()
+            .map(Paciente::getEvaluacionCars)
+            .filter(e -> e != null && e.getRawScore() != null)
+            .toList();
         long totalConCars = conScore.size();
 
-        // Categorías
-        long minimoNoTea = conScore.stream()
-            .filter(e -> e.getRawScore().compareTo(new BigDecimal("30")) < 0).count();
-        long leveModerado = conScore.stream()
-            .filter(e -> {
-                int cmp30  = e.getRawScore().compareTo(new BigDecimal("30"));
-                int cmp365 = e.getRawScore().compareTo(new BigDecimal("36.5"));
-                return cmp30 >= 0 && cmp365 <= 0;
-            }).count();
-        long severo = conScore.stream()
-            .filter(e -> e.getRawScore().compareTo(new BigDecimal("36.5")) > 0).count();
+        long minimoNoTea  = conScore.stream().filter(e -> e.getRawScore().compareTo(new BigDecimal("30")) < 0).count();
+        long leveModerado = conScore.stream().filter(e -> {
+            int cmp30  = e.getRawScore().compareTo(new BigDecimal("30"));
+            int cmp365 = e.getRawScore().compareTo(new BigDecimal("36.5"));
+            return cmp30 >= 0 && cmp365 <= 0;
+        }).count();
+        long severo = conScore.stream().filter(e -> e.getRawScore().compareTo(new BigDecimal("36.5")) > 0).count();
 
-        // Media y SD
-        double media = conScore.stream()
-            .mapToDouble(e -> e.getRawScore().doubleValue()).average().orElse(0);
-        double sd = calcSD(conScore.stream()
-            .mapToDouble(e -> e.getRawScore().doubleValue()).toArray(), media);
+        double media = conScore.stream().mapToDouble(e -> e.getRawScore().doubleValue()).average().orElse(0);
+        double sd    = calcSD(conScore.stream().mapToDouble(e -> e.getRawScore().doubleValue()).toArray(), media);
 
-        // Distribución por bins de 2.5 (rango 15-60)
-        Map<String, Long> bins = new java.util.LinkedHashMap<>();
-        for (double start = 15.0; start < 60.0; start += 2.5) {
-            String label = String.format("%.1f-%.1f", start, start + 2.5);
-            bins.put(label, 0L);
+        Map<String, Long> bins = new LinkedHashMap<>();
+        for (int i = 0; i < CARS_BIN_EDGES.length - 1; i++) {
+            bins.put(binLabel(CARS_BIN_EDGES[i], CARS_BIN_EDGES[i + 1]), 0L);
         }
         for (EvaluacionCars e : conScore) {
             double val = e.getRawScore().doubleValue();
-            for (double start = 15.0; start < 60.0; start += 2.5) {
-                if (val >= start && val < start + 2.5) {
-                    String label = String.format("%.1f-%.1f", start, start + 2.5);
-                    bins.merge(label, 1L, Long::sum);
+            for (int i = 0; i < CARS_BIN_EDGES.length - 1; i++) {
+                double from = CARS_BIN_EDGES[i];
+                double to   = CARS_BIN_EDGES[i + 1];
+                boolean lastBin = (i == CARS_BIN_EDGES.length - 2);
+                if (val >= from && (lastBin ? val <= to : val < to)) {
+                    bins.merge(binLabel(from, to), 1L, Long::sum);
                     break;
                 }
             }
@@ -227,73 +300,62 @@ public class ReporteService {
             round(media), round(sd), totalConCars);
     }
 
-    @Transactional(readOnly = true)
-    public VinelandAnaliticaDTO getVineland() {
-        List<EvaluacionVineland> todos = evaluacionVinelandRepository.findAllProblema();
+    private VinelandAnaliticaDTO computeVineland(List<Paciente> filtrados) {
+        List<EvaluacionVineland> todos = filtrados.stream()
+            .map(Paciente::getEvaluacionVineland)
+            .filter(Objects::nonNull)
+            .toList();
         long total = todos.size();
         if (total == 0) {
             return new VinelandAnaliticaDTO(0, 0, 0, 0, 0, 0, null, null, null, 0);
         }
 
-        double mediaCom   = todos.stream().filter(v -> v.getComunicacion()   != null).mapToInt(EvaluacionVineland::getComunicacion).average().orElse(0);
-        double mediaAuto  = todos.stream().filter(v -> v.getAutovalimiento() != null).mapToInt(EvaluacionVineland::getAutovalimiento).average().orElse(0);
-        double mediaSoc   = todos.stream().filter(v -> v.getSocial()         != null).mapToInt(EvaluacionVineland::getSocial).average().orElse(0);
-        double mediaMot   = todos.stream().filter(v -> v.getMotor()          != null).mapToInt(EvaluacionVineland::getMotor).average().orElse(0);
-        double mediaCoc   = todos.stream().filter(v -> v.getCocienteFinal()  != null).mapToInt(EvaluacionVineland::getCocienteFinal).average().orElse(0);
+        double mediaCom  = todos.stream().filter(v -> v.getComunicacion()   != null).mapToInt(EvaluacionVineland::getComunicacion).average().orElse(0);
+        double mediaAuto = todos.stream().filter(v -> v.getAutovalimiento() != null).mapToInt(EvaluacionVineland::getAutovalimiento).average().orElse(0);
+        double mediaSoc  = todos.stream().filter(v -> v.getSocial()         != null).mapToInt(EvaluacionVineland::getSocial).average().orElse(0);
+        double mediaMot  = todos.stream().filter(v -> v.getMotor()          != null).mapToInt(EvaluacionVineland::getMotor).average().orElse(0);
+        double mediaCoc  = todos.stream().filter(v -> v.getCocienteFinal()  != null).mapToInt(EvaluacionVineland::getCocienteFinal).average().orElse(0);
 
         double[] cocValues = todos.stream().filter(v -> v.getCocienteFinal() != null)
             .mapToDouble(EvaluacionVineland::getCocienteFinal).toArray();
         double sdCoc = calcSD(cocValues, mediaCoc);
 
-        List<EvaluacionVineland> conConducta = todos.stream()
-            .filter(v -> v.getConductaDesadaptativa() != null).toList();
+        List<EvaluacionVineland> conConducta = todos.stream().filter(v -> v.getConductaDesadaptativa() != null).toList();
         Double mediaConducta = conConducta.isEmpty() ? null
             : round(conConducta.stream().mapToInt(EvaluacionVineland::getConductaDesadaptativa).average().orElse(0));
 
-        List<EvaluacionVineland> conIntern = todos.stream()
-            .filter(v -> v.getInternalizante() != null).toList();
+        List<EvaluacionVineland> conIntern = todos.stream().filter(v -> v.getInternalizante() != null).toList();
         Double mediaIntern = conIntern.isEmpty() ? null
             : round(conIntern.stream().mapToInt(EvaluacionVineland::getInternalizante).average().orElse(0));
 
-        List<EvaluacionVineland> conExtern = todos.stream()
-            .filter(v -> v.getExternalizante() != null).toList();
+        List<EvaluacionVineland> conExtern = todos.stream().filter(v -> v.getExternalizante() != null).toList();
         Double mediaExtern = conExtern.isEmpty() ? null
             : round(conExtern.stream().mapToInt(EvaluacionVineland::getExternalizante).average().orElse(0));
 
         return new VinelandAnaliticaDTO(
             round(mediaCom), round(mediaAuto), round(mediaSoc), round(mediaMot),
             round(mediaCoc), round(sdCoc),
-            mediaConducta, mediaIntern, mediaExtern,
-            total
+            mediaConducta, mediaIntern, mediaExtern, total
         );
     }
 
-    @Transactional(readOnly = true)
-    public List<CorrelacionPuntoDTO> getCorrelaciones(String ejeX, String ejeY) {
-        List<Paciente> pacientes = pacienteRepository.findProblemaConEdadCalculable();
-        List<CorrelacionPuntoDTO> puntos = new ArrayList<>();
-
-        for (Paciente p : pacientes) {
-            Double x = extraerValorEje(p, ejeX);
-            Double y = extraerValorEje(p, ejeY);
-            if (x != null && y != null) {
-                puntos.add(new CorrelacionPuntoDTO(x, y, p.getCodigoNumerico()));
-            }
-        }
-        return puntos;
-    }
-
-    // --- helpers privados ---
+    // ══ Helpers privados ══
 
     private Double extraerValorEje(Paciente p, String eje) {
         return switch (eje) {
-            case "MCHAT_SCORE"       -> p.getMchatFamilia()      != null ? (double) p.getMchatFamilia().getScoreTotal() : null;
-            case "CARS_RAW"          -> p.getEvaluacionCars()    != null && p.getEvaluacionCars().getRawScore() != null
+            case "MCHAT_SCORE"       -> p.getMchatFamilia()       != null ? (double) p.getMchatFamilia().getScoreTotal() : null;
+            case "CARS_RAW"          -> p.getEvaluacionCars()     != null && p.getEvaluacionCars().getRawScore() != null
                                         ? p.getEvaluacionCars().getRawScore().doubleValue() : null;
             case "VINELAND_COCIENTE" -> p.getEvaluacionVineland() != null && p.getEvaluacionVineland().getCocienteFinal() != null
                                         ? (double) p.getEvaluacionVineland().getCocienteFinal() : null;
             default -> null;
         };
+    }
+
+    private String binLabel(double from, double to) {
+        String fromStr = (from == Math.floor(from)) ? String.valueOf((int) from) : String.valueOf(from);
+        String toStr   = (to   == Math.floor(to))   ? String.valueOf((int) to)   : String.valueOf(to);
+        return fromStr + "-" + toStr;
     }
 
     private boolean[] familiaArray(MchatFamilia m) {

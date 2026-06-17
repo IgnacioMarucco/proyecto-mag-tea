@@ -1,3 +1,13 @@
+export interface FiltroReportes {
+  tipoPaciente: 'TODOS' | 'PROBLEMA' | 'CONTROL';
+  edades: number[];   // grupos etarios seleccionados: 2 = 18-35m, 3 = 36-47m, 4 = 48-59m, 5 = 60-120m
+}
+
+export const FILTRO_DEFAULT: FiltroReportes = {
+  tipoPaciente: 'TODOS',
+  edades: [],
+};
+
 export interface ResumenGeneral {
   totalFormularios: number;
   formulariosContactados: number;
@@ -75,7 +85,7 @@ export interface CorrelacionPunto {
 export type EjeCorrelacion = 'MCHAT_SCORE' | 'CARS_RAW' | 'VINELAND_COCIENTE';
 
 export const EJE_LABELS: Record<EjeCorrelacion, string> = {
-  MCHAT_SCORE: 'M-CHAT Score',
+  MCHAT_SCORE: 'M-CHAT Tamizaje (score)',
   CARS_RAW: 'CARS-2 Raw Score',
   VINELAND_COCIENTE: 'Vineland Cociente',
 };
@@ -85,3 +95,12 @@ export const PARES_CORRELACION: Array<{ x: EjeCorrelacion; y: EjeCorrelacion }> 
   { x: 'MCHAT_SCORE', y: 'VINELAND_COCIENTE' },
   { x: 'CARS_RAW',    y: 'VINELAND_COCIENTE' },
 ];
+
+export interface DashboardAnalitica {
+  resumen: ResumenGeneral;
+  embudo: EmbudoData;
+  demografico: DemograficoData;
+  mchat: MchatData;
+  cars: CarsData;
+  vineland: VinelandData;
+}

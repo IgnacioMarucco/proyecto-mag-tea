@@ -63,14 +63,20 @@ public class PacienteService {
                                                   List<TipoPaciente> tipos,
                                                   String sortBy, String sortDir) {
         Sort sort = buildSort(sortBy, sortDir, "createdAt");
-        Page<Paciente> result = repository.findAll(buildSpec(q, estados, tipos), PageRequest.of(page, size, sort));
-        return new PageResponse<>(
-                result.map(mapper::toListDTO).getContent(),
-                result.getTotalElements(),
-                result.getTotalPages(),
-                result.getNumber(),
-                result.getSize()
+        Page<PacienteListProjection> result = repository.findBy(
+                buildSpec(q, estados, tipos),
+                fq -> fq.as(PacienteListProjection.class).page(PageRequest.of(page, size, sort))
         );
+        List<PacienteListDTO> content = result.getContent().stream()
+                .map(p -> new PacienteListDTO(
+                        p.getId(), p.getApellidoTutor(), p.getNombreTutor(),
+                        p.getApellidoNino(), p.getNombreNino(), p.getFechaNacimientoNino(),
+                        p.getTipoPaciente(), p.getEstadoClinico(),
+                        p.getFechaPrimeraVisita(), p.getFechaExtraccion()
+                ))
+                .toList();
+        return new PageResponse<>(content, result.getTotalElements(),
+                result.getTotalPages(), result.getNumber(), result.getSize());
     }
 
     @Transactional(readOnly = true)

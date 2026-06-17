@@ -140,8 +140,12 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
       desc: 'Coordinamos una llamada para explicarte el protocolo en detalle y responder todas tus dudas, sin compromiso.',
     },
     {
-      title: 'Primera visita',
-      desc: 'Si decidís participar, te recibimos en el centro para las evaluaciones neurológicas.',
+      title: 'Primera visita al consultorio',
+      desc: 'Si decidís participar, te recibimos en el consultorio para las evaluaciones neurológicas (M-CHAT-R, CARS-2, Vineland).',
+    },
+    {
+      title: 'Segunda visita al laboratorio',
+      desc: 'Se realiza una pequeña extracción de sangre para el análisis de anticuerpos. El equipo acompaña a la familia durante todo el proceso.',
     },
   ];
 

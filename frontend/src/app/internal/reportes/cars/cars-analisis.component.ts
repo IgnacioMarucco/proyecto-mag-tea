@@ -1,8 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { NgxEchartsDirective } from 'ngx-echarts';
-import { catchError, of } from 'rxjs';
-import { ReportesService } from '../reportes.service';
+import { CarsData } from '../reportes.models';
 import type { EChartsOption } from 'echarts';
 
 @Component({
@@ -12,49 +10,46 @@ import type { EChartsOption } from 'echarts';
   templateUrl: './cars-analisis.component.html',
 })
 export class CarsAnalisisComponent {
-  private readonly service = inject(ReportesService);
+  readonly data = input.required<CarsData | null | undefined>();
 
-  readonly data = toSignal(
-    this.service.getCars().pipe(catchError(() => of(null))),
-    { initialValue: undefined }
-  );
-
-  readonly histogramaOptions = () => {
+  readonly histogramaOptions = computed(() => {
     const d = this.data();
     if (!d) return null;
     const labels = d.distribucionRawScore.map(s => s.label);
-    const values = d.distribucionRawScore.map(s => s.n);
     return {
       tooltip: { trigger: 'axis' },
-      grid: { left: '3%', right: '4%', top: '14%', bottom: '14%', containLabel: true },
+      grid: { left: '3%', right: '4%', top: '8%', bottom: '20%', containLabel: true },
       xAxis: {
         type: 'category',
         data: labels,
         axisLabel: { fontSize: 9, rotate: 30 },
-        name: 'Raw Score',
-        nameLocation: 'end',
+        name: 'Raw Score CARS-2',
+        nameLocation: 'middle',
+        nameGap: 38,
+        nameTextStyle: { fontSize: 11, fontWeight: 'bold' },
       },
-      yAxis: { type: 'value', name: 'N', axisLabel: { fontSize: 10 } },
+      yAxis: {
+        type: 'value',
+        name: 'Frecuencia (N)',
+        nameLocation: 'middle',
+        nameGap: 38,
+        nameRotate: 90,
+        nameTextStyle: { fontSize: 11, fontWeight: 'bold' },
+        axisLabel: { fontSize: 10 },
+      },
       series: [{
         type: 'bar',
-        data: values,
-        itemStyle: { color: '#6366f1', borderRadius: [3, 3, 0, 0] },
-        markLine: {
-          silent: true,
-          data: [
-            { xAxis: '27.5-30.0', name: 'Umbral leve (30)', label: { formatter: '30', position: 'insideStartTop', fontSize: 10 } },
-            { xAxis: '35.0-37.5', name: 'Umbral severo (36.5)', label: { formatter: '36.5', position: 'insideStartTop', fontSize: 10 } },
-          ],
-          lineStyle: { type: 'dashed', color: '#ef4444' },
-        },
+        data: d.distribucionRawScore.map(s => ({
+          value: s.n,
+          itemStyle: { color: this.getColorPorBin(s.label), borderRadius: [3, 3, 0, 0] },
+        })),
       }],
     } as EChartsOption;
-  };
+  });
 
-  readonly donutOptions = () => {
+  readonly donutOptions = computed(() => {
     const d = this.data();
     if (!d || d.totalConCars === 0) return null;
-    const total = d.totalConCars;
     return {
       tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
       legend: { bottom: 0, textStyle: { fontSize: 10 } },
@@ -70,5 +65,12 @@ export class CarsAnalisisComponent {
         ],
       }],
     } as EChartsOption;
-  };
+  });
+
+  private getColorPorBin(label: string): string {
+    const min = parseFloat(label.split('-')[0]);
+    if (min < 30)   return '#22c55e';
+    if (min < 36.5) return '#f59e0b';
+    return '#ef4444';
+  }
 }

@@ -1,8 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { NgxEchartsDirective } from 'ngx-echarts';
-import { catchError, of } from 'rxjs';
-import { ReportesService } from '../reportes.service';
+import { VinelandData } from '../reportes.models';
 import type { EChartsOption } from 'echarts';
 
 @Component({
@@ -12,14 +10,9 @@ import type { EChartsOption } from 'echarts';
   templateUrl: './vineland-analisis.component.html',
 })
 export class VinelandAnalisisComponent {
-  private readonly service = inject(ReportesService);
+  readonly data = input.required<VinelandData | null | undefined>();
 
-  readonly data = toSignal(
-    this.service.getVineland().pipe(catchError(() => of(null))),
-    { initialValue: undefined }
-  );
-
-  readonly radarOptions = () => {
+  readonly radarOptions = computed(() => {
     const d = this.data();
     if (!d || d.totalConVineland === 0) return null;
 
@@ -47,5 +40,5 @@ export class VinelandAnalisisComponent {
         }],
       }],
     } as EChartsOption;
-  };
+  });
 }

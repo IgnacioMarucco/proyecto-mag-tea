@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, ElementRef, input, output, signal, viewChild } from '@angular/core';
 
 export interface FilterOption {
   key: string;
@@ -19,14 +19,18 @@ export interface FilterGroup {
 })
 export class ListToolbarComponent {
   placeholder   = input('Buscar…');
+  showSearch    = input(true);
   filterGroups  = input<FilterGroup[]>([]);
   activeFilters = input<Record<string, string | string[]>>({});
 
   searchChange  = output<string>();
   filtersChange = output<Record<string, string | string[]>>();
 
-  searchValue = signal('');
-  panelOpen   = signal(false);
+  private readonly triggerBtn = viewChild<ElementRef<HTMLButtonElement>>('triggerBtn');
+
+  searchValue  = signal('');
+  panelOpen    = signal(false);
+  panelStyle   = signal<Record<string, string>>({});
 
   activeCount = computed(() => {
     const filters = this.activeFilters();
@@ -52,6 +56,15 @@ export class ListToolbarComponent {
   }
 
   togglePanel(): void {
+    if (!this.panelOpen()) {
+      const rect = this.triggerBtn()?.nativeElement.getBoundingClientRect();
+      if (rect) {
+        this.panelStyle.set({
+          top:   `${rect.bottom + 4}px`,
+          right: `${window.innerWidth - rect.right}px`,
+        });
+      }
+    }
     this.panelOpen.update(v => !v);
   }
 

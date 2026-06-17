@@ -20,8 +20,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -197,17 +197,24 @@ class PacienteServiceTest {
     // ─── findAll ──────────────────────────────────────────────────────────────
 
     @Test
+    @SuppressWarnings("unchecked")
     void deberia_retornarPacientes_cuandoListar() {
-        var entidad = pacienteActivo(1L);
-        var listDTO = buildListDTO(1L);
+        var projection = mock(PacienteListProjection.class);
+        when(projection.getId()).thenReturn(1L);
+        when(projection.getApellidoTutor()).thenReturn("García");
+        when(projection.getNombreTutor()).thenReturn("Ana");
+        when(projection.getApellidoNino()).thenReturn("Niño");
+        when(projection.getNombreNino()).thenReturn("Nombre");
+        when(projection.getTipoPaciente()).thenReturn(TipoPaciente.PROBLEMA);
+        when(projection.getEstadoClinico()).thenReturn(PacienteEstado.ADMITIDO);
 
-        when(repository.findAll(any(Specification.class), any(Pageable.class)))
-                .thenReturn(new PageImpl<>(List.of(entidad)));
-        when(mapper.toListDTO(entidad)).thenReturn(listDTO);
+        Page<PacienteListProjection> page = new PageImpl<>(List.of(projection));
+
+        doAnswer(inv -> page).when(repository).findBy(any(Specification.class), any());
 
         var result = service.findAll(0, 20, null, null, null, "createdAt", "desc");
 
-        assertThat(result.content()).hasSize(1).contains(listDTO);
+        assertThat(result.content()).hasSize(1);
         assertThat(result.totalElements()).isEqualTo(1);
     }
 

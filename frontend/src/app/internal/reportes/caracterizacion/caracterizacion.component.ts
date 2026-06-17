@@ -1,8 +1,6 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { NgxEchartsDirective } from 'ngx-echarts';
-import { catchError, map, of } from 'rxjs';
-import { ReportesService } from '../reportes.service';
+import { DemograficoData } from '../reportes.models';
 import type { Distribucion } from '../reportes.models';
 import type { EChartsOption } from 'echarts';
 
@@ -23,50 +21,27 @@ const DERIVACION_LABELS: Record<string, string> = {
   selector: 'app-caracterizacion',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [NgxEchartsDirective],
-  template: `
-    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-      <h3 class="mb-4 text-sm font-semibold text-slate-700">Caracterización Demográfica</h3>
-      @if (data()) {
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <p class="mb-2 text-xs font-medium text-slate-500">Distribución por Sexo</p>
-            <div echarts [options]="sexoOptions()!" [autoResize]="true" class="h-44 w-full"></div>
-          </div>
-          <div>
-            <p class="mb-2 text-xs font-medium text-slate-500">Fuente de Derivación</p>
-            <div echarts [options]="derivacionOptions()!" [autoResize]="true" class="h-44 w-full"></div>
-          </div>
-        </div>
-      } @else if (data() === null) {
-        <p class="text-sm text-slate-400">Sin datos disponibles</p>
-      } @else {
-        <div class="h-44 animate-pulse rounded bg-slate-50"></div>
-      }
-    </div>
-  `,
+  templateUrl: './caracterizacion.component.html',
 })
 export class CaracterizacionComponent {
-  private readonly service = inject(ReportesService);
+  readonly data = input.required<DemograficoData | null | undefined>();
 
-  readonly data = toSignal(
-    this.service.getDemografico().pipe(catchError(() => of(null))),
-    { initialValue: undefined }
-  );
-
-  readonly sexoOptions = () => {
+  readonly sexoOptions = computed(() => {
     const d = this.data();
     if (!d) return null;
     return this.buildDonut(d.sexo.map(s => ({ name: SEXO_LABELS[s.label] ?? s.label, value: s.n })));
-  };
+  });
 
-  readonly derivacionOptions = () => {
+  readonly derivacionOptions = computed(() => {
     const d = this.data();
     if (!d) return null;
-    return this.buildBar(d.fuenteDerivacion.map(s => ({
-      label: DERIVACION_LABELS[s.label] ?? s.label,
-      n: s.n,
+    const existing = new Map(d.fuenteDerivacion.map(s => [s.label, s.n]));
+    const allKeys = Object.keys(DERIVACION_LABELS);
+    return this.buildBar(allKeys.map(k => ({
+      label: DERIVACION_LABELS[k],
+      n: existing.get(k) ?? 0,
     })));
-  };
+  });
 
   private buildDonut(data: { name: string; value: number }[]): EChartsOption {
     return {

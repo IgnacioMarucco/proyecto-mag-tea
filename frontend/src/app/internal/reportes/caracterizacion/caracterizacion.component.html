@@ -1,0 +1,19 @@
+<div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+  <h3 class="mb-4 text-sm font-semibold text-slate-700">Caracterización Demográfica</h3>
+  @if (data()) {
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <p class="mb-2 text-xs font-medium text-slate-500">Distribución por Sexo</p>
+        <div echarts [options]="sexoOptions()!" [autoResize]="true" class="h-44 w-full"></div>
+      </div>
+      <div>
+        <p class="mb-2 text-xs font-medium text-slate-500">Fuente de Derivación</p>
+        <div echarts [options]="derivacionOptions()!" [autoResize]="true" class="h-44 w-full"></div>
+      </div>
+    </div>
+  } @else if (data() === null) {
+    <p class="text-sm text-slate-400">Sin datos disponibles</p>
+  } @else {
+    <div class="h-44 animate-pulse rounded bg-slate-50"></div>
+  }
+</div>

@@ -1,12 +1,13 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { NgxEchartsDirective } from 'ngx-echarts';
 import { FormsModule } from '@angular/forms';
-import { catchError, of, switchMap } from 'rxjs';
+import { catchError, combineLatest, of, switchMap } from 'rxjs';
 import { ReportesService } from '../reportes.service';
 import {
   EJE_LABELS,
   EjeCorrelacion,
+  FiltroReportes,
   PARES_CORRELACION,
 } from '../reportes.models';
 import type { EChartsOption } from 'echarts';
@@ -20,6 +21,7 @@ import type { EChartsOption } from 'echarts';
 export class CorrelacionesComponent {
   private readonly service = inject(ReportesService);
 
+  readonly filtros = input.required<FiltroReportes>();
   readonly pares = PARES_CORRELACION;
   readonly ejeLabels = EJE_LABELS;
 
@@ -29,10 +31,13 @@ export class CorrelacionesComponent {
   readonly ejeY = computed(() => this.pares[this.parSeleccionado()].y);
 
   private readonly puntos = toSignal(
-    toObservable(this.parSeleccionado).pipe(
-      switchMap(i => {
+    combineLatest([
+      toObservable(this.parSeleccionado),
+      toObservable(this.filtros),
+    ]).pipe(
+      switchMap(([i, f]) => {
         const par = this.pares[i];
-        return this.service.getCorrelaciones(par.x, par.y).pipe(catchError(() => of(null)));
+        return this.service.getCorrelaciones(par.x, par.y, f).pipe(catchError(() => of(null)));
       })
     ),
     { initialValue: undefined }
