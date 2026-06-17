@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { PacienteService } from '../../../../core/services/paciente.service';
+import { extractErrorMessage } from '../../../../shared/utils/error.utils';
 import { PacienteResponse } from '../../../../core/models/paciente.model';
 import { ModalContainerComponent } from '../../../../shared/modal-container/modal-container.component';
 
@@ -37,7 +38,7 @@ export class ExtraccionSectionComponent {
     this.saveError.set(null);
     this.service.patchSegundaVisita(this.paciente().id, { fechaExtraccion: fecha }).subscribe({
       next: p  => { this.updated.emit(p); this.showModal.set(false); this.saving.set(false); },
-      error: err => { this.saveError.set(err.error?.message ?? 'Error al guardar'); this.saving.set(false); },
+      error: err => { this.saveError.set(extractErrorMessage(err, 'Error al guardar')); this.saving.set(false); },
     });
   }
 

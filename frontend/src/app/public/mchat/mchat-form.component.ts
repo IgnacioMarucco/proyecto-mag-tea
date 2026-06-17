@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } fro
 import { Meta, Title } from '@angular/platform-browser';
 import { MchatService, MchatPublicInfo, MchatSubmit } from '../../core/services/mchat.service';
 import { MchatPreguntasComponent } from '../../shared/mchat-preguntas/mchat-preguntas.component';
+import { extractErrorMessage } from '../../shared/utils/error.utils';
 
 @Component({
   selector: 'app-mchat-form',
@@ -44,7 +45,7 @@ export class MchatFormComponent implements OnInit {
     this.service.submitRespuestas(this.token(), dto).subscribe({
       next:  () => this.submitState.set('success'),
       error: err => {
-        this.submitError.set(err.error?.message ?? 'Error al enviar. Intentá de nuevo.');
+        this.submitError.set(extractErrorMessage(err, 'Error al enviar. Intentá de nuevo.'));
         this.submitState.set('error');
       },
     });

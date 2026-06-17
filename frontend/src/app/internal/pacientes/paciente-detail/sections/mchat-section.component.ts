@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { switchMap, tap } from 'rxjs';
 import { PacienteService } from '../../../../core/services/paciente.service';
+import { extractErrorMessage } from '../../../../shared/utils/error.utils';
 import {
   MchatService,
   MchatRespuestasResponse,
@@ -36,7 +37,7 @@ export class MchatSectionComponent {
   readonly mchatRespuestasAsArray = computed((): boolean[] | null => {
     const r = this.mchatRespuestas();
     if (!r) return null;
-    return Array.from({ length: 20 }, (_, i) => !!(r as any)[`p${i + 1}`]);
+    return Array.from({ length: 20 }, (_, i) => !!(r[`p${i + 1}` as keyof MchatRespuestasResponse]));
   });
 
   readonly mchatEstadoLabels: Record<string, string> = {
@@ -88,7 +89,7 @@ export class MchatSectionComponent {
       switchMap(() => this.pacienteService.findById(this.paciente().id)),
     ).subscribe({
       next:  p   => { this.updated.emit(p); this.editMode.set(false); this.saving.set(false); },
-      error: err => { this.saveError.set(err.error?.message ?? 'Error al guardar'); this.saving.set(false); },
+      error: err => { this.saveError.set(extractErrorMessage(err, 'Error al guardar')); this.saving.set(false); },
     });
   }
 

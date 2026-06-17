@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { map, startWith } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { PacienteService } from '../../../core/services/paciente.service';
+import { extractErrorMessage } from '../../../shared/utils/error.utils';
 import { FormularioInteresService } from '../../../core/services/formulario-interes.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { PacienteCreate, PacienteUpdate } from '../../../core/models/paciente.model';
@@ -190,7 +191,7 @@ export class PacienteFormComponent implements OnInit {
       };
       this.pacienteService.update(+this.id()!, dto).subscribe({
         next: p   => this.router.navigate(['/internal/pacientes', p.id]),
-        error: err => { this.error.set(err.error?.message ?? 'Error al guardar'); this.loading.set(false); },
+        error: err => { this.error.set(extractErrorMessage(err, 'Error al guardar')); this.loading.set(false); },
       });
     } else {
       const dto: PacienteCreate = {
@@ -229,7 +230,7 @@ export class PacienteFormComponent implements OnInit {
             this.router.navigate(['/internal/pacientes', p.id]);
           }
         },
-        error: err => { this.error.set(err.error?.message ?? 'Error al registrar'); this.loading.set(false); },
+        error: err => { this.error.set(extractErrorMessage(err, 'Error al registrar')); this.loading.set(false); },
       });
     }
   }

@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { PacienteService } from '../../../../core/services/paciente.service';
-import { PacienteResponse } from '../../../../core/models/paciente.model';
+import { extractErrorMessage } from '../../../../shared/utils/error.utils';
+import { PacienteResponse, PacienteVineland } from '../../../../core/models/paciente.model';
 import { ModalContainerComponent } from '../../../../shared/modal-container/modal-container.component';
 
 @Component({
@@ -52,9 +53,9 @@ export class VinelandSectionComponent {
     if (this.saving()) return;
     this.saving.set(true);
     this.saveError.set(null);
-    this.service.patchVineland(this.paciente().id, this.form.value as any).subscribe({
+    this.service.patchVineland(this.paciente().id, this.form.getRawValue() as PacienteVineland).subscribe({
       next: p  => { this.updated.emit(p); this.showModal.set(false); this.saving.set(false); },
-      error: err => { this.saveError.set(err.error?.message ?? 'Error al guardar'); this.saving.set(false); },
+      error: err => { this.saveError.set(extractErrorMessage(err, 'Error al guardar')); this.saving.set(false); },
     });
   }
 }

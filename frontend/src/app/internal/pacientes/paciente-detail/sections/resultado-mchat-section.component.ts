@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { PacienteService } from '../../../../core/services/paciente.service';
-import { PacienteResponse } from '../../../../core/models/paciente.model';
+import { extractErrorMessage } from '../../../../shared/utils/error.utils';
+import { PacienteResponse, PacienteMchatSeguimiento } from '../../../../core/models/paciente.model';
 import { StatusBadgeComponent } from '../../../../shared/status-badge/status-badge.component';
 import { MchatPreguntasComponent } from '../../../../shared/mchat-preguntas/mchat-preguntas.component';
 import { ModalContainerComponent } from '../../../../shared/modal-container/modal-container.component';
@@ -29,7 +30,7 @@ export class ResultadoMchatSectionComponent {
   readonly seguimientoItemsAsArray = computed((): boolean[] | null => {
     const p = this.paciente();
     if (p.mchatSeguimientoFallas === null) return null;
-    return Array.from({ length: 20 }, (_, i) => !!(p as any)[`seguimientoItem${i + 1}`]);
+    return Array.from({ length: 20 }, (_, i) => !!(p[`seguimientoItem${i + 1}` as keyof PacienteResponse]));
   });
 
   readonly resultadoFinalLabels: Record<string, string> = {
@@ -46,12 +47,12 @@ export class ResultadoMchatSectionComponent {
 
   onGuardar(respuestas: boolean[]): void {
     if (this.saving()) return;
-    const dto = Object.fromEntries(respuestas.map((v, i) => [`item${i + 1}`, v])) as any;
+    const dto = Object.fromEntries(respuestas.map((v, i) => [`item${i + 1}`, v])) as unknown as PacienteMchatSeguimiento;
     this.saving.set(true);
     this.saveError.set(null);
     this.service.patchMchatSeguimiento(this.paciente().id, dto).subscribe({
       next: p  => { this.updated.emit(p); this.showModal.set(false); this.saving.set(false); },
-      error: err => { this.saveError.set(err.error?.message ?? 'Error al guardar'); this.saving.set(false); },
+      error: err => { this.saveError.set(extractErrorMessage(err, 'Error al guardar')); this.saving.set(false); },
     });
   }
 }

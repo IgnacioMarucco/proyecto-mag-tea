@@ -6,6 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
+import { extractErrorMessage } from '../../shared/utils/error.utils';
 import { CommonModule, NgOptimizedImage } from '@angular/common';
 import { Meta, Title } from '@angular/platform-browser';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -106,7 +107,7 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
     this.formularioService.create(dto).subscribe({
       next: () => this.submitState.set('success'),
       error: (err) => {
-        this.errorMessage.set(err.error?.message ?? 'Error al enviar el formulario. Intentá de nuevo.');
+        this.errorMessage.set(extractErrorMessage(err, 'Error al enviar el formulario. Intentá de nuevo.'));
         this.submitState.set('error');
       },
     });

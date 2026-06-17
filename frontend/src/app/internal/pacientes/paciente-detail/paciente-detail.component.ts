@@ -1,13 +1,15 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   computed,
-  effect,
   inject,
   input,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { filter, switchMap, tap } from 'rxjs';
 import { PacienteService } from '../../../core/services/paciente.service';
 import { PacienteResponse } from '../../../core/models/paciente.model';
 import { StatusBadgeComponent } from '../../../shared/status-badge/status-badge.component';
@@ -39,7 +41,8 @@ export class PacienteDetailComponent {
   readonly id = input.required<string>();
 
   private readonly pacienteService = inject(PacienteService);
-  private readonly route = inject(ActivatedRoute);
+  private readonly route      = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
 
   paciente  = signal<PacienteResponse | null>(null);
   loading   = signal(true);
@@ -58,14 +61,14 @@ export class PacienteDetailComponent {
   });
 
   constructor() {
-    effect(() => {
-      const numId = Number(this.id());
-      if (!numId) return;
-      this.loading.set(true);
-      this.pacienteService.findById(numId).subscribe({
-        next:  p => { this.paciente.set(p); this.loading.set(false); },
-        error: () => { this.loadError.set('No se pudo cargar el paciente.'); this.loading.set(false); },
-      });
+    toObservable(computed(() => Number(this.id()))).pipe(
+      filter(id => !!id),
+      tap(() => { this.loading.set(true); this.loadError.set(null); }),
+      switchMap(id => this.pacienteService.findById(id)),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe({
+      next:  p => { this.paciente.set(p); this.loading.set(false); },
+      error: () => { this.loadError.set('No se pudo cargar el paciente.'); this.loading.set(false); },
     });
   }
 

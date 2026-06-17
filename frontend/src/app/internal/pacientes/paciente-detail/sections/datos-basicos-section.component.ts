@@ -9,6 +9,7 @@ import { StatusBadgeComponent } from '../../../../shared/status-badge/status-bad
 import { EdadPipe } from '../../../../core/pipes/edad.pipe';
 import { CriteriosSectionComponent } from './criterios-section.component';
 import { ConfirmModalComponent } from '../../../../shared/confirm-modal/confirm-modal.component';
+import { extractErrorMessage } from '../../../../shared/utils/error.utils';
 
 @Component({
   selector: 'app-datos-basicos-section',
@@ -61,7 +62,7 @@ export class DatosBasicosSectionComponent {
     this.confirmError.set(null);
     this.service.patchConsentimiento(this.paciente().id, { consentimientoFirmado: true }).subscribe({
       next:  p   => { this.updated.emit(p); this.showConfirmModal.set(false); this.confirming.set(false); },
-      error: err => { this.confirmError.set(err.error?.message ?? 'Error al guardar'); this.confirming.set(false); },
+      error: err => { this.confirmError.set(extractErrorMessage(err, 'Error al guardar')); this.confirming.set(false); },
     });
   }
 

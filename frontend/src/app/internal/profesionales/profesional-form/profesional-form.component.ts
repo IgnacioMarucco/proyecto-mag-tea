@@ -4,6 +4,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ProfesionalService } from '../../../core/services/profesional.service';
+import { extractErrorMessage } from '../../../shared/utils/error.utils';
 import { ROLE_LABELS, ROLES, ProfesionalCreate, ProfesionalUpdate } from '../../../core/models/profesional.model';
 import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 
@@ -75,7 +76,7 @@ export class ProfesionalFormComponent {
     request$.subscribe({
       next: () => this.router.navigate(['/internal/profesionales']),
       error: err => {
-        this.error.set(err.error?.message ?? 'Error al guardar');
+        this.error.set(extractErrorMessage(err, 'Error al guardar'));
         this.loading.set(false);
       },
     });

@@ -19,6 +19,12 @@ public interface PacienteRepository extends JpaRepository<Paciente, Long>, JpaSp
     @EntityGraph(attributePaths = {
             "mchatFamilia", "mchatSeguimiento", "evaluacionCars", "evaluacionVineland", "criterios"
     })
+    Optional<Paciente> findById(Long id);
+
+    @Override
+    @EntityGraph(attributePaths = {
+            "mchatFamilia", "mchatSeguimiento", "evaluacionCars", "evaluacionVineland", "criterios"
+    })
     List<Paciente> findAll(Specification<Paciente> spec);
 
     long countByActivoTrue();

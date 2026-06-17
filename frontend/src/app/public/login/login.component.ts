@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
+import { finalize } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
 import { LoginRequest } from '../../core/models/auth.model';
+import { extractErrorMessage } from '../../shared/utils/error.utils';
 
 @Component({
   selector: 'app-login',
@@ -29,12 +31,11 @@ export class LoginComponent {
     this.loading.set(true);
     this.error.set(null);
 
-    this.authService.login(this.form.value as LoginRequest).subscribe({
-      next: () => this.router.navigate(['/internal/profesionales']),
-      error: err => {
-        this.error.set(err.error?.message ?? 'Error al iniciar sesión');
-        this.loading.set(false);
-      },
-    });
+    this.authService.login(this.form.value as LoginRequest)
+      .pipe(finalize(() => this.loading.set(false)))
+      .subscribe({
+        next: () => this.router.navigate(['/internal/profesionales']),
+        error: err => this.error.set(extractErrorMessage(err, 'Error al iniciar sesión')),
+      });
   }
 }

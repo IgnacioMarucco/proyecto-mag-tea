@@ -3,7 +3,8 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { startWith } from 'rxjs';
 import { PacienteService } from '../../../../core/services/paciente.service';
-import { PacienteResponse } from '../../../../core/models/paciente.model';
+import { extractErrorMessage } from '../../../../shared/utils/error.utils';
+import { PacienteResponse, PacienteCriterios } from '../../../../core/models/paciente.model';
 import { ModalContainerComponent } from '../../../../shared/modal-container/modal-container.component';
 
 @Component({
@@ -86,10 +87,9 @@ export class CriteriosSectionComponent {
     if (this.saving()) return;
     this.saving.set(true);
     this.saveError.set(null);
-    const dto = this.form.value as any;
-    this.service.patchCriterios(this.paciente().id, dto).subscribe({
+    this.service.patchCriterios(this.paciente().id, this.form.getRawValue() as PacienteCriterios).subscribe({
       next: p  => { this.updated.emit(p); this.showModal.set(false); this.saving.set(false); },
-      error: err => { this.saveError.set(err.error?.message ?? 'Error al guardar'); this.saving.set(false); },
+      error: err => { this.saveError.set(extractErrorMessage(err, 'Error al guardar')); this.saving.set(false); },
     });
   }
 }

@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { startWith } from 'rxjs';
 import { PacienteService } from '../../../../core/services/paciente.service';
+import { extractErrorMessage } from '../../../../shared/utils/error.utils';
 import { PacienteResponse } from '../../../../core/models/paciente.model';
 import { StatusBadgeComponent } from '../../../../shared/status-badge/status-badge.component';
 import { ModalContainerComponent } from '../../../../shared/modal-container/modal-container.component';
@@ -101,7 +102,7 @@ export class CarsSectionComponent {
     this.saveError.set(null);
     this.service.patchCars(this.paciente().id, dto).subscribe({
       next:  p   => { this.updated.emit(p); this.showModal.set(false); this.saving.set(false); },
-      error: err => { this.saveError.set(err.error?.message ?? 'Error al guardar'); this.saving.set(false); },
+      error: err => { this.saveError.set(extractErrorMessage(err, 'Error al guardar')); this.saving.set(false); },
     });
   }
 }
