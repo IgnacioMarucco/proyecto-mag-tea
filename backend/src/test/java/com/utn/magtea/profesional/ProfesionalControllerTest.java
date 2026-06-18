@@ -77,7 +77,7 @@ class ProfesionalControllerTest {
 
     @Test
     void deberia_darDeBaja_cuandoProfesionalExiste() throws Exception {
-        var dto = new ProfesionalCreateDTO("María", "Gómez", "maria@test.com", "351-000-0002", "pass1234", Role.SECRETARIA);
+        var dto = new ProfesionalCreateDTO("María", "Gómez", "maria@test.com", "351-000-0002", "pass1234", Role.CUERPO_MEDICO);
         var response = mockMvc.perform(post("/api/v1/profesionales")
                         .with(user("test@test.com").roles("INVESTIGADOR_PRINCIPAL"))
                         .contentType(MediaType.APPLICATION_JSON)
