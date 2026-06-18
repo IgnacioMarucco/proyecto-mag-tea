@@ -24,7 +24,7 @@ public class FormularioInteresController {
     private final FormularioInteresService service;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('SECRETARIA', 'CUERPO_MEDICO', 'ROTANTE_CLINICA', 'INVESTIGADOR_PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Listar formularios de interés con paginación")
     public PageResponse<FormularioInteresResponseDTO> findAll(
             @RequestParam(defaultValue = "0")            int page,
@@ -37,7 +37,7 @@ public class FormularioInteresController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SECRETARIA', 'CUERPO_MEDICO', 'ROTANTE_CLINICA', 'INVESTIGADOR_PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Obtener formulario de interés por id")
     public FormularioInteresResponseDTO findById(@PathVariable Long id) {
         return service.findById(id);
@@ -53,7 +53,7 @@ public class FormularioInteresController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SECRETARIA', 'CUERPO_MEDICO', 'ROTANTE_CLINICA', 'INVESTIGADOR_PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Actualizar formulario de interés")
     public FormularioInteresResponseDTO update(@PathVariable Long id,
                                                @RequestBody @Valid FormularioInteresCreateDTO dto) {
@@ -61,7 +61,7 @@ public class FormularioInteresController {
     }
 
     @PatchMapping("/{id}/estado")
-    @PreAuthorize("hasAnyRole('SECRETARIA', 'CUERPO_MEDICO', 'ROTANTE_CLINICA', 'INVESTIGADOR_PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Cambiar estado del formulario (PENDIENTE→CONTACTADO, CONTACTADO/PENDIENTE→DESCARTADO)")
     public FormularioInteresResponseDTO cambiarEstado(@PathVariable Long id,
                                                       @RequestBody @Valid EstadoUpdateDTO dto) {
@@ -70,7 +70,7 @@ public class FormularioInteresController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasAnyRole('SECRETARIA', 'INVESTIGADOR_PRINCIPAL')")
+    @PreAuthorize("hasRole('INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Dar de baja formulario de interés (baja lógica)")
     public void delete(@PathVariable Long id) {
         service.delete(id);
