@@ -60,11 +60,17 @@ public class DataInitializer implements ApplicationRunner {
     @Value("${app.init.seed-investigador-password:magtea2026}")
     private String seedInvestigadorPassword;
 
-    @Value("${app.init.seed-secretaria-email:secretaria@magtea.com}")
-    private String seedSecretariaEmail;
+    @Value("${app.init.seed-medico-email:medico@magtea.com}")
+    private String seedMedicoEmail;
 
-    @Value("${app.init.seed-secretaria-password:magtea2026}")
-    private String seedSecretariaPassword;
+    @Value("${app.init.seed-medico-password:magtea2026}")
+    private String seedMedicoPassword;
+
+    @Value("${app.init.seed-tecnico-email:tecnico@magtea.com}")
+    private String seedTecnicoEmail;
+
+    @Value("${app.init.seed-tecnico-password:magtea2026}")
+    private String seedTecnicoPassword;
 
     @Override
     public void run(ApplicationArguments args) {
@@ -79,9 +85,10 @@ public class DataInitializer implements ApplicationRunner {
     // ===========================
 
     private void seedProfesionales() {
-        seedProfesional("Admin",      "Sistema",  adminEmail,             adminPassword,             "351-000-0000", Role.INVESTIGADOR_PRINCIPAL);
-        seedProfesional("Ignacio",    "Marucco",  seedInvestigadorEmail,  seedInvestigadorPassword,  "351-000-0001", Role.INVESTIGADOR_PRINCIPAL);
-        seedProfesional("Secretaria", "Demo",     seedSecretariaEmail,    seedSecretariaPassword,    "351-000-0002", Role.SECRETARIA);
+        seedProfesional("Admin",      "Sistema",  adminEmail,            adminPassword,            "351-000-0000", Role.INVESTIGADOR_PRINCIPAL);
+        seedProfesional("Ignacio",    "Marucco",  seedInvestigadorEmail, seedInvestigadorPassword, "351-000-0001", Role.INVESTIGADOR_PRINCIPAL);
+        seedProfesional("Médico",     "Demo",     seedMedicoEmail,       seedMedicoPassword,       "351-000-0002", Role.CUERPO_MEDICO);
+        seedProfesional("Técnico",    "Demo",     seedTecnicoEmail,      seedTecnicoPassword,      "351-000-0003", Role.CUERPO_TECNICO);
     }
 
     private void seedProfesional(String nombre, String apellido, String email, String password, String telefono, Role role) {
