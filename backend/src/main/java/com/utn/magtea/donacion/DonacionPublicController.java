@@ -42,7 +42,9 @@ public class DonacionPublicController {
                     }
                 }
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            System.err.println("Error procesando webhook de MP: " + e.getMessage());
+            e.printStackTrace();
             // Absorber — MP no debe recibir errores o reintentará indefinidamente
         }
     }

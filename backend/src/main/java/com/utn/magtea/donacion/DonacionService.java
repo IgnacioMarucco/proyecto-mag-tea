@@ -7,6 +7,7 @@ import com.mercadopago.client.preference.PreferenceItemRequest;
 import com.mercadopago.client.preference.PreferenceRequest;
 import com.mercadopago.resources.preference.Preference;
 import com.utn.magtea.common.PageResponse;
+import com.utn.magtea.common.ApiConstants;
 import com.utn.magtea.common.exception.BusinessRuleException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,6 +26,7 @@ public class DonacionService {
 
     private final DonacionRepository repository;
     private final DonacionMapper mapper;
+    private final MercadoPagoClientProvider mpClientProvider;
 
     @Value("${mp.access-token}")
     private String mpAccessToken;
@@ -68,10 +70,10 @@ public class DonacionService {
                     .externalReference(donacion.getId().toString());
 
             if (mpNotificationUrl != null && !mpNotificationUrl.isBlank()) {
-                builder.notificationUrl(mpNotificationUrl + "/api/public/donaciones/webhook?source_news=webhooks");
+                builder.notificationUrl(mpNotificationUrl + ApiConstants.V1 + "/public/donaciones/webhook?source_news=webhooks");
             }
 
-            PreferenceClient client = new PreferenceClient();
+            PreferenceClient client = mpClientProvider.getPreferenceClient();
             Preference preference = client.create(builder.build());
 
             donacion.setMpPreferenceId(preference.getId());
@@ -92,7 +94,7 @@ public class DonacionService {
         try {
             MercadoPagoConfig.setAccessToken(mpAccessToken);
             com.mercadopago.client.payment.PaymentClient client =
-                    new com.mercadopago.client.payment.PaymentClient();
+                    mpClientProvider.getPaymentClient();
             com.mercadopago.resources.payment.Payment payment = client.get(paymentId);
 
             // externalReference es el ID de nuestra Donacion, asignado al crear la preferencia
