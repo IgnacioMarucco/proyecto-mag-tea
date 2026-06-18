@@ -527,6 +527,157 @@ class PacienteServiceTest {
         assertThat(entidad.getMchatSeguimiento()).isNull();
     }
 
+    // ─── Nuevos Tests de Cobertura ──────────────────────────────────────────
+
+    @Test
+    void deberia_actualizarPaciente_cuandoDatosValidos() {
+        var entidad = pacienteActivo(1L);
+        var dto = new PacienteUpdateDTO("TutorAp", "TutorNom", "tutor@mail.com", "12345",
+                "NinoAp", "NinoNom", LocalDate.now().minusYears(3), Sexo.FEMENINO, "Nuevas notas",
+                LocalDateTime.now(), LocalDate.now());
+
+        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(repository.save(entidad)).thenReturn(entidad);
+        when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
+
+        service.update(1L, dto);
+
+        assertThat(entidad.getApellidoTutor()).isEqualTo("TutorAp");
+        assertThat(entidad.getNombreTutor()).isEqualTo("TutorNom");
+        assertThat(entidad.getCorreoTutor()).isEqualTo("tutor@mail.com");
+        assertThat(entidad.getTelefono()).isEqualTo("12345");
+        assertThat(entidad.getApellidoNino()).isEqualTo("NinoAp");
+        assertThat(entidad.getNombreNino()).isEqualTo("NinoNom");
+        assertThat(entidad.getSexo()).isEqualTo(Sexo.FEMENINO);
+        assertThat(entidad.getNotas()).isEqualTo("Nuevas notas");
+    }
+
+    @Test
+    void deberia_actualizarPrimeraVisita_cuandoDatosValidos() {
+        var entidad = pacienteActivo(1L);
+        var fecha = LocalDateTime.now().minusDays(1);
+        var dto = new PacientePrimeraVisitaDTO(fecha);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(repository.save(entidad)).thenReturn(entidad);
+        when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
+
+        service.updatePrimeraVisita(1L, dto);
+
+        assertThat(entidad.getFechaPrimeraVisita()).isEqualTo(fecha);
+    }
+
+    @Test
+    void deberia_actualizarConsentimiento_cuandoDatosValidos() {
+        var entidad = pacienteActivo(1L);
+        var dto = new PacienteConsentimientoDTO(true);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(repository.save(entidad)).thenReturn(entidad);
+        when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
+
+        service.updateConsentimiento(1L, dto);
+
+        assertThat(entidad.isConsentimientoFirmado()).isTrue();
+    }
+
+    @Test
+    void deberia_actualizarSegundaVisita_cuandoDatosValidos() {
+        var entidad = pacienteActivo(1L);
+        var fecha = LocalDate.now();
+        var dto = new PacienteSegundaVisitaDTO(fecha);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(repository.save(entidad)).thenReturn(entidad);
+        when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
+
+        service.updateSegundaVisita(1L, dto);
+
+        assertThat(entidad.getFechaExtraccion()).isEqualTo(fecha);
+        assertThat(entidad.getEstadoClinico()).isEqualTo(PacienteEstado.EXTRACCION_PENDIENTE);
+    }
+
+    @Test
+    void deberia_reenviarMchat_cuandoPacienteProblema() {
+        var entidad = pacienteActivo(1L);
+        entidad.setTipoPaciente(TipoPaciente.PROBLEMA);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(repository.save(entidad)).thenReturn(entidad);
+        when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
+
+        service.reenviarMchat(1L);
+
+        assertThat(entidad.getMchatToken()).isNotBlank();
+        assertThat(entidad.getMchatTokenExpiry()).isNotNull();
+        verify(mailService).enviarLinkMchat(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void deberia_lanzarExcepcion_alReenviarMchat_cuandoPacienteControl() {
+        var entidad = pacienteActivo(1L);
+        entidad.setTipoPaciente(TipoPaciente.CONTROL);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+
+        assertThatThrownBy(() -> service.reenviarMchat(1L))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("control");
+    }
+
+    @Test
+    void deberia_actualizarVineland_cuandoPacienteProblema() {
+        var entidad = pacienteActivo(1L);
+        entidad.setTipoPaciente(TipoPaciente.PROBLEMA);
+        var dto = new VinelandDTO(80, 85, 75, 90, 82, 15, 10, 12);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(repository.save(entidad)).thenReturn(entidad);
+        when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
+
+        service.updateVineland(1L, dto);
+
+        assertThat(entidad.getEvaluacionVineland()).isNotNull();
+        assertThat(entidad.getEvaluacionVineland().getComunicacion()).isEqualTo(80);
+        assertThat(entidad.getEvaluacionVineland().getAutovalimiento()).isEqualTo(85);
+        assertThat(entidad.getEvaluacionVineland().getSocial()).isEqualTo(75);
+        assertThat(entidad.getEvaluacionVineland().getMotor()).isEqualTo(90);
+        assertThat(entidad.getEvaluacionVineland().getCocienteFinal()).isEqualTo(82);
+        assertThat(entidad.getEvaluacionVineland().getConductaDesadaptativa()).isEqualTo(15);
+        assertThat(entidad.getEvaluacionVineland().getInternalizante()).isEqualTo(10);
+        assertThat(entidad.getEvaluacionVineland().getExternalizante()).isEqualTo(12);
+    }
+
+    @Test
+    @SuppressWarnings({ "rawtypes", "unchecked" })
+    void deberia_ejecutarSpecification_paraCobertura() {
+        var projection = mock(PacienteListProjection.class);
+        Page<PacienteListProjection> page = new PageImpl<>(List.of(projection));
+
+        var specCaptor = org.mockito.ArgumentCaptor.forClass(Specification.class);
+        doAnswer(inv -> page).when(repository).findBy(specCaptor.capture(), any());
+
+        service.findAll(0, 20, "filtro", List.of(PacienteEstado.ADMITIDO), List.of(TipoPaciente.PROBLEMA), "createdAt", "desc");
+
+        Specification<Paciente> capturedSpec = specCaptor.getValue();
+        assertThat(capturedSpec).isNotNull();
+
+        var root = mock(jakarta.persistence.criteria.Root.class);
+        var query = mock(jakarta.persistence.criteria.CriteriaQuery.class);
+        var cb = mock(jakarta.persistence.criteria.CriteriaBuilder.class);
+        
+        var path = mock(jakarta.persistence.criteria.Path.class);
+        when(root.get(anyString())).thenReturn(path);
+        
+        var expr = mock(jakarta.persistence.criteria.Expression.class);
+        when(cb.lower(any())).thenReturn(expr);
+        when(cb.like(any(), anyString())).thenReturn(mock(jakarta.persistence.criteria.Predicate.class));
+        when(cb.or(any(jakarta.persistence.criteria.Predicate[].class))).thenReturn(mock(jakarta.persistence.criteria.Predicate.class));
+        when(path.in(any(java.util.Collection.class))).thenReturn(mock(jakarta.persistence.criteria.Predicate.class));
+
+        capturedSpec.toPredicate(root, query, cb);
+    }
+
     // ─── Helpers ─────────────────────────────────────────────────────────────
 
     private Paciente pacienteActivo(Long id) {
