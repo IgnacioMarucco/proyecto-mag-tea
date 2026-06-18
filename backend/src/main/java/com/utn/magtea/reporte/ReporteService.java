@@ -2,6 +2,7 @@ package com.utn.magtea.reporte;
 
 import com.utn.magtea.formulariointeres.ComoConocioProyecto;
 import com.utn.magtea.formulariointeres.EstadoFormulario;
+import com.utn.magtea.formulariointeres.FormularioInteres;
 import com.utn.magtea.formulariointeres.FormularioInteresRepository;
 import com.utn.magtea.paciente.Paciente;
 import com.utn.magtea.paciente.PacienteEstado;
@@ -65,17 +66,12 @@ public class ReporteService {
     @Transactional(readOnly = true)
     public DashboardAnaliticaDTO getDashboard(String tipoPaciente, List<Integer> edades) {
         List<Paciente> filtrados = filtrarPacientes(tipoPaciente, edades);
-
-        long totalFormularios = formularioRepository.countByActivoTrue();
-        long contactados = formularioRepository.countByEstadoAndActivoTrue(EstadoFormulario.CONTACTADO)
-                         + formularioRepository.countByEstadoAndActivoTrue(EstadoFormulario.ADMITIDO);
-        long admitidos = formularioRepository.countByEstadoAndActivoTrue(EstadoFormulario.ADMITIDO);
-        List<Object[]> derivRows = formularioRepository.distribucionComoConocio();
+        List<FormularioInteres> formulariosFiltrados = filtrarFormularios(edades);
 
         return new DashboardAnaliticaDTO(
-                computeResumen(filtrados, totalFormularios, contactados, admitidos),
-                computeEmbudo(filtrados, totalFormularios, contactados),
-                computeDemografico(filtrados, derivRows),
+                computeResumen(filtrados, formulariosFiltrados),
+                computeEmbudo(filtrados),
+                computeDemografico(filtrados, formulariosFiltrados),
                 computeMchat(filtrados),
                 computeCars(filtrados),
                 computeVineland(filtrados)
@@ -111,6 +107,25 @@ public class ReporteService {
         return pacienteRepository.findAll(buildReportSpec(tipo, edades));
     }
 
+    private List<FormularioInteres> filtrarFormularios(List<Integer> edades) {
+        Specification<FormularioInteres> spec = (root, query, cb) -> cb.isTrue(root.get("activo"));
+        if (edades != null && !edades.isEmpty()) {
+            LocalDate hoy = LocalDate.now();
+            spec = spec.and((root, query, cb) -> {
+                List<Predicate> rangos = edades.stream()
+                    .map(EDAD_GRUPOS_MESES::get)
+                    .filter(Objects::nonNull)
+                    .map(r -> cb.between(root.get("fechaNacimientoNino"),
+                                         hoy.minusMonths(r[1]),
+                                         hoy.minusMonths(r[0])))
+                    .map(p -> (Predicate) p)
+                    .toList();
+                return rangos.size() == 1 ? rangos.get(0) : cb.or(rangos.toArray(new Predicate[0]));
+            });
+        }
+        return formularioRepository.findAll(spec);
+    }
+
     private Specification<Paciente> buildReportSpec(TipoPaciente tipo, List<Integer> edades) {
         Specification<Paciente> spec = (root, query, cb) -> cb.isTrue(root.get("activo"));
         if (tipo != null) {
@@ -135,8 +150,15 @@ public class ReporteService {
 
     // ══ Métodos de cómputo privados ══
 
-    private ResumenGeneralDTO computeResumen(List<Paciente> filtrados,
-                                              long totalFormularios, long contactados, long admitidos) {
+    private ResumenGeneralDTO computeResumen(List<Paciente> filtrados, List<FormularioInteres> formularios) {
+        long totalFormularios = formularios.size();
+        long contactados = formularios.stream()
+            .filter(f -> f.getEstado() == EstadoFormulario.CONTACTADO
+                      || f.getEstado() == EstadoFormulario.ADMITIDO)
+            .count();
+        long admitidos = formularios.stream()
+            .filter(f -> f.getEstado() == EstadoFormulario.ADMITIDO)
+            .count();
         long pacientesTotal         = filtrados.size();
         long pacientesProblema      = filtrados.stream().filter(p -> p.getTipoPaciente() == TipoPaciente.PROBLEMA).count();
         long pacientesControl       = filtrados.stream().filter(p -> p.getTipoPaciente() == TipoPaciente.CONTROL).count();
@@ -150,25 +172,23 @@ public class ReporteService {
         );
     }
 
-    private EmbudoDTO computeEmbudo(List<Paciente> filtrados, long formularios, long contactados) {
+    private EmbudoDTO computeEmbudo(List<Paciente> filtrados) {
         long admitidos    = filtrados.size();
         long mchat        = filtrados.stream().filter(p -> PacienteEstado.MCHAT_COMPLETADOS.contains(p.getEstadoClinico())).count();
         long extPendiente = filtrados.stream().filter(p -> PacienteEstado.CON_EXTRACCION.contains(p.getEstadoClinico())).count();
         long extRealizada = filtrados.stream().filter(p -> p.getEstadoClinico() == PacienteEstado.EXTRACCION_REALIZADA).count();
 
-        double base = formularios > 0 ? formularios : 1;
+        double base = admitidos > 0 ? admitidos : 1;
         List<EtapaDTO> etapas = List.of(
-            new EtapaDTO("Formularios recibidos", formularios, 100.0),
-            new EtapaDTO("Contactados",           contactados,  round(contactados  / base * 100)),
-            new EtapaDTO("Admitidos",             admitidos,    round(admitidos    / base * 100)),
-            new EtapaDTO("M-CHAT completado",     mchat,        round(mchat        / base * 100)),
-            new EtapaDTO("Extracción pendiente",  extPendiente, round(extPendiente / base * 100)),
-            new EtapaDTO("Extracción realizada",  extRealizada, round(extRealizada / base * 100))
+            new EtapaDTO("Admitidos",            admitidos,    100.0),
+            new EtapaDTO("M-CHAT completado",    mchat,        round(mchat        / base * 100)),
+            new EtapaDTO("Extracción pendiente", extPendiente, round(extPendiente / base * 100)),
+            new EtapaDTO("Extracción realizada", extRealizada, round(extRealizada / base * 100))
         );
         return new EmbudoDTO(etapas);
     }
 
-    private DemograficoDTO computeDemografico(List<Paciente> filtrados, List<Object[]> derivRows) {
+    private DemograficoDTO computeDemografico(List<Paciente> filtrados, List<FormularioInteres> formularios) {
         Map<Sexo, Long> sexoFreq = filtrados.stream()
             .filter(p -> p.getSexo() != null)
             .collect(Collectors.groupingBy(Paciente::getSexo, Collectors.counting()));
@@ -178,12 +198,14 @@ public class ReporteService {
                 totalSexo > 0 ? round(e.getValue() / (double) totalSexo * 100) : 0))
             .toList();
 
-        long totalDeriv = derivRows.stream().mapToLong(r -> (Long) r[1]).sum();
-        List<DistribucionDTO> derivacion = derivRows.stream()
-            .map(r -> new DistribucionDTO(
-                ((ComoConocioProyecto) r[0]).name(),
-                (Long) r[1],
-                round((Long) r[1] / (double) totalDeriv * 100)))
+        Map<ComoConocioProyecto, Long> derivFreq = formularios.stream()
+            .filter(f -> f.getComoConocioProyecto() != null)
+            .collect(Collectors.groupingBy(FormularioInteres::getComoConocioProyecto, Collectors.counting()));
+        long totalDeriv = derivFreq.values().stream().mapToLong(Long::longValue).sum();
+        List<DistribucionDTO> derivacion = derivFreq.entrySet().stream()
+            .sorted(Map.Entry.<ComoConocioProyecto, Long>comparingByValue().reversed())
+            .map(e -> new DistribucionDTO(e.getKey().name(), e.getValue(),
+                totalDeriv > 0 ? round(e.getValue() / (double) totalDeriv * 100) : 0))
             .toList();
 
         return new DemograficoDTO(sexo, derivacion);
