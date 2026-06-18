@@ -26,12 +26,28 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import com.utn.magtea.caja.Caja;
+import com.utn.magtea.caja.CajaRepository;
+import com.utn.magtea.suero.Suero;
+import com.utn.magtea.suero.SueroRepository;
+import com.utn.magtea.suero.SueroRangoUtil;
+import com.utn.magtea.pool.Pool;
+import com.utn.magtea.pool.PoolRepository;
+import com.utn.magtea.camada.Camada;
+import com.utn.magtea.camada.CamadaRepository;
+import com.utn.magtea.modeloanimal.ModeloAnimal;
+import com.utn.magtea.modeloanimal.ModeloAnimalRepository;
+import com.utn.magtea.modeloanimal.SexoRaton;
+import com.utn.magtea.modeloanimal.estudios.VocalizacionesUltrasonicas;
+import com.utn.magtea.modeloanimal.estudios.TresCamaras;
 
 @Component
 @RequiredArgsConstructor
@@ -45,6 +61,12 @@ public class DataInitializer implements ApplicationRunner {
     private final EvaluacionCarsRepository evaluacionCarsRepository;
     private final EvaluacionVinelandRepository evaluacionVinelandRepository;
     private final PasswordEncoder passwordEncoder;
+    private final CajaRepository cajaRepository;
+    private final SueroRepository sueroRepository;
+    private final PoolRepository poolRepository;
+    private final CamadaRepository camadaRepository;
+    private final ModeloAnimalRepository modeloAnimalRepository;
+    private final Clock clock;
 
     private static final Set<Integer> MCHAT_INVERTIDAS = Set.of(2, 5, 12);
 
@@ -78,6 +100,11 @@ public class DataInitializer implements ApplicationRunner {
         seedFormularios();
         seedPacientes();
         seedEvaluaciones();
+        seedCajas();
+        seedSueros();
+        seedPools();
+        seedCamadas();
+        seedModelosAnimales();
     }
 
     // ===========================
@@ -491,6 +518,245 @@ public class DataInitializer implements ApplicationRunner {
         form.setFechaContacto(fechaContacto);
         form.setEstado(estado);
         return form;
+    }
+
+    // ===========================
+    // BASIC STAGE (FASE 6) SEEDING
+    // ===========================
+
+    private void seedCajas() {
+        if (cajaRepository.count() > 0) return;
+
+        var cajas = List.of(
+            createCaja("A", 1, 1),
+            createCaja("A", 1, 2),
+            createCaja("B", 2, 1),
+            createCaja("B", 3, 1)
+        );
+        cajaRepository.saveAll(cajas);
+    }
+
+    private Caja createCaja(String freezer, Integer cajon, Integer numero) {
+        Caja c = new Caja();
+        c.setFreezer(freezer);
+        c.setCajon(cajon);
+        c.setNumero(numero);
+        c.setActivo(true);
+        return c;
+    }
+
+    private void seedSueros() {
+        if (sueroRepository.count() > 0) return;
+
+        Map<String, Paciente> porCodigo = pacienteRepository.findAll().stream()
+                .collect(Collectors.toMap(Paciente::getCodigoNumerico, p -> p));
+
+        List<Caja> cajas = cajaRepository.findAll();
+        Caja cajaControl = cajas.get(0);
+        Caja cajaProblema = cajas.get(1);
+
+        // Control sueros (rango 0)
+        saveSuero(porCodigo.get("C0001"), cajaControl, "A1,A2", 2.0, 0.0);
+        saveSuero(porCodigo.get("C0002"), cajaControl, "A3,A4", 2.0, 0.0);
+        saveSuero(porCodigo.get("C0003"), cajaControl, "A5,A6", 2.0, 0.0);
+        saveSuero(porCodigo.get("C0004"), cajaControl, "A7,A8", 2.0, 0.0);
+
+        // Problem sueros
+        // Rango 1: 1314–2500 BTU (P0006, P0007, P0014, P0015)
+        saveSuero(porCodigo.get("P0006"), cajaProblema, "B1,B2", 1.5, 1800.0);
+        saveSuero(porCodigo.get("P0007"), cajaProblema, "B3,B4", 1.5, 2000.0);
+        saveSuero(porCodigo.get("P0014"), cajaProblema, "B5,B6", 1.5, 1500.0);
+        saveSuero(porCodigo.get("P0015"), cajaProblema, "B7,B8", 1.5, 2200.0);
+
+        // Rango 2: 2501–8000 BTU (P0009, P0012, P0013)
+        saveSuero(porCodigo.get("P0009"), cajaProblema, "C1,C2", 1.5, 5000.0);
+        saveSuero(porCodigo.get("P0012"), cajaProblema, "C3,C4", 1.5, 4000.0);
+        saveSuero(porCodigo.get("P0013"), cajaProblema, "C5,C6", 1.5, 4500.0);
+
+        // Rango 3: > 8000 BTU (P0008, P0010, P0011)
+        saveSuero(porCodigo.get("P0008"), cajaProblema, "D1,D2", 1.5, 9000.0);
+        saveSuero(porCodigo.get("P0010"), cajaProblema, "D3,D4", 1.5, 9500.0);
+        saveSuero(porCodigo.get("P0011"), cajaProblema, "D5,D6", 1.5, 8500.0);
+    }
+
+    private void saveSuero(Paciente paciente, Caja caja, String tubos, double cantidadTotal, double valorAnticuerpos) {
+        if (paciente == null) return;
+        Suero s = new Suero();
+        s.setPaciente(paciente);
+        s.setCaja(caja);
+        s.setTubos(tubos);
+        s.setFechaExtraccion(paciente.getFechaExtraccion());
+        s.setCantidadTotal(cantidadTotal);
+        s.setCantidadUsada(0.0);
+        s.setValorAnticuerpos(valorAnticuerpos);
+        s.setRango(SueroRangoUtil.calcularRango(valorAnticuerpos));
+        s.setActivo(true);
+        sueroRepository.save(s);
+
+        // Update Patient clinical state
+        paciente.setEstadoClinico(PacienteEstado.EXTRACCION_REALIZADA);
+        pacienteRepository.save(paciente);
+    }
+
+    private void seedPools() {
+        if (poolRepository.count() > 0) return;
+
+        List<Caja> cajas = cajaRepository.findAll();
+        Caja cajaPools = cajas.get(2); // Caja 3
+
+        Map<String, Suero> suerosPorPacienteCodigo = sueroRepository.findAll().stream()
+                .collect(Collectors.toMap(s -> s.getPaciente().getCodigoNumerico(), s -> s));
+
+        // Pool 1: Rango 2 (uses P0009 and P0012)
+        Suero s0009 = suerosPorPacienteCodigo.get("P0009");
+        Suero s0012 = suerosPorPacienteCodigo.get("P0012");
+        if (s0009 != null && s0012 != null) {
+            s0009.setCantidadUsada(s0009.getCantidadUsada() + 0.3);
+            s0012.setCantidadUsada(s0012.getCantidadUsada() + 0.3);
+            sueroRepository.save(s0009);
+            sueroRepository.save(s0012);
+
+            Pool pool1 = new Pool();
+            pool1.setSueros(List.of(s0009, s0012));
+            pool1.setCaja(cajaPools);
+            pool1.setTubos("P2-A");
+            pool1.setFechaCreacion(LocalDate.now(clock).minusDays(20));
+            pool1.setRango(2);
+            pool1.setCantidadTotal(0.6);
+            pool1.setCantidadUsada(0.0);
+            pool1.setActivo(true);
+            poolRepository.save(pool1);
+        }
+
+        // Pool 2: Rango 3 (uses P0008 and P0010)
+        Suero s0008 = suerosPorPacienteCodigo.get("P0008");
+        Suero s0010 = suerosPorPacienteCodigo.get("P0010");
+        if (s0008 != null && s0010 != null) {
+            s0008.setCantidadUsada(s0008.getCantidadUsada() + 0.4);
+            s0010.setCantidadUsada(s0010.getCantidadUsada() + 0.4);
+            sueroRepository.save(s0008);
+            sueroRepository.save(s0010);
+
+            Pool pool2 = new Pool();
+            pool2.setSueros(List.of(s0008, s0010));
+            pool2.setCaja(cajaPools);
+            pool2.setTubos("P3-A");
+            pool2.setFechaCreacion(LocalDate.now(clock).minusDays(10));
+            pool2.setRango(3);
+            pool2.setCantidadTotal(0.8);
+            pool2.setCantidadUsada(0.0);
+            pool2.setActivo(true);
+            poolRepository.save(pool2);
+        }
+    }
+
+    private void seedCamadas() {
+        if (camadaRepository.count() > 0) return;
+
+        var camadas = List.of(
+            createCamada("C2026-A"),
+            createCamada("C2026-B")
+        );
+        camadaRepository.saveAll(camadas);
+    }
+
+    private Camada createCamada(String nombre) {
+        Camada c = new Camada();
+        c.setNombre(nombre);
+        c.setActivo(true);
+        return c;
+    }
+
+    private void seedModelosAnimales() {
+        if (modeloAnimalRepository.count() > 0) return;
+
+        List<Pool> pools = poolRepository.findAll();
+        if (pools.size() < 2) return;
+
+        Pool pool1 = pools.get(0); // Rango 2
+        Pool pool2 = pools.get(1); // Rango 3
+
+        List<Camada> camadas = camadaRepository.findAll();
+        if (camadas.size() < 2) return;
+
+        Camada camada1 = camadas.get(0);
+        Camada camada2 = camadas.get(1);
+
+        LocalDate hoy = LocalDate.now(clock);
+
+        // Raton 1: M-R2-A
+        // Rango 2, Camada 1, Male, complete studies
+        ModeloAnimal m1 = new ModeloAnimal();
+        m1.setIdentificador("M-R2-A");
+        m1.setPool(pool1);
+        m1.setCamada(camada1);
+        m1.setFechaNacimiento(hoy.minusDays(25));
+        m1.setSexo(SexoRaton.MACHO);
+        m1.setFechaDia1Inoculacion(hoy.minusDays(19));
+        m1.setNumCelulasGanglionares(150);
+        m1.setNumCelulasPurkinje(85);
+        m1.setActivo(true);
+
+        VocalizacionesUltrasonicas vus1 = new VocalizacionesUltrasonicas();
+        vus1.setModeloAnimal(m1);
+        vus1.setMuestra1Khz(45.0);
+        vus1.setMuestra2Khz(65.0);
+        m1.setVocalizaciones(vus1);
+
+        TresCamaras tc1 = new TresCamaras();
+        tc1.setModeloAnimal(m1);
+        tc1.setM1TiempoRatonNovedad(4.5);
+        tc1.setM1TiempoObjetoNovedoso(3.0);
+        tc1.setM2TiempoRatonDesconocido(5.0);
+        tc1.setM2TiempoRatonFamiliar(2.5);
+        m1.setTresCamaras(tc1);
+
+        modeloAnimalRepository.save(m1);
+
+        // Raton 2: M-R2-B
+        // Rango 2, Camada 1, Female, only Vocalizaciones registered
+        ModeloAnimal m2 = new ModeloAnimal();
+        m2.setIdentificador("M-R2-B");
+        m2.setPool(pool1);
+        m2.setCamada(camada1);
+        m2.setFechaNacimiento(hoy.minusDays(25));
+        m2.setSexo(SexoRaton.HEMBRA);
+        m2.setFechaDia1Inoculacion(hoy.minusDays(19));
+        m2.setNumCelulasGanglionares(160);
+        m2.setNumCelulasPurkinje(90);
+        m2.setActivo(true);
+
+        VocalizacionesUltrasonicas vus2 = new VocalizacionesUltrasonicas();
+        vus2.setModeloAnimal(m2);
+        vus2.setMuestra1Khz(30.0);
+        vus2.setMuestra2Khz(40.0);
+        m2.setVocalizaciones(vus2);
+
+        modeloAnimalRepository.save(m2);
+
+        // Raton 3: M-R3-A
+        // Rango 3, Camada 2, Male, no studies yet. Born exactly 5 days ago to trigger "necesitaVocalizaciones" alert.
+        ModeloAnimal m3 = new ModeloAnimal();
+        m3.setIdentificador("M-R3-A");
+        m3.setPool(pool2);
+        m3.setCamada(camada2);
+        m3.setFechaNacimiento(hoy.minusDays(5));
+        m3.setSexo(SexoRaton.MACHO);
+        m3.setFechaDia1Inoculacion(hoy.minusDays(1));
+        m3.setActivo(true);
+        modeloAnimalRepository.save(m3);
+
+        // Raton 4: M-R3-B
+        // Rango 3, Camada 2, Female, no studies yet. Born exactly 19 days ago to trigger "necesitaTresCamaras" alert.
+        ModeloAnimal m4 = new ModeloAnimal();
+        m4.setIdentificador("M-R3-B");
+        m4.setPool(pool2);
+        m4.setCamada(camada2);
+        m4.setFechaNacimiento(hoy.minusDays(19));
+        m4.setSexo(SexoRaton.HEMBRA);
+        m4.setFechaDia1Inoculacion(hoy.minusDays(15));
+        m4.setActivo(true);
+        modeloAnimalRepository.save(m4);
     }
 
 }
