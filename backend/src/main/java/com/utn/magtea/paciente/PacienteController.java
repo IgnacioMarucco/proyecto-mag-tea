@@ -28,7 +28,7 @@ public class PacienteController {
     private final PacienteService service;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'ROTANTE_CLINICA', 'INVESTIGADOR_PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Listar pacientes activos con paginación")
     public PageResponse<PacienteListDTO> findAll(
             @RequestParam(defaultValue = "0")          int page,
@@ -42,14 +42,14 @@ public class PacienteController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'ROTANTE_CLINICA', 'INVESTIGADOR_PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Obtener paciente por id")
     public PacienteResponseDTO findById(@PathVariable Long id) {
         return service.findById(id);
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('SECRETARIA', 'CUERPO_MEDICO', 'ROTANTE_CLINICA', 'INVESTIGADOR_PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Registrar paciente")
     public ResponseEntity<PacienteResponseDTO> create(@RequestBody @Valid PacienteCreateDTO dto) {
         PacienteResponseDTO created = service.create(dto);
@@ -59,7 +59,7 @@ public class PacienteController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'ROTANTE_CLINICA', 'INVESTIGADOR_PRINCIPAL')")
+    @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Actualizar datos básicos del paciente")
     public PacienteResponseDTO update(@PathVariable Long id,
                                       @RequestBody @Valid PacienteUpdateDTO dto) {
@@ -67,7 +67,7 @@ public class PacienteController {
     }
 
     @PatchMapping("/{id}/primera-visita")
-    @PreAuthorize("hasAnyRole('INVESTIGADOR_PRINCIPAL', 'CUERPO_MEDICO', 'ROTANTE_CLINICA')")
+    @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Actualizar fecha y hora de la primera visita")
     public PacienteResponseDTO updatePrimeraVisita(@PathVariable Long id,
                                                    @RequestBody @Valid PacientePrimeraVisitaDTO dto) {
@@ -75,7 +75,7 @@ public class PacienteController {
     }
 
     @PatchMapping("/{id}/consentimiento")
-    @PreAuthorize("hasAnyRole('INVESTIGADOR_PRINCIPAL', 'CUERPO_MEDICO', 'ROTANTE_CLINICA')")
+    @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Registrar consentimiento informado")
     public PacienteResponseDTO updateConsentimiento(@PathVariable Long id,
                                                     @RequestBody PacienteConsentimientoDTO dto) {
@@ -83,7 +83,7 @@ public class PacienteController {
     }
 
     @PatchMapping("/{id}/criterios")
-    @PreAuthorize("hasAnyRole('INVESTIGADOR_PRINCIPAL', 'CUERPO_MEDICO', 'ROTANTE_CLINICA')")
+    @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Registrar criterios de inclusión/exclusión")
     public PacienteResponseDTO updateCriterios(@PathVariable Long id,
                                                @RequestBody CriteriosDTO dto) {
@@ -91,7 +91,7 @@ public class PacienteController {
     }
 
     @PatchMapping("/{id}/mchat-seguimiento")
-    @PreAuthorize("hasAnyRole('INVESTIGADOR_PRINCIPAL', 'CUERPO_MEDICO', 'ROTANTE_CLINICA')")
+    @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Registrar resultado del seguimiento M-CHAT-R/F (solo si score 3-7)")
     public PacienteResponseDTO updateMchatSeguimiento(@PathVariable Long id,
                                                       @RequestBody MchatSeguimientoDTO dto) {
@@ -99,7 +99,7 @@ public class PacienteController {
     }
 
     @PatchMapping("/{id}/cars")
-    @PreAuthorize("hasAnyRole('INVESTIGADOR_PRINCIPAL', 'CUERPO_MEDICO', 'ROTANTE_CLINICA')")
+    @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Registrar puntuaciones CARS-2")
     public PacienteResponseDTO updateCars(@PathVariable Long id,
                                           @RequestBody @Valid CarsDTO dto) {
@@ -107,7 +107,7 @@ public class PacienteController {
     }
 
     @PatchMapping("/{id}/vineland")
-    @PreAuthorize("hasAnyRole('INVESTIGADOR_PRINCIPAL', 'CUERPO_MEDICO', 'ROTANTE_CLINICA')")
+    @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Registrar puntuaciones Vineland")
     public PacienteResponseDTO updateVineland(@PathVariable Long id,
                                               @RequestBody VinelandDTO dto) {
@@ -115,7 +115,7 @@ public class PacienteController {
     }
 
     @PatchMapping("/{id}/segunda-visita")
-    @PreAuthorize("hasAnyRole('INVESTIGADOR_PRINCIPAL', 'CUERPO_MEDICO', 'ROTANTE_CLINICA', 'CUERPO_TECNICO')")
+    @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Registrar fecha de extracción de sangre (segunda visita)")
     public PacienteResponseDTO updateSegundaVisita(@PathVariable Long id,
                                                    @RequestBody @Valid PacienteSegundaVisitaDTO dto) {
@@ -123,7 +123,7 @@ public class PacienteController {
     }
 
     @PostMapping("/{id}/reenviar-mchat")
-    @PreAuthorize("hasAnyRole('INVESTIGADOR_PRINCIPAL', 'CUERPO_MEDICO', 'ROTANTE_CLINICA')")
+    @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Regenerar y reenviar el enlace M-CHAT por mail")
     public PacienteResponseDTO reenviarMchat(@PathVariable Long id) {
         return service.reenviarMchat(id);

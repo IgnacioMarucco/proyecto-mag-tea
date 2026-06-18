@@ -17,14 +17,14 @@ public class MchatInternalController {
     private final MchatService service;
 
     @GetMapping("/{pacienteId}/mchat/respuestas")
-    @PreAuthorize("hasAnyRole('INVESTIGADOR_PRINCIPAL','CUERPO_MEDICO','ROTANTE_CLINICA','CUERPO_TECNICO')")
+    @PreAuthorize("hasAnyRole('CUERPO_MEDICO','INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Obtener respuestas M-CHAT del paciente")
     public MchatFamiliaResponseDTO getRespuestas(@PathVariable Long pacienteId) {
         return service.getRespuestasByPaciente(pacienteId);
     }
 
     @PutMapping("/{pacienteId}/mchat/respuestas")
-    @PreAuthorize("hasAnyRole('INVESTIGADOR_PRINCIPAL','CUERPO_MEDICO','ROTANTE_CLINICA')")
+    @PreAuthorize("hasAnyRole('CUERPO_MEDICO','INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Registrar o reemplazar respuestas M-CHAT del paciente")
     public MchatFamiliaResponseDTO upsertRespuestas(@PathVariable Long pacienteId,
                                                     @RequestBody @Valid MchatSubmitDTO dto) {
