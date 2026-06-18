@@ -65,7 +65,7 @@
         "serve": {
           "builder": "@angular/build:dev-server",
           "options": {
-            "allowedHosts": [".ngrok-free.dev", ".ngrok-free.app", ".lhr.life"]
+            "allowedHosts": [".ngrok-free.dev", ".ngrok-free.app", ".loca.lt"]
           },
           "configurations": {
             "production": {
