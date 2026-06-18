@@ -10,11 +10,11 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring", imports = {VusBanda.class, SocializacionResultado.class})
 public interface ModeloAnimalMapper {
 
-    @Mapping(target = "poolId", source = "pool.id")
-    @Mapping(target = "poolRango", source = "pool.rango")
-    @Mapping(target = "camadaNombre", source = "camada.nombre")
-    @Mapping(target = "necesitaVocalizaciones", ignore = true)
-    @Mapping(target = "necesitaTresCamaras", ignore = true)
+    @Mapping(target = "poolId", source = "modeloAnimal.pool.id")
+    @Mapping(target = "poolRango", source = "modeloAnimal.pool.rango")
+    @Mapping(target = "camadaNombre", source = "modeloAnimal.camada.nombre")
+    @Mapping(target = "necesitaVocalizaciones", source = "necesitaVocalizaciones")
+    @Mapping(target = "necesitaTresCamaras", source = "necesitaTresCamaras")
     ModeloAnimalListDTO toListDTO(ModeloAnimal modeloAnimal, boolean necesitaVocalizaciones, boolean necesitaTresCamaras);
 
     @Mapping(target = "poolId", source = "modeloAnimal.pool.id")
@@ -32,9 +32,9 @@ public interface ModeloAnimalMapper {
                                   TresCamarasDTO tresCamarasDTO);
 
     @Mapping(target = "vusBanda1",
-             expression = "java(vus.getMuestra1Khz() >= 20 && vus.getMuestra1Khz() <= 50 ? VusBanda.AVERSIVA : VusBanda.APETITIVA)")
+             expression = "java(vus.getMuestra1Khz() != null ? (vus.getMuestra1Khz() >= 20 && vus.getMuestra1Khz() <= 50 ? VusBanda.AVERSIVA : VusBanda.APETITIVA) : null)")
     @Mapping(target = "vusBanda2",
-             expression = "java(vus.getMuestra2Khz() >= 20 && vus.getMuestra2Khz() <= 50 ? VusBanda.AVERSIVA : VusBanda.APETITIVA)")
+             expression = "java(vus.getMuestra2Khz() != null ? (vus.getMuestra2Khz() >= 20 && vus.getMuestra2Khz() <= 50 ? VusBanda.AVERSIVA : VusBanda.APETITIVA) : null)")
     VocalizacionesDTO toVocalizacionesDTO(VocalizacionesUltrasonicas vus);
 
     @Mapping(target = "sociabilizacion1",
