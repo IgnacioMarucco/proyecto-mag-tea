@@ -33,9 +33,6 @@ export class PacienteFormComponent implements OnInit {
   id           = input<string>();
 
   readonly isEdit       = computed(() => !!this.id());
-  private readonly isSecretaria = computed(() =>
-    this.authService.currentUser()?.role === 'SECRETARIA'
-  );
 
   loading     = signal(false);
   error       = signal<string | null>(null);
@@ -224,11 +221,7 @@ export class PacienteFormComponent implements OnInit {
       };
       this.pacienteService.create(dto).subscribe({
         next: p => {
-          if (this.isSecretaria()) {
-            this.router.navigate(['/internal/bandeja']);
-          } else {
-            this.router.navigate(['/internal/pacientes', p.id]);
-          }
+          this.router.navigate(['/internal/pacientes', p.id]);
         },
         error: err => { this.error.set(extractErrorMessage(err, 'Error al registrar')); this.loading.set(false); },
       });
@@ -238,8 +231,6 @@ export class PacienteFormComponent implements OnInit {
   cancel(): void {
     if (this.isEdit()) {
       this.router.navigate(['/internal/pacientes', this.id()]);
-    } else if (this.isSecretaria()) {
-      this.router.navigate(['/internal/bandeja']);
     } else {
       this.router.navigate(['/internal/pacientes']);
     }

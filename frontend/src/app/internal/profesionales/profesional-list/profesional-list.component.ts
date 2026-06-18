@@ -72,12 +72,9 @@ export class ProfesionalListComponent {
   ];
 
   readonly rolColors: Record<string, string> = {
-    SECRETARIA:             'bg-primary-light text-primary',
-    CUERPO_TECNICO:         'bg-primary-light text-primary',
     CUERPO_MEDICO:          'bg-primary-light text-primary',
-    ROTANTE_CLINICA:        'bg-primary-light text-primary',
-    ROTANTE_BASICA:         'bg-primary-light text-primary',
-    INVESTIGADOR_PRINCIPAL: 'bg-primary-light text-primary',
+    CUERPO_TECNICO:         'bg-accent-light text-accent',
+    INVESTIGADOR_PRINCIPAL: 'bg-warning/10 text-warning',
   };
 
   readonly emptyTitle = computed(() =>

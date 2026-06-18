@@ -1,17 +1,11 @@
 export type Role =
-  | 'SECRETARIA'
-  | 'CUERPO_TECNICO'
   | 'CUERPO_MEDICO'
-  | 'ROTANTE_CLINICA'
-  | 'ROTANTE_BASICA'
+  | 'CUERPO_TECNICO'
   | 'INVESTIGADOR_PRINCIPAL';
 
 export const ROLE_LABELS: Record<Role, string> = {
-  SECRETARIA: 'Secretaría',
-  CUERPO_TECNICO: 'Cuerpo Técnico',
-  CUERPO_MEDICO: 'Cuerpo Médico',
-  ROTANTE_CLINICA: 'Rotante Clínica',
-  ROTANTE_BASICA: 'Rotante Básica',
+  CUERPO_MEDICO:          'Cuerpo Médico',
+  CUERPO_TECNICO:         'Cuerpo Técnico',
   INVESTIGADOR_PRINCIPAL: 'Investigador Principal',
 };
 

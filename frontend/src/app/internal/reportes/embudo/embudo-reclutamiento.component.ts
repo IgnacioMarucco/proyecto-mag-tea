@@ -31,7 +31,7 @@ export class EmbudoReclutamientoComponent {
         label: { show: true, position: 'inside', formatter: '{b}: {c}' },
         itemStyle: { borderWidth: 0 },
         data: etapas.map(e => ({ name: e.nombre, value: e.n })),
-        color: ['#6366f1', '#818cf8', '#a5b4fc', '#c7d2fe', '#ddd6fe', '#ede9fe'],
+        color: ['#6366f1', '#818cf8', '#a5b4fc', '#c7d2fe'],
       }],
     };
   }
