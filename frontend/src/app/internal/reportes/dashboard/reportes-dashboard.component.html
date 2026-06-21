@@ -13,14 +13,42 @@
     (filtersChange)="onFiltersChange($event)"
   />
 
-  <!-- KPI Cards (siempre visibles, sobre los tabs) -->
-  <div class="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-    <app-kpi-card label="Formularios recibidos" [value]="resumen()?.totalFormularios ?? null" />
-    <app-kpi-card label="Pacientes totales"     [value]="resumen()?.pacientesTotal ?? null" />
-    <app-kpi-card label="Pacientes PROBLEMA"    [value]="resumen()?.pacientesProblema ?? null" />
-    <app-kpi-card label="Pacientes CONTROL"     [value]="resumen()?.pacientesControl ?? null" />
-    <app-kpi-card label="Tasa de admisión"      [value]="tasaAdmision()" />
-    <app-kpi-card label="M-CHAT completados"    [value]="resumen()?.mchatCompletados ?? null" />
+  <!-- KPI Ribbon (Cinta horizontal compacta) -->
+  <div class="mb-6 bg-surface border border-border rounded-lg px-6 py-3.5 flex flex-wrap items-center justify-between gap-y-2 gap-x-6 text-sm">
+    <div class="flex items-center gap-1.5">
+      <span class="text-text-muted font-mono text-xs uppercase tracking-wider">Formularios:</span>
+      <span class="font-bold text-text font-mono text-base">{{ resumen()?.totalFormularios ?? '—' }}</span>
+    </div>
+    <div class="w-px h-4 bg-border hidden lg:block"></div>
+    
+    <div class="flex items-center gap-1.5">
+      <span class="text-text-muted font-mono text-xs uppercase tracking-wider">Pacientes Totales:</span>
+      <span class="font-bold text-text font-mono text-base">{{ resumen()?.pacientesTotal ?? '—' }}</span>
+    </div>
+    <div class="w-px h-4 bg-border hidden lg:block"></div>
+
+    <div class="flex items-center gap-1.5">
+      <span class="text-text-muted font-mono text-xs uppercase tracking-wider">Caso Problema:</span>
+      <span class="font-bold text-primary font-mono text-base">{{ resumen()?.pacientesProblema ?? '—' }}</span>
+    </div>
+    <div class="w-px h-4 bg-border hidden lg:block"></div>
+
+    <div class="flex items-center gap-1.5">
+      <span class="text-text-muted font-mono text-xs uppercase tracking-wider">Control:</span>
+      <span class="font-bold text-text font-mono text-base">{{ resumen()?.pacientesControl ?? '—' }}</span>
+    </div>
+    <div class="w-px h-4 bg-border hidden lg:block"></div>
+
+    <div class="flex items-center gap-1.5">
+      <span class="text-text-muted font-mono text-xs uppercase tracking-wider">Admisión:</span>
+      <span class="font-bold text-accent font-mono text-base">{{ tasaAdmision() ?? '—' }}</span>
+    </div>
+    <div class="w-px h-4 bg-border hidden lg:block"></div>
+
+    <div class="flex items-center gap-1.5">
+      <span class="text-text-muted font-mono text-xs uppercase tracking-wider">M-CHAT:</span>
+      <span class="font-bold text-text font-mono text-base">{{ resumen()?.mchatCompletados ?? '—' }}</span>
+    </div>
   </div>
 
   <!-- Tabs Nav -->
@@ -65,8 +93,8 @@
     <div id="tab-panel-0" role="tabpanel" class="flex flex-col gap-6">
       @defer (on viewport) {
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <app-embudo-reclutamiento [data]="embudo()" />
           <app-caracterizacion [data]="demografico()" />
+          <app-embudo-reclutamiento [data]="embudo()" />
         </div>
       } @placeholder {
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">

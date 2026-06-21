@@ -3,7 +3,6 @@ import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { catchError, of, switchMap } from 'rxjs';
 import { ReportesService } from '../reportes.service';
 import { FILTRO_DEFAULT, FiltroReportes } from '../reportes.models';
-import { KpiCardComponent } from '../shared/kpi-card/kpi-card.component';
 import { EmbudoReclutamientoComponent } from '../embudo/embudo-reclutamiento.component';
 import { CaracterizacionComponent } from '../caracterizacion/caracterizacion.component';
 import { MchatAnalisisComponent } from '../mchat/mchat-analisis.component';
@@ -16,7 +15,6 @@ import { ListToolbarComponent, FilterGroup } from '../../../shared/list-toolbar/
   selector: 'app-reportes-dashboard',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    KpiCardComponent,
     EmbudoReclutamientoComponent,
     CaracterizacionComponent,
     MchatAnalisisComponent,
