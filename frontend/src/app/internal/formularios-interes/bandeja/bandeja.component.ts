@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { BehaviorSubject, catchError, map, of, switchMap } from 'rxjs';
+import { BehaviorSubject, catchError, combineLatest, map, of, switchMap, tap, timer } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormularioInteresService, FormularioListParams } from '../../../core/services/formulario-interes.service';
 import { EstadoFormulario, FormularioInteresResponse } from '../../../core/models/formulario-interes.model';
@@ -13,13 +13,15 @@ import { PaginatorComponent } from '../../../shared/paginator/paginator.componen
 import { SortState } from '../../../shared/sort.utils';
 import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 import { EdadPipe } from '../../../core/pipes/edad.pipe';
+import { FechaPipe } from '../../../core/pipes/fecha.pipe';
+import { FormularioDetalleModalComponent } from './formulario-detalle-modal.component';
 
 const PAGE_SIZE = 20;
 const ALL_ESTADOS = ['PENDIENTE', 'CONTACTADO', 'ADMITIDO', 'DESCARTADO'];
 
 @Component({
   selector: 'app-bandeja',
-  imports: [ListToolbarComponent, ConfirmModalComponent, DataTableComponent, StatusBadgeComponent, RowActionsComponent, PaginatorComponent, PageHeaderComponent, EdadPipe],
+  imports: [ListToolbarComponent, ConfirmModalComponent, DataTableComponent, StatusBadgeComponent, RowActionsComponent, PaginatorComponent, PageHeaderComponent, EdadPipe, FechaPipe, FormularioDetalleModalComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './bandeja.component.html',
 })
@@ -38,9 +40,16 @@ export class BandejaComponent {
     estados: ['PENDIENTE', 'CONTACTADO'],
   });
 
+  error   = signal(false);
+  loading = signal(false);
+
   private readonly response = toSignal(
-    this.params$.pipe(
-      switchMap(params => this.service.findAll(params).pipe(catchError(() => of(null))))
+    combineLatest([this.params$, timer(0, 60_000)]).pipe(
+      tap(() => { this.error.set(false); this.loading.set(true); }),
+      switchMap(([params]) => this.service.findAll(params).pipe(
+        tap(() => this.loading.set(false)),
+        catchError(() => { this.error.set(true); this.loading.set(false); return of(null); })
+      ))
     ),
     { initialValue: null }
   );
@@ -73,12 +82,11 @@ export class BandejaComponent {
   ];
 
   readonly columns: TableColumn[] = [
-    { label: 'Tutor/a' },
-    { label: 'Niño/a' },
-    { label: 'Edad',      hidden: 'sm' },
-    { label: 'Teléfono',  hidden: 'md' },
-    { label: 'Mail',      hidden: 'lg' },
-    { label: 'Fecha',     hidden: 'md', sortKey: 'fechaContacto' },
+    { label: 'Paciente' },
+    { label: 'Edad' },
+    { label: 'Teléfono' },
+    { label: 'Mail' },
+    { label: 'Fecha', sortKey: 'fechaContacto' },
     { label: 'Estado' },
   ];
 
@@ -94,14 +102,6 @@ export class BandejaComponent {
     CONTACTADO:  'bg-primary-light text-primary',
     ADMITIDO:    'bg-accent-light text-accent',
     DESCARTADO:  'bg-background text-text-muted border border-border',
-  };
-
-  readonly comoConocioLabels: Record<string, string> = {
-    INSTAGRAM:                   'Instagram',
-    SUGERIDO_PARTICIPANTE:       'Sugerencia de otro participante',
-    SUGERIDO_EQUIPO_TERAPEUTICO: 'Equipo terapéutico',
-    SUGERIDO_MEDICO:             'Un médico',
-    OTRO:                        'Otro',
   };
 
   readonly emptyTitle = computed(() =>
@@ -146,14 +146,21 @@ export class BandejaComponent {
   }
 
   private hasActiveSearch(): boolean {
-    const p = this.params$.value as Record<string, unknown>;
-    return !!(p['q'] || (p['estados'] as string[] | undefined)?.length);
+    if (this.search()) return true;
+    const f = this.activeFilters();
+    return this.filterGroups.some(group => {
+      const val = f[group.key];
+      if (val === undefined) return false;
+      return group.multiSelect
+        ? (val as string[]).length < group.options.length
+        : val !== group.options[0]?.key;
+    });
   }
 
 getActionsFor(f: FormularioInteresResponse): RowAction[] {
     const procesando = this.procesando();
     return [
-      { label: 'Ver detalles', onClick: () => this.verDetalles(f) },
+      { label: 'Detalles', onClick: () => this.verDetalles(f) },
       ...(f.estado === 'PENDIENTE' ? [
         { label: 'Contactar', style: 'primary' as const, disabled: procesando === f.id, onClick: () => this.contactar(f.id) },
         { label: 'Descartar', style: 'danger'  as const, disabled: procesando === f.id, onClick: () => this.requestDescartar(f.id) },
