@@ -47,7 +47,7 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'pacientes/:id/editar',
+        path: 'pacientes/:codigo/editar',
         data: { crumbs: [{ label: 'Etapa Clínica' }, { label: 'Pacientes', path: '/internal/pacientes' }, { label: 'Editar paciente' }] },
         loadComponent: () =>
           import('./internal/pacientes/paciente-form/paciente-form.component').then(
@@ -55,7 +55,7 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'pacientes/:id',
+        path: 'pacientes/:codigo',
         data: { crumbs: [{ label: 'Etapa Clínica' }, { label: 'Pacientes', path: '/internal/pacientes' }, { label: '' }] },
         loadComponent: () =>
           import('./internal/pacientes/paciente-detail/paciente-detail.component').then(
@@ -63,8 +63,144 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'sueros',
+        data: { crumbs: [{ label: 'Etapa Básica' }, { label: 'Sueros' }] },
+        loadComponent: () =>
+          import('./internal/sueros/suero-list/suero-list.component').then(
+            m => m.SueroListComponent
+          ),
+      },
+      {
+        path: 'sueros/nuevo',
+        data: { crumbs: [{ label: 'Etapa Básica' }, { label: 'Sueros', path: '/internal/sueros' }, { label: 'Registrar suero' }] },
+        loadComponent: () =>
+          import('./internal/sueros/suero-form/suero-form.component').then(
+            m => m.SueroFormComponent
+          ),
+      },
+      {
+        path: 'sueros/:codigo/editar',
+        data: { crumbs: [{ label: 'Etapa Básica' }, { label: 'Sueros', path: '/internal/sueros' }, { label: 'Editar suero' }] },
+        loadComponent: () =>
+          import('./internal/sueros/suero-form/suero-form.component').then(
+            m => m.SueroFormComponent
+          ),
+      },
+      {
+        path: 'sueros/:codigo',
+        data: { crumbs: [{ label: 'Etapa Básica' }, { label: 'Sueros', path: '/internal/sueros' }, { label: '' }] },
+        loadComponent: () =>
+          import('./internal/sueros/suero-detail/suero-detail.component').then(
+            m => m.SueroDetailComponent
+          ),
+      },
+      {
+        path: 'pools',
+        data: { crumbs: [{ label: 'Etapa Básica' }, { label: 'Pools' }] },
+        loadComponent: () =>
+          import('./internal/pools/pool-list/pool-list.component').then(
+            m => m.PoolListComponent
+          ),
+      },
+      {
+        path: 'pools/nuevo',
+        data: { crumbs: [{ label: 'Etapa Básica' }, { label: 'Pools', path: '/internal/pools' }, { label: 'Nuevo pool' }] },
+        loadComponent: () =>
+          import('./internal/pools/pool-form/pool-form.component').then(
+            m => m.PoolFormComponent
+          ),
+      },
+      {
+        path: 'pools/:id',
+        data: { crumbs: [{ label: 'Etapa Básica' }, { label: 'Pools', path: '/internal/pools' }, { label: '' }] },
+        loadComponent: () =>
+          import('./internal/pools/pool-detail/pool-detail.component').then(
+            m => m.PoolDetailComponent
+          ),
+      },
+      {
+        path: 'modelos-animales',
+        data: { crumbs: [{ label: 'Etapa Básica' }, { label: 'Modelos Animales' }] },
+        loadComponent: () =>
+          import('./internal/modelos-animales/modelo-animal-list/modelo-animal-list.component').then(
+            m => m.ModeloAnimalListComponent
+          ),
+      },
+      {
+        path: 'modelos-animales/nuevo',
+        data: { crumbs: [{ label: 'Etapa Básica' }, { label: 'Modelos Animales', path: '/internal/modelos-animales' }, { label: 'Registrar ratón' }] },
+        loadComponent: () =>
+          import('./internal/modelos-animales/modelo-animal-form/modelo-animal-form.component').then(
+            m => m.ModeloAnimalFormComponent
+          ),
+      },
+      {
+        path: 'modelos-animales/:id/editar',
+        data: { crumbs: [{ label: 'Etapa Básica' }, { label: 'Modelos Animales', path: '/internal/modelos-animales' }, { label: 'Editar' }] },
+        loadComponent: () =>
+          import('./internal/modelos-animales/modelo-animal-form/modelo-animal-form.component').then(
+            m => m.ModeloAnimalFormComponent
+          ),
+      },
+      {
+        path: 'modelos-animales/:id',
+        data: { crumbs: [{ label: 'Etapa Básica' }, { label: 'Modelos Animales', path: '/internal/modelos-animales' }, { label: '' }] },
+        loadComponent: () =>
+          import('./internal/modelos-animales/modelo-animal-detail/modelo-animal-detail.component').then(
+            m => m.ModeloAnimalDetailComponent
+          ),
+      },
+      {
+        path: 'cajas',
+        data: { crumbs: [{ label: 'Administración' }, { label: 'Cajas' }] },
+        loadComponent: () =>
+          import('./internal/administracion/cajas/caja-list/caja-list.component').then(
+            m => m.CajaListComponent
+          ),
+      },
+      {
+        path: 'cajas/nuevo',
+        data: { crumbs: [{ label: 'Administración' }, { label: 'Cajas', path: '/internal/cajas' }, { label: 'Nueva caja' }] },
+        loadComponent: () =>
+          import('./internal/administracion/cajas/caja-form/caja-form.component').then(
+            m => m.CajaFormComponent
+          ),
+      },
+      {
+        path: 'cajas/:id/editar',
+        data: { crumbs: [{ label: 'Administración' }, { label: 'Cajas', path: '/internal/cajas' }, { label: 'Editar caja' }] },
+        loadComponent: () =>
+          import('./internal/administracion/cajas/caja-form/caja-form.component').then(
+            m => m.CajaFormComponent
+          ),
+      },
+      {
+        path: 'camadas',
+        data: { crumbs: [{ label: 'Administración' }, { label: 'Camadas' }] },
+        loadComponent: () =>
+          import('./internal/administracion/camadas/camada-list/camada-list.component').then(
+            m => m.CamadaListComponent
+          ),
+      },
+      {
+        path: 'camadas/nuevo',
+        data: { crumbs: [{ label: 'Administración' }, { label: 'Camadas', path: '/internal/camadas' }, { label: 'Nueva camada' }] },
+        loadComponent: () =>
+          import('./internal/administracion/camadas/camada-form/camada-form.component').then(
+            m => m.CamadaFormComponent
+          ),
+      },
+      {
+        path: 'camadas/:id/editar',
+        data: { crumbs: [{ label: 'Administración' }, { label: 'Camadas', path: '/internal/camadas' }, { label: 'Editar camada' }] },
+        loadComponent: () =>
+          import('./internal/administracion/camadas/camada-form/camada-form.component').then(
+            m => m.CamadaFormComponent
+          ),
+      },
+      {
         path: 'profesionales',
-        data: { crumbs: [{ label: 'Gestión' }, { label: 'Profesionales' }] },
+        data: { crumbs: [{ label: 'Administración' }, { label: 'Profesionales' }] },
         loadComponent: () =>
           import('./internal/profesionales/profesional-list/profesional-list.component').then(
             m => m.ProfesionalListComponent
@@ -72,7 +208,7 @@ export const routes: Routes = [
       },
       {
         path: 'profesionales/nuevo',
-        data: { crumbs: [{ label: 'Gestión' }, { label: 'Profesionales', path: '/internal/profesionales' }, { label: 'Nuevo profesional' }] },
+        data: { crumbs: [{ label: 'Administración' }, { label: 'Profesionales', path: '/internal/profesionales' }, { label: 'Nuevo profesional' }] },
         loadComponent: () =>
           import('./internal/profesionales/profesional-form/profesional-form.component').then(
             m => m.ProfesionalFormComponent
@@ -80,7 +216,7 @@ export const routes: Routes = [
       },
       {
         path: 'profesionales/:id/editar',
-        data: { crumbs: [{ label: 'Gestión' }, { label: 'Profesionales', path: '/internal/profesionales' }, { label: 'Editar profesional' }] },
+        data: { crumbs: [{ label: 'Administración' }, { label: 'Profesionales', path: '/internal/profesionales' }, { label: 'Editar profesional' }] },
         loadComponent: () =>
           import('./internal/profesionales/profesional-form/profesional-form.component').then(
             m => m.ProfesionalFormComponent
@@ -88,7 +224,7 @@ export const routes: Routes = [
       },
       {
         path: 'reportes',
-        data: { crumbs: [{ label: 'Gestión' }, { label: 'Reportes' }] },
+        data: { crumbs: [{ label: 'Reportes' }] },
         loadComponent: () =>
           import('./internal/reportes/dashboard/reportes-dashboard.component').then(
             m => m.ReportesDashboardComponent
