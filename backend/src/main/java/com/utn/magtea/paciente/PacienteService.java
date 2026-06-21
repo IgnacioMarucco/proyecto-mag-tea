@@ -9,6 +9,7 @@ import com.utn.magtea.formulariointeres.FormularioInteresService;
 import com.utn.magtea.paciente.cars.CarsDTO;
 import com.utn.magtea.paciente.cars.EvaluacionCars;
 import com.utn.magtea.paciente.criterios.Criterios;
+import com.utn.magtea.paciente.criterios.CriteriosAptitud;
 import com.utn.magtea.paciente.criterios.CriteriosDTO;
 import com.utn.magtea.paciente.mchat.MchatFamilia;
 import com.utn.magtea.paciente.mchat.MchatInfoDTO;
@@ -69,7 +70,7 @@ public class PacienteService {
         );
         List<PacienteListDTO> content = result.getContent().stream()
                 .map(p -> new PacienteListDTO(
-                        p.getId(), p.getApellidoTutor(), p.getNombreTutor(),
+                        p.getId(), p.getCodigoNumerico(), p.getApellidoTutor(), p.getNombreTutor(),
                         p.getApellidoNino(), p.getNombreNino(), p.getFechaNacimientoNino(),
                         p.getTipoPaciente(), p.getEstadoClinico(),
                         p.getFechaPrimeraVisita(), p.getFechaExtraccion()
@@ -82,6 +83,29 @@ public class PacienteService {
     @Transactional(readOnly = true)
     public PacienteResponseDTO findById(Long id) {
         return mapper.toDTO(findActiveById(id));
+    }
+
+    @Transactional(readOnly = true)
+    public PacienteResponseDTO findByCodigoFull(String codigo) {
+        Paciente p = repository.findActiveByCodigoNumericoWithGraph(codigo)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Paciente con código " + codigo + " no existe"));
+        return mapper.toDTO(p);
+    }
+
+    @Transactional(readOnly = true)
+    public PacientePorCodigoDTO findByCodigoNumerico(String codigo) {
+        Paciente p = repository.findByCodigoNumericoAndActivoTrue(codigo)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No existe un paciente con código " + codigo));
+        if (p.getEstadoClinico() != PacienteEstado.EXTRACCION_PENDIENTE) {
+            throw new BusinessRuleException(
+                    "El paciente con código " + codigo + " no tiene extracción pendiente");
+        }
+        return new PacientePorCodigoDTO(
+                p.getId(), p.getCodigoNumerico(),
+                p.getNombreNino(), p.getApellidoNino(),
+                p.getFechaExtraccion(), p.getTipoPaciente());
     }
 
     @Transactional
@@ -118,6 +142,16 @@ public class PacienteService {
         criterios.setPubertadPrecoz(dto.pubertadPrecoz());
         paciente.setCriterios(criterios);
 
+        CriteriosAptitud aptitud = mapper.calcularCriteriosAptitud(paciente);
+        if (aptitud != CriteriosAptitud.APTO) {
+            String mensaje = aptitud == CriteriosAptitud.EXCLUIDO
+                    ? "El paciente presenta un criterio de exclusión y no puede ser admitido al protocolo."
+                    : paciente.getTipoPaciente() == TipoPaciente.CONTROL
+                            ? "Para caso control los criterios clínicos TEA y TGD no deben presentarse, y el criterio de edad debe cumplirse."
+                            : "Para caso problema los tres criterios de inclusión (TEA DSM-V, TGD DSM-IV y edad) deben cumplirse.";
+            throw new BusinessRuleException(mensaje);
+        }
+
         paciente.setEstadoClinico(PacienteEstado.ADMITIDO);
 
         if (dto.tipoPaciente() == TipoPaciente.PROBLEMA) {
@@ -145,8 +179,8 @@ public class PacienteService {
     }
 
     @Transactional
-    public PacienteResponseDTO update(Long id, PacienteUpdateDTO dto) {
-        Paciente paciente = findActiveById(id);
+    public PacienteResponseDTO update(String codigo, PacienteUpdateDTO dto) {
+        Paciente paciente = findActiveByCodigo(codigo);
         paciente.setApellidoTutor(dto.apellidoTutor());
         paciente.setNombreTutor(dto.nombreTutor());
         paciente.setCorreoTutor(dto.correoTutor());
@@ -162,22 +196,22 @@ public class PacienteService {
     }
 
     @Transactional
-    public PacienteResponseDTO updatePrimeraVisita(Long id, PacientePrimeraVisitaDTO dto) {
-        Paciente paciente = findActiveById(id);
+    public PacienteResponseDTO updatePrimeraVisita(String codigo, PacientePrimeraVisitaDTO dto) {
+        Paciente paciente = findActiveByCodigo(codigo);
         paciente.setFechaPrimeraVisita(dto.fechaPrimeraVisita());
         return mapper.toDTO(repository.save(paciente));
     }
 
     @Transactional
-    public PacienteResponseDTO updateConsentimiento(Long id, PacienteConsentimientoDTO dto) {
-        Paciente paciente = findActiveById(id);
+    public PacienteResponseDTO updateConsentimiento(String codigo, PacienteConsentimientoDTO dto) {
+        Paciente paciente = findActiveByCodigo(codigo);
         paciente.setConsentimientoFirmado(dto.consentimientoFirmado());
         return mapper.toDTO(repository.save(paciente));
     }
 
     @Transactional
-    public PacienteResponseDTO updateCriterios(Long id, CriteriosDTO dto) {
-        Paciente paciente = findActiveById(id);
+    public PacienteResponseDTO updateCriterios(String codigo, CriteriosDTO dto) {
+        Paciente paciente = findActiveByCodigo(codigo);
         Criterios criterios = Optional.ofNullable(paciente.getCriterios())
                 .orElseGet(() -> { var c = new Criterios(); c.setPaciente(paciente); return c; });
         criterios.setCriterioTEADSMV(dto.criterioTEADSMV());
@@ -198,8 +232,8 @@ public class PacienteService {
     }
 
     @Transactional
-    public PacienteResponseDTO updateMchatSeguimiento(Long id, MchatSeguimientoDTO dto) {
-        Paciente paciente = findActiveById(id);
+    public PacienteResponseDTO updateMchatSeguimiento(String codigo, MchatSeguimientoDTO dto) {
+        Paciente paciente = findActiveByCodigo(codigo);
 
         if (paciente.getTipoPaciente() == TipoPaciente.CONTROL) {
             throw new BusinessRuleException(
@@ -232,9 +266,9 @@ public class PacienteService {
     }
 
     @Transactional
-    public PacienteResponseDTO updateCars(Long id, CarsDTO dto) {
+    public PacienteResponseDTO updateCars(String codigo, CarsDTO dto) {
         validarItemsCars(dto);
-        Paciente paciente = findActiveById(id);
+        Paciente paciente = findActiveByCodigo(codigo);
         if (paciente.getTipoPaciente() == TipoPaciente.CONTROL) {
             throw new BusinessRuleException("CARS-2 no aplica para pacientes caso control");
         }
@@ -263,8 +297,8 @@ public class PacienteService {
     }
 
     @Transactional
-    public PacienteResponseDTO updateVineland(Long id, VinelandDTO dto) {
-        Paciente paciente = findActiveById(id);
+    public PacienteResponseDTO updateVineland(String codigo, VinelandDTO dto) {
+        Paciente paciente = findActiveByCodigo(codigo);
         if (paciente.getTipoPaciente() == TipoPaciente.CONTROL) {
             throw new BusinessRuleException("Vineland no aplica para pacientes caso control");
         }
@@ -283,16 +317,16 @@ public class PacienteService {
     }
 
     @Transactional
-    public PacienteResponseDTO updateSegundaVisita(Long id, PacienteSegundaVisitaDTO dto) {
-        Paciente paciente = findActiveById(id);
+    public PacienteResponseDTO updateSegundaVisita(String codigo, PacienteSegundaVisitaDTO dto) {
+        Paciente paciente = findActiveByCodigo(codigo);
         paciente.setFechaExtraccion(dto.fechaExtraccion());
         paciente.setEstadoClinico(calcularEstado(paciente));
         return mapper.toDTO(repository.save(paciente));
     }
 
     @Transactional
-    public PacienteResponseDTO reenviarMchat(Long id) {
-        Paciente paciente = findActiveById(id);
+    public PacienteResponseDTO reenviarMchat(String codigo) {
+        Paciente paciente = findActiveByCodigo(codigo);
         if (paciente.getTipoPaciente() == TipoPaciente.CONTROL) {
             throw new BusinessRuleException("El formulario M-CHAT no aplica para pacientes caso control");
         }
@@ -316,8 +350,8 @@ public class PacienteService {
     }
 
     @Transactional
-    public void delete(Long id) {
-        Paciente paciente = findActiveById(id);
+    public void delete(String codigo) {
+        Paciente paciente = findActiveByCodigo(codigo);
         paciente.setActivo(false);
         repository.save(paciente);
     }
@@ -364,6 +398,12 @@ public class PacienteService {
                         "Paciente con id " + id + " no existe"));
     }
 
+    private Paciente findActiveByCodigo(String codigo) {
+        return repository.findByCodigoNumericoAndActivoTrue(codigo)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Paciente con código " + codigo + " no existe"));
+    }
+
     private Specification<Paciente> buildSpec(String q, List<PacienteEstado> estados, List<TipoPaciente> tipos) {
         Specification<Paciente> spec = activoTrue();
         if (q != null && !q.isBlank()) spec = spec.and(searchText(q));
@@ -403,7 +443,7 @@ public class PacienteService {
     private String generarCodigoNumerico() {
         String codigo;
         do {
-            codigo = UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
+            codigo = UUID.randomUUID().toString().replace("-", "").substring(0, 6).toUpperCase();
         } while (repository.existsByCodigoNumerico(codigo));
         return codigo;
     }

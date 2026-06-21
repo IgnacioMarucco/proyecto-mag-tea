@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 
 public record PacienteListDTO(
         Long id,
+        String codigoNumerico,
         String apellidoTutor,
         String nombreTutor,
         String apellidoNino,

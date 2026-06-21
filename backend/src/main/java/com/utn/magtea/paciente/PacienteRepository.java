@@ -5,12 +5,20 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
 
 public interface PacienteRepository extends JpaRepository<Paciente, Long>, JpaSpecificationExecutor<Paciente> {
     boolean existsByCodigoNumerico(String codigoNumerico);
+    Optional<Paciente> findByCodigoNumericoAndActivoTrue(String codigoNumerico);
+
+    @EntityGraph(attributePaths = {
+            "mchatFamilia", "mchatSeguimiento", "evaluacionCars", "evaluacionVineland", "criterios"
+    })
+    @Query("SELECT p FROM Paciente p WHERE p.codigoNumerico = :codigo AND p.activo = true")
+    Optional<Paciente> findActiveByCodigoNumericoWithGraph(@Param("codigo") String codigo);
     Optional<Paciente> findByMchatToken(String mchatToken);
 
     List<Paciente> findByActivoTrue();

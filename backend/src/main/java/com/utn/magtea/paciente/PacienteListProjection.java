@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 
 public interface PacienteListProjection {
     Long getId();
+    String getCodigoNumerico();
     String getApellidoTutor();
     String getNombreTutor();
     String getApellidoNino();

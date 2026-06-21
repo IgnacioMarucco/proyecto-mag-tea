@@ -41,11 +41,18 @@ public class PacienteController {
         return service.findAll(page, size, q, estados, tipos, sortBy, sortDir);
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{codigo}")
     @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Obtener paciente por id")
-    public PacienteResponseDTO findById(@PathVariable Long id) {
-        return service.findById(id);
+    @Operation(summary = "Obtener paciente por código alfanumérico")
+    public PacienteResponseDTO findByCodigo(@PathVariable String codigo) {
+        return service.findByCodigoFull(codigo);
+    }
+
+    @GetMapping("/by-codigo/{codigo}")
+    @PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
+    @Operation(summary = "Buscar paciente por código numérico (para alta de suero)")
+    public PacientePorCodigoDTO findByCodigoSimple(@PathVariable String codigo) {
+        return service.findByCodigoNumerico(codigo);
     }
 
     @PostMapping
@@ -54,86 +61,86 @@ public class PacienteController {
     public ResponseEntity<PacienteResponseDTO> create(@RequestBody @Valid PacienteCreateDTO dto) {
         PacienteResponseDTO created = service.create(dto);
         var location = ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{id}").buildAndExpand(created.id()).toUri();
+                .path("/{codigo}").buildAndExpand(created.codigoNumerico()).toUri();
         return ResponseEntity.created(location).body(created);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/{codigo}")
     @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Actualizar datos básicos del paciente")
-    public PacienteResponseDTO update(@PathVariable Long id,
+    public PacienteResponseDTO update(@PathVariable String codigo,
                                       @RequestBody @Valid PacienteUpdateDTO dto) {
-        return service.update(id, dto);
+        return service.update(codigo, dto);
     }
 
-    @PatchMapping("/{id}/primera-visita")
+    @PatchMapping("/{codigo}/primera-visita")
     @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Actualizar fecha y hora de la primera visita")
-    public PacienteResponseDTO updatePrimeraVisita(@PathVariable Long id,
+    public PacienteResponseDTO updatePrimeraVisita(@PathVariable String codigo,
                                                    @RequestBody @Valid PacientePrimeraVisitaDTO dto) {
-        return service.updatePrimeraVisita(id, dto);
+        return service.updatePrimeraVisita(codigo, dto);
     }
 
-    @PatchMapping("/{id}/consentimiento")
+    @PatchMapping("/{codigo}/consentimiento")
     @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Registrar consentimiento informado")
-    public PacienteResponseDTO updateConsentimiento(@PathVariable Long id,
+    public PacienteResponseDTO updateConsentimiento(@PathVariable String codigo,
                                                     @RequestBody PacienteConsentimientoDTO dto) {
-        return service.updateConsentimiento(id, dto);
+        return service.updateConsentimiento(codigo, dto);
     }
 
-    @PatchMapping("/{id}/criterios")
+    @PatchMapping("/{codigo}/criterios")
     @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Registrar criterios de inclusión/exclusión")
-    public PacienteResponseDTO updateCriterios(@PathVariable Long id,
+    public PacienteResponseDTO updateCriterios(@PathVariable String codigo,
                                                @RequestBody CriteriosDTO dto) {
-        return service.updateCriterios(id, dto);
+        return service.updateCriterios(codigo, dto);
     }
 
-    @PatchMapping("/{id}/mchat-seguimiento")
+    @PatchMapping("/{codigo}/mchat-seguimiento")
     @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Registrar resultado del seguimiento M-CHAT-R/F (solo si score 3-7)")
-    public PacienteResponseDTO updateMchatSeguimiento(@PathVariable Long id,
+    public PacienteResponseDTO updateMchatSeguimiento(@PathVariable String codigo,
                                                       @RequestBody MchatSeguimientoDTO dto) {
-        return service.updateMchatSeguimiento(id, dto);
+        return service.updateMchatSeguimiento(codigo, dto);
     }
 
-    @PatchMapping("/{id}/cars")
+    @PatchMapping("/{codigo}/cars")
     @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Registrar puntuaciones CARS-2")
-    public PacienteResponseDTO updateCars(@PathVariable Long id,
+    public PacienteResponseDTO updateCars(@PathVariable String codigo,
                                           @RequestBody @Valid CarsDTO dto) {
-        return service.updateCars(id, dto);
+        return service.updateCars(codigo, dto);
     }
 
-    @PatchMapping("/{id}/vineland")
+    @PatchMapping("/{codigo}/vineland")
     @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Registrar puntuaciones Vineland")
-    public PacienteResponseDTO updateVineland(@PathVariable Long id,
+    public PacienteResponseDTO updateVineland(@PathVariable String codigo,
                                               @RequestBody VinelandDTO dto) {
-        return service.updateVineland(id, dto);
+        return service.updateVineland(codigo, dto);
     }
 
-    @PatchMapping("/{id}/segunda-visita")
+    @PatchMapping("/{codigo}/segunda-visita")
     @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Registrar fecha de extracción de sangre (segunda visita)")
-    public PacienteResponseDTO updateSegundaVisita(@PathVariable Long id,
+    public PacienteResponseDTO updateSegundaVisita(@PathVariable String codigo,
                                                    @RequestBody @Valid PacienteSegundaVisitaDTO dto) {
-        return service.updateSegundaVisita(id, dto);
+        return service.updateSegundaVisita(codigo, dto);
     }
 
-    @PostMapping("/{id}/reenviar-mchat")
+    @PostMapping("/{codigo}/reenviar-mchat")
     @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Regenerar y reenviar el enlace M-CHAT por mail")
-    public PacienteResponseDTO reenviarMchat(@PathVariable Long id) {
-        return service.reenviarMchat(id);
+    public PacienteResponseDTO reenviarMchat(@PathVariable String codigo) {
+        return service.reenviarMchat(codigo);
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{codigo}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Dar de baja paciente (baja lógica)")
-    public void delete(@PathVariable Long id) {
-        service.delete(id);
+    public void delete(@PathVariable String codigo) {
+        service.delete(codigo);
     }
 }
