@@ -1,0 +1,60 @@
+<div class="px-8 pb-8">
+
+  <div class="flex items-center justify-between mb-6">
+    <app-page-header [crumbs]="crumbs()" />
+    <a routerLink="/internal/camadas/nuevo"
+      class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors whitespace-nowrap">
+      <app-icon name="plus" class="w-4 h-4" /> Nueva camada
+    </a>
+  </div>
+
+  <app-list-toolbar
+    placeholder="Buscar por nombre…"
+    [filterGroups]="filterGroups"
+    [activeFilters]="{}"
+    (searchChange)="onSearch($event)"
+  />
+
+  <span aria-live="polite" class="sr-only">
+    {{ totalElements() }} {{ totalElements() === 1 ? 'camada encontrada' : 'camadas encontradas' }}
+  </span>
+
+  <app-data-table
+    [columns]="columns"
+    [rows]="camadas().length"
+    ariaLabel="Listado de camadas"
+    [emptyTitle]="emptyTitle()"
+    [emptySubtitle]="emptySubtitle()"
+    [currentSort]="sortState()"
+    (sortChange)="onSortChange($event)"
+  >
+    @for (camada of camadas(); track camada.id) {
+      <tr class="border-b border-border last:border-0 hover:bg-background transition-colors">
+        <td class="px-5 py-3.5 text-text font-mono font-medium">{{ camada.nombre }}</td>
+        <td class="px-5 py-3.5">
+          <app-row-actions [actions]="getActionsFor(camada)" />
+        </td>
+      </tr>
+    }
+  </app-data-table>
+
+  <app-paginator
+    [currentPage]="currentPage()"
+    [totalPages]="totalPages()"
+    [totalElements]="totalElements()"
+    itemLabel="camadas"
+    (pageChange)="goToPage($event)"
+  />
+
+</div>
+
+@if (pendingDeleteId() !== null) {
+  <app-confirm-modal
+    title="¿Dar de baja la camada?"
+    message="La camada quedará inactiva. Los modelos animales asociados conservan su registro."
+    confirmLabel="Dar de baja"
+    cancelLabel="Cancelar"
+    (confirmed)="confirmDelete()"
+    (cancelled)="cancelDelete()"
+  />
+}

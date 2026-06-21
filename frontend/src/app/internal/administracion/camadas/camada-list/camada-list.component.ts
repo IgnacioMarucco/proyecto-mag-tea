@@ -1,0 +1,124 @@
+import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { BehaviorSubject, catchError, map, of, switchMap } from 'rxjs';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { CamadaService } from '../../../../core/services/camada.service';
+import { ToastService } from '../../../../core/services/toast.service';
+import { CamadaListItem } from '../../../../core/models/camada.model';
+import { ListToolbarComponent, FilterGroup } from '../../../../shared/list-toolbar/list-toolbar.component';
+import { ConfirmModalComponent } from '../../../../shared/confirm-modal/confirm-modal.component';
+import { DataTableComponent, TableColumn } from '../../../../shared/data-table/data-table.component';
+import { RowActionsComponent, RowAction } from '../../../../shared/row-actions/row-actions.component';
+import { PaginatorComponent } from '../../../../shared/paginator/paginator.component';
+import { IconComponent } from '../../../../shared/icon/icon.component';
+import { SortState } from '../../../../shared/sort.utils';
+import { Crumb, PageHeaderComponent } from '../../../../shared/page-header/page-header.component';
+import { PageParams } from '../../../../core/models/page-response.model';
+
+@Component({
+  selector: 'app-camada-list',
+  imports: [RouterLink, ListToolbarComponent, ConfirmModalComponent, DataTableComponent,
+            RowActionsComponent, PaginatorComponent, IconComponent, PageHeaderComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  templateUrl: './camada-list.component.html',
+  host: { '(window:keydown)': 'onGlobalKey($event)' },
+})
+export class CamadaListComponent {
+  private readonly service = inject(CamadaService);
+  private readonly router  = inject(Router);
+  private readonly route   = inject(ActivatedRoute);
+  private readonly toolbar = viewChild(ListToolbarComponent);
+  private readonly toast   = inject(ToastService);
+
+  readonly crumbs = toSignal(
+    this.route.data.pipe(map(d => d['crumbs'] as Crumb[] ?? [])),
+    { initialValue: [] as Crumb[] }
+  );
+
+  private readonly params$ = new BehaviorSubject<PageParams>({
+    page: 0, size: 50, sortBy: 'nombre', sortDir: 'asc',
+  });
+
+  private readonly response = toSignal(
+    this.params$.pipe(
+      switchMap(params => this.service.findAll(params).pipe(catchError(() => of(null))))
+    ),
+    { initialValue: null }
+  );
+
+  readonly camadas       = computed(() => this.response()?.content ?? []);
+  readonly totalElements = computed(() => this.response()?.totalElements ?? 0);
+  readonly totalPages    = computed(() => this.response()?.totalPages ?? 1);
+  readonly currentPage   = computed(() => this.response()?.page ?? 0);
+
+  search          = signal('');
+  sortState       = signal<SortState>({ key: 'nombre', direction: 'asc' });
+  deleting        = signal<number | null>(null);
+  pendingDeleteId = signal<number | null>(null);
+
+  readonly filterGroups: FilterGroup[] = [];
+
+  readonly columns: TableColumn[] = [
+    { label: 'Nombre', sortKey: 'nombre' },
+  ];
+
+
+  readonly emptyTitle = computed(() =>
+    this.totalElements() === 0 && !this.hasActiveSearch()
+      ? 'No hay camadas registradas'
+      : 'Sin resultados'
+  );
+  readonly emptySubtitle = computed(() =>
+    this.totalElements() === 0 && !this.hasActiveSearch()
+      ? 'Creá la primera con el botón de arriba'
+      : 'Probá con otro criterio de búsqueda'
+  );
+
+  onSearch(q: string): void {
+    this.search.set(q);
+    this.params$.next({ ...this.params$.value, page: 0, q: q || undefined });
+  }
+
+  onSortChange(sort: SortState): void {
+    this.sortState.set(sort);
+    this.params$.next({ ...this.params$.value, sortBy: sort.key, sortDir: sort.direction });
+  }
+
+  goToPage(page: number): void { this.params$.next({ ...this.params$.value, page }); }
+  private reload(): void       { this.params$.next({ ...this.params$.value }); }
+
+  private hasActiveSearch(): boolean {
+    return !!this.params$.value.q;
+  }
+
+  getActionsFor(camada: CamadaListItem): RowAction[] {
+    return [
+      { label: 'Editar',      style: 'primary', onClick: () => this.router.navigate(['/internal/camadas', camada.id, 'editar']) },
+      { label: 'Dar de baja', style: 'danger',  disabled: this.deleting() === camada.id, onClick: () => this.requestDelete(camada.id) },
+    ];
+  }
+
+  requestDelete(id: number): void { this.pendingDeleteId.set(id); }
+  cancelDelete(): void            { this.pendingDeleteId.set(null); }
+
+  confirmDelete(): void {
+    const id = this.pendingDeleteId();
+    if (id === null) return;
+    this.pendingDeleteId.set(null);
+    this.deleting.set(id);
+    this.service.delete(id).subscribe({
+      next:  () => { this.deleting.set(null); this.toast.show('Camada dada de baja'); this.reload(); },
+      error: () =>   this.deleting.set(null),
+    });
+  }
+
+  onGlobalKey(event: KeyboardEvent): void {
+    const tag = (event.target as HTMLElement).tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (event.key === '/') { event.preventDefault(); this.toolbar()?.focusSearch(); }
+    if ((event.ctrlKey || event.metaKey) && event.key === 'n') {
+      event.preventDefault();
+      this.router.navigate(['/internal/camadas/nuevo']);
+    }
+  }
+}

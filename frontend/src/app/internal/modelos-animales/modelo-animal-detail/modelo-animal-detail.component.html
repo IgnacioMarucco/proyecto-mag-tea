@@ -1,0 +1,79 @@
+@if (loading()) {
+  <div class="px-8 pb-8 flex items-center justify-center text-text-muted text-sm">Cargando…</div>
+} @else if (loadError()) {
+  <div class="px-8 pb-8">
+    <p class="text-danger text-sm">{{ loadError() }}</p>
+    <a routerLink="/internal/modelos-animales" class="mt-3 inline-block text-sm text-primary hover:underline">← Volver a modelos animales</a>
+  </div>
+} @else if (modeloAnimal(); as ma) {
+
+<div class="px-8 pb-0">
+  <div class="mb-6">
+    <app-page-header [crumbs]="crumbs()">
+      <span class="font-mono text-xs text-text-muted bg-surface border border-border rounded px-2 py-0.5">
+        {{ ma.identificador }}
+      </span>
+      <app-status-badge
+        [value]="'' + ma.poolRango"
+        [labels]="rangoLabels"
+        [colorMap]="rangoColors"
+      />
+    </app-page-header>
+  </div>
+</div>
+
+<div class="px-8 pb-8 flex flex-col gap-4">
+
+  <app-datos-basicos-ma-section [modeloAnimal]="ma" />
+
+  @if (ma.aportes && ma.aportes.length > 0) {
+    <div class="bg-surface border border-border rounded-lg overflow-hidden">
+      <div class="px-6 py-4 border-b border-border">
+        <h3 class="text-sm font-semibold text-text uppercase tracking-wider font-mono">Tubos inoculados</h3>
+      </div>
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border bg-background">
+            <th class="px-6 py-3 text-left text-xs font-mono text-text-muted uppercase tracking-wider">Tubo</th>
+            <th class="px-6 py-3 text-right text-xs font-mono text-text-muted uppercase tracking-wider">Cant. consumida</th>
+            <th class="px-6 py-3 text-center text-xs font-mono text-text-muted uppercase tracking-wider">Día</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (aporte of ma.aportes; track aporte.poolTuboId) {
+            <tr class="border-b border-border last:border-0">
+              <td class="px-6 py-3 font-mono text-text">{{ aporte.posicion }}</td>
+              <td class="px-6 py-3 text-right font-mono text-text-muted">
+                {{ aporte.cantidadConsumida !== null ? (aporte.cantidadConsumida + ' ml') : '—' }}
+              </td>
+              <td class="px-6 py-3 text-center font-mono text-text-muted">
+                {{ aporte.dia !== null ? aporte.dia : '—' }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  @defer (on viewport) {
+    <app-vocalizaciones-section [modeloAnimal]="ma" (updated)="onUpdated($event)" />
+  } @placeholder {
+    <div class="h-32 rounded-lg bg-surface border border-border animate-pulse"></div>
+  }
+
+  @defer (on viewport) {
+    <app-tres-camaras-section [modeloAnimal]="ma" (updated)="onUpdated($event)" />
+  } @placeholder {
+    <div class="h-32 rounded-lg bg-surface border border-border animate-pulse"></div>
+  }
+
+  @defer (on viewport) {
+    <app-microscopia-section [modeloAnimal]="ma" (updated)="onUpdated($event)" />
+  } @placeholder {
+    <div class="h-24 rounded-lg bg-surface border border-border animate-pulse"></div>
+  }
+
+</div>
+
+}

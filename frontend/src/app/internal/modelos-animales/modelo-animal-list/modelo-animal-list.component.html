@@ -1,0 +1,108 @@
+<div class="px-8 pb-8">
+
+  <div class="flex items-center justify-between mb-6">
+    <app-page-header [crumbs]="crumbs()" />
+    <a routerLink="/internal/modelos-animales/nuevo"
+      class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors whitespace-nowrap">
+      <app-icon name="plus" class="w-4 h-4" /> Registrar ratón
+    </a>
+  </div>
+
+  <app-list-toolbar
+    placeholder="Buscar por identificador…"
+    [filterGroups]="filterGroups"
+    [activeFilters]="activeFilters()"
+    (searchChange)="onSearch($event)"
+    (filtersChange)="onFiltersChange($event)"
+  />
+
+  <span aria-live="polite" class="sr-only">
+    {{ totalElements() }} {{ totalElements() === 1 ? 'modelo animal encontrado' : 'modelos animales encontrados' }}
+  </span>
+
+  <app-data-table
+    [columns]="columns"
+    [rows]="modelosAnimales().length"
+    ariaLabel="Listado de modelos animales"
+    [emptyTitle]="emptyTitle()"
+    [emptySubtitle]="emptySubtitle()"
+    [currentSort]="sortState()"
+    (sortChange)="onSortChange($event)"
+  >
+    @for (ma of modelosAnimales(); track ma.id) {
+      <tr class="border-b border-border last:border-0 hover:bg-background transition-colors">
+
+        <td class="px-5 py-3.5">
+          <a [routerLink]="['/internal/modelos-animales', ma.id]"
+             class="text-primary font-medium font-mono hover:underline">
+            {{ ma.identificador }}
+          </a>
+        </td>
+
+        <td class="px-5 py-3.5 hidden sm:table-cell">
+          <app-status-badge
+            [value]="'' + ma.poolRango"
+            [labels]="rangoLabels"
+            [colorMap]="rangoColors"
+          />
+        </td>
+
+        <td class="px-5 py-3.5 hidden md:table-cell text-text-muted text-sm font-mono">
+          {{ ma.camadaNombre }}
+        </td>
+
+        <td class="px-5 py-3.5 hidden sm:table-cell text-text-muted text-sm font-mono">
+          {{ formatDate(ma.fechaNacimiento) }}
+        </td>
+
+        <td class="px-5 py-3.5 hidden sm:table-cell">
+          <app-status-badge
+            [value]="ma.sexo"
+            [labels]="sexoLabels"
+            [colorMap]="sexoColors"
+          />
+        </td>
+
+        <td class="px-5 py-3.5">
+          <div class="flex flex-wrap gap-1">
+            @if (ma.necesitaVocalizaciones) {
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning/10 text-warning">
+                VUS hoy
+              </span>
+            }
+            @if (ma.necesitaTresCamaras) {
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning/10 text-warning">
+                3C hoy
+              </span>
+            }
+          </div>
+        </td>
+
+        <td class="px-5 py-3.5">
+          <app-row-actions [actions]="getActionsFor(ma)" />
+        </td>
+
+      </tr>
+    }
+  </app-data-table>
+
+  <app-paginator
+    [currentPage]="currentPage()"
+    [totalPages]="totalPages()"
+    [totalElements]="totalElements()"
+    itemLabel="modelos animales"
+    (pageChange)="goToPage($event)"
+  />
+
+</div>
+
+@if (pendingDeleteId() !== null) {
+  <app-confirm-modal
+    title="¿Dar de baja el modelo animal?"
+    message="El ratón quedará inactivo. Los estudios conductuales registrados se conservan."
+    confirmLabel="Dar de baja"
+    cancelLabel="Cancelar"
+    (confirmed)="confirmDelete()"
+    (cancelled)="cancelDelete()"
+  />
+}

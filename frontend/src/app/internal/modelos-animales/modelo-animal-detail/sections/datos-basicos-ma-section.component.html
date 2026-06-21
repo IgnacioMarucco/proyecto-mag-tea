@@ -1,0 +1,50 @@
+<div class="bg-surface border border-border rounded-lg p-6">
+  <div class="flex items-start justify-between mb-4">
+    <h2 class="text-sm font-semibold text-text uppercase tracking-wider font-mono">Datos básicos</h2>
+    <a
+      [routerLink]="['/internal/modelos-animales', modeloAnimal().id, 'editar']"
+      class="px-3 py-1.5 text-xs font-medium text-primary border border-primary/30 rounded-md
+             hover:bg-primary/5 transition-colors"
+    >
+      Editar
+    </a>
+  </div>
+
+  <dl class="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4 text-sm">
+    <div>
+      <dt class="text-xs font-mono text-text-muted uppercase tracking-wider mb-0.5">Identificador</dt>
+      <dd class="text-text font-mono font-semibold">{{ modeloAnimal().identificador }}</dd>
+    </div>
+    <div>
+      <dt class="text-xs font-mono text-text-muted uppercase tracking-wider mb-0.5">Pool</dt>
+      <dd>
+        <a [routerLink]="['/internal/pools', modeloAnimal().poolId]"
+           class="text-primary font-mono text-sm hover:underline">
+          Pool #{{ modeloAnimal().poolCodigo }} — Rango {{ modeloAnimal().poolRango }}
+        </a>
+      </dd>
+    </div>
+    <div>
+      <dt class="text-xs font-mono text-text-muted uppercase tracking-wider mb-0.5">Camada</dt>
+      <dd class="text-text font-mono">{{ modeloAnimal().camadaNombre }}</dd>
+    </div>
+    <div>
+      <dt class="text-xs font-mono text-text-muted uppercase tracking-wider mb-0.5">Fecha nacimiento</dt>
+      <dd class="text-text font-mono">{{ formatDate(modeloAnimal().fechaNacimiento) }}</dd>
+    </div>
+    <div>
+      <dt class="text-xs font-mono text-text-muted uppercase tracking-wider mb-0.5">Día de vida</dt>
+      <dd class="text-text font-mono font-semibold">Día {{ diaNacimiento() }}</dd>
+    </div>
+    <div>
+      <dt class="text-xs font-mono text-text-muted uppercase tracking-wider mb-0.5">Sexo</dt>
+      <dd>
+        <app-status-badge [value]="modeloAnimal().sexo" [labels]="sexoLabels" [colorMap]="sexoColors" />
+      </dd>
+    </div>
+    <div>
+      <dt class="text-xs font-mono text-text-muted uppercase tracking-wider mb-0.5">Fecha día 1 inoculación</dt>
+      <dd class="text-text font-mono">{{ formatDate(modeloAnimal().fechaDia1Inoculacion) }}</dd>
+    </div>
+  </dl>
+</div>
