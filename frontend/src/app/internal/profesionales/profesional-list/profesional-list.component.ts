@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { BehaviorSubject, catchError, map, of, switchMap } from 'rxjs';
 import { ProfesionalService } from '../../../core/services/profesional.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { ROLE_LABELS, Role, ProfesionalResponse } from '../../../core/models/profesional.model';
 import { ListToolbarComponent, FilterGroup } from '../../../shared/list-toolbar/list-toolbar.component';
 import { ConfirmModalComponent } from '../../../shared/confirm-modal/confirm-modal.component';
@@ -19,11 +20,14 @@ import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-hea
   imports: [RouterLink, ListToolbarComponent, ConfirmModalComponent, DataTableComponent, StatusBadgeComponent, RowActionsComponent, PaginatorComponent, IconComponent, PageHeaderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './profesional-list.component.html',
+  host: { '(window:keydown)': 'onGlobalKey($event)' },
 })
 export class ProfesionalListComponent {
   private readonly service = inject(ProfesionalService);
   private readonly router  = inject(Router);
   private readonly route   = inject(ActivatedRoute);
+  private readonly toolbar = viewChild(ListToolbarComponent);
+  private readonly toast   = inject(ToastService);
 
   readonly crumbs = toSignal(
     this.route.data.pipe(map(d => d['crumbs'] as Crumb[] ?? [])),
@@ -138,8 +142,18 @@ export class ProfesionalListComponent {
     this.pendingDeleteId.set(null);
     this.deleting.set(id);
     this.service.delete(id).subscribe({
-      next:  () => { this.deleting.set(null); this.reload(); },
+      next:  () => { this.deleting.set(null); this.toast.show('Profesional dado de baja'); this.reload(); },
       error: () =>   this.deleting.set(null),
     });
+  }
+
+  onGlobalKey(event: KeyboardEvent): void {
+    const tag = (event.target as HTMLElement).tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (event.key === '/') { event.preventDefault(); this.toolbar()?.focusSearch(); }
+    if ((event.ctrlKey || event.metaKey) && event.key === 'n') {
+      event.preventDefault();
+      this.router.navigate(['/internal/profesionales/nuevo']);
+    }
   }
 }
