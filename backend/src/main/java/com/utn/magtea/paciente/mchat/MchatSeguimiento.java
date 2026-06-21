@@ -24,7 +24,7 @@ public class MchatSeguimiento extends Auditable {
     @JoinColumn(name = "paciente_id", nullable = false, unique = true)
     private Paciente paciente;
 
-    // true = Pasa, false = Falla
+    // Convención: true = Pasa, false = Falla — EXCEPTO ítems 2, 5 y 12 (invertidos): true = Falla, false = Pasa
     @Column(nullable = false) private boolean item1;
     @Column(nullable = false) private boolean item2;
     @Column(nullable = false) private boolean item3;

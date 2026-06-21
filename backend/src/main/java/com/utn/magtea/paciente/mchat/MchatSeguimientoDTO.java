@@ -1,6 +1,6 @@
 package com.utn.magtea.paciente.mchat;
 
-// true = Pasa, false = Falla
+// Convención: true = Pasa, false = Falla — EXCEPTO ítems 2, 5 y 12 (invertidos): true = Falla, false = Pasa
 public record MchatSeguimientoDTO(
         boolean item1,  boolean item2,  boolean item3,  boolean item4,  boolean item5,
         boolean item6,  boolean item7,  boolean item8,  boolean item9,  boolean item10,
