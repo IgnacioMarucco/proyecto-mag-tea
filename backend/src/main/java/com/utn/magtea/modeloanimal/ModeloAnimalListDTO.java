@@ -7,6 +7,7 @@ public record ModeloAnimalListDTO(
         String identificador,
         Long poolId,
         Integer poolRango,
+        String poolCodigo,
         String camadaNombre,
         LocalDate fechaNacimiento,
         SexoRaton sexo,

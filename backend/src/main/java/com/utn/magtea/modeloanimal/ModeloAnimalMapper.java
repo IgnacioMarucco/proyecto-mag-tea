@@ -10,21 +10,24 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring", imports = {VusBanda.class, SocializacionResultado.class})
 public interface ModeloAnimalMapper {
 
-    @Mapping(target = "poolId", source = "modeloAnimal.pool.id")
-    @Mapping(target = "poolRango", source = "modeloAnimal.pool.rango")
+    @Mapping(target = "poolId",     source = "modeloAnimal.pool.id")
+    @Mapping(target = "poolRango",  source = "modeloAnimal.pool.rango")
+    @Mapping(target = "poolCodigo", source = "modeloAnimal.pool.codigo")
     @Mapping(target = "camadaNombre", source = "modeloAnimal.camada.nombre")
     @Mapping(target = "necesitaVocalizaciones", source = "necesitaVocalizaciones")
-    @Mapping(target = "necesitaTresCamaras", source = "necesitaTresCamaras")
+    @Mapping(target = "necesitaTresCamaras",    source = "necesitaTresCamaras")
     ModeloAnimalListDTO toListDTO(ModeloAnimal modeloAnimal, boolean necesitaVocalizaciones, boolean necesitaTresCamaras);
 
-    @Mapping(target = "poolId", source = "modeloAnimal.pool.id")
-    @Mapping(target = "poolRango", source = "modeloAnimal.pool.rango")
-    @Mapping(target = "camadaId", source = "modeloAnimal.camada.id")
+    @Mapping(target = "poolId",     source = "modeloAnimal.pool.id")
+    @Mapping(target = "poolRango",  source = "modeloAnimal.pool.rango")
+    @Mapping(target = "poolCodigo", source = "modeloAnimal.pool.codigo")
+    @Mapping(target = "camadaId",   source = "modeloAnimal.camada.id")
     @Mapping(target = "camadaNombre", source = "modeloAnimal.camada.nombre")
     @Mapping(target = "necesitaVocalizaciones", source = "necesitaVocalizaciones")
-    @Mapping(target = "necesitaTresCamaras", source = "necesitaTresCamaras")
+    @Mapping(target = "necesitaTresCamaras",    source = "necesitaTresCamaras")
     @Mapping(target = "vocalizaciones", source = "vocalizacionesDTO")
-    @Mapping(target = "tresCamaras", source = "tresCamarasDTO")
+    @Mapping(target = "tresCamaras",    source = "tresCamarasDTO")
+    @Mapping(target = "aportes",    source = "modeloAnimal.aportes")
     ModeloAnimalResponseDTO toDTO(ModeloAnimal modeloAnimal,
                                   boolean necesitaVocalizaciones,
                                   boolean necesitaTresCamaras,
@@ -43,13 +46,18 @@ public interface ModeloAnimalMapper {
              expression = "java(tc.getM2TiempoRatonDesconocido() / tc.getM2TiempoRatonFamiliar() <= 1 ? SocializacionResultado.FALTA_SOCIALIZACION : SocializacionResultado.NORMAL)")
     TresCamarasDTO toTresCamarasDTO(TresCamaras tc);
 
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "activo", ignore = true)
-    @Mapping(target = "pool", ignore = true)
-    @Mapping(target = "camada", ignore = true)
-    @Mapping(target = "vocalizaciones", ignore = true)
-    @Mapping(target = "tresCamaras", ignore = true)
+    @Mapping(target = "posicion", source = "tubo.posicion")
+    @Mapping(target = "poolTuboId", source = "tubo.id")
+    ModeloAnimalPoolAporteDTO toAporteDTO(ModeloAnimalPoolAporte aporte);
+
+    @Mapping(target = "id",                  ignore = true)
+    @Mapping(target = "activo",              ignore = true)
+    @Mapping(target = "pool",                ignore = true)
+    @Mapping(target = "camada",              ignore = true)
+    @Mapping(target = "vocalizaciones",      ignore = true)
+    @Mapping(target = "tresCamaras",         ignore = true)
+    @Mapping(target = "aportes",             ignore = true)
     @Mapping(target = "numCelulasGanglionares", ignore = true)
-    @Mapping(target = "numCelulasPurkinje", ignore = true)
+    @Mapping(target = "numCelulasPurkinje",  ignore = true)
     ModeloAnimal toEntity(ModeloAnimalCreateDTO dto);
 }

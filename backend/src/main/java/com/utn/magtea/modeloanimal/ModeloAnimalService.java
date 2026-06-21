@@ -3,6 +3,7 @@ package com.utn.magtea.modeloanimal;
 import com.utn.magtea.camada.Camada;
 import com.utn.magtea.camada.CamadaRepository;
 import com.utn.magtea.common.PageResponse;
+import com.utn.magtea.common.exception.BusinessRuleException;
 import com.utn.magtea.common.exception.ResourceNotFoundException;
 import com.utn.magtea.modeloanimal.estudios.TresCamaras;
 import com.utn.magtea.modeloanimal.estudios.TresCamarasDTO;
@@ -10,6 +11,9 @@ import com.utn.magtea.modeloanimal.estudios.VocalizacionesDTO;
 import com.utn.magtea.modeloanimal.estudios.VocalizacionesUltrasonicas;
 import com.utn.magtea.pool.Pool;
 import com.utn.magtea.pool.PoolRepository;
+import com.utn.magtea.tubo.Tubo;
+import com.utn.magtea.tubo.TipoTubo;
+import com.utn.magtea.tubo.TuboRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -32,6 +36,8 @@ public class ModeloAnimalService {
     private final ModeloAnimalRepository repository;
     private final ModeloAnimalMapper mapper;
     private final PoolRepository poolRepository;
+    private final TuboRepository tuboRepository;
+    private final ModeloAnimalPoolAporteRepository modeloAnimalPoolAporteRepository;
     private final CamadaRepository camadaRepository;
     private final Clock clock;
 
@@ -78,12 +84,43 @@ public class ModeloAnimalService {
         ModeloAnimal m = mapper.toEntity(dto);
         m.setPool(pool);
         m.setCamada(camada);
+        ModeloAnimal saved = repository.save(m);
+
+        if (dto.aportes() != null && !dto.aportes().isEmpty()) {
+            for (ModeloAnimalPoolAporteInputDTO a : dto.aportes()) {
+                Tubo tubo = tuboRepository.findById(a.poolTuboId())
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                "Tubo con id " + a.poolTuboId() + " no existe"));
+
+                if (tubo.getTipo() != TipoTubo.POOL) {
+                    throw new BusinessRuleException(
+                            "El tubo en posición " + tubo.getPosicion() + " no es un tubo de pool");
+                }
+
+                if (!tubo.getPool().getId().equals(dto.poolId())) {
+                    throw new BusinessRuleException(
+                            "El tubo " + tubo.getPosicion() + " no pertenece al pool indicado");
+                }
+
+                ModeloAnimalPoolAporte aporte = new ModeloAnimalPoolAporte();
+                aporte.setModeloAnimal(saved);
+                aporte.setTubo(tubo);
+                aporte.setCantidadConsumida(a.cantidadConsumida());
+                aporte.setDia(a.dia());
+                modeloAnimalPoolAporteRepository.save(aporte);
+
+                if (a.cantidadConsumida() != null) {
+                    tubo.setCantidadUsada(tubo.getCantidadUsada() + a.cantidadConsumida());
+                    tuboRepository.save(tubo);
+                }
+            }
+        }
 
         LocalDate hoy = LocalDate.now(clock);
-        ModeloAnimal saved = repository.save(m);
-        return mapper.toDTO(saved,
-                calcularNecesitaVocalizaciones(saved, hoy),
-                calcularNecesitaTresCamaras(saved, hoy),
+        ModeloAnimal refreshed = repository.findById(saved.getId()).orElseThrow();
+        return mapper.toDTO(refreshed,
+                calcularNecesitaVocalizaciones(refreshed, hoy),
+                calcularNecesitaTresCamaras(refreshed, hoy),
                 null, null);
     }
 

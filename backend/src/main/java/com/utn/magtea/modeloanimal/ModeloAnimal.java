@@ -12,6 +12,8 @@ import lombok.Setter;
 import org.hibernate.envers.Audited;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Audited
 @Entity
@@ -55,6 +57,9 @@ public class ModeloAnimal extends Auditable {
 
     @OneToOne(mappedBy = "modeloAnimal", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private TresCamaras tresCamaras;
+
+    @OneToMany(mappedBy = "modeloAnimal", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ModeloAnimalPoolAporte> aportes = new ArrayList<>();
 
     @Column(nullable = false)
     private boolean activo = true;

@@ -5,12 +5,14 @@ import com.utn.magtea.modeloanimal.estudios.VocalizacionesDTO;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record ModeloAnimalResponseDTO(
         Long id,
         String identificador,
         Long poolId,
         Integer poolRango,
+        String poolCodigo,
         Long camadaId,
         String camadaNombre,
         LocalDate fechaNacimiento,
@@ -20,6 +22,7 @@ public record ModeloAnimalResponseDTO(
         Integer numCelulasPurkinje,
         VocalizacionesDTO vocalizaciones,
         TresCamarasDTO tresCamaras,
+        List<ModeloAnimalPoolAporteDTO> aportes,
         boolean necesitaVocalizaciones,
         boolean necesitaTresCamaras,
         boolean activo,
