@@ -3,11 +3,12 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {
   LucideAngularModule,
   type LucideIconData,
-  Inbox, Users, Droplets, Layers, Rat, Briefcase, ChartBar,
+  Inbox, Users, Droplets, Layers, Rat, Briefcase, ChartBar, Archive, Dna,
   LogOut, PanelLeftClose, PanelLeftOpen,
 } from 'lucide-angular';
 import { AuthService } from '../../core/services/auth.service';
 import { Role, ROLE_LABELS } from '../../core/models/profesional.model';
+import { ToastContainerComponent } from '../../shared/toast/toast-container.component';
 
 interface NavItem {
   label: string;
@@ -63,7 +64,7 @@ const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    label: 'Gestión',
+    label: 'Administración',
     items: [
       {
         label: 'Profesionales',
@@ -71,6 +72,23 @@ const NAV_SECTIONS: NavSection[] = [
         icon: Briefcase,
         allowedRoles: ['INVESTIGADOR_PRINCIPAL'],
       },
+      {
+        label: 'Cajas',
+        path: '/internal/cajas',
+        icon: Archive,
+        allowedRoles: ['CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL'],
+      },
+      {
+        label: 'Camadas',
+        path: '/internal/camadas',
+        icon: Dna,
+        allowedRoles: ['CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL'],
+      },
+    ],
+  },
+  {
+    label: 'Reportes',
+    items: [
       {
         label: 'Reportes',
         path: '/internal/reportes',
@@ -83,7 +101,7 @@ const NAV_SECTIONS: NavSection[] = [
 
 @Component({
   selector: 'app-internal-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, LucideAngularModule],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, LucideAngularModule, ToastContainerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './internal-layout.component.html',
 })
