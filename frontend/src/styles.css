@@ -15,6 +15,16 @@
   --color-warning:          #e67e22;
   --color-success:          #27ae60;
 
+  /* Rangos BTU */
+  --color-rango0:           #0891b2;   /* celeste  — Control  */
+  --color-rango0-light:     #e0f7fb;
+  --color-rango1:           #4f46e5;   /* índigo   — Rango 1  */
+  --color-rango1-light:     #eef2ff;
+  --color-rango2:           #7c3aed;   /* violeta  — Rango 2  */
+  --color-rango2-light:     #f5f3ff;
+  --color-rango3:           #db2777;   /* fucsia   — Rango 3  */
+  --color-rango3-light:     #fdf2f8;
+
   /* Neutros */
   --color-background:       #f5f7f9;
   --color-surface:          #ffffff;
@@ -46,4 +56,11 @@ body {
   background-color: var(--color-background);
   color: var(--color-text);
   -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+  .badge-rango0 { background-color: var(--color-rango0-light); color: var(--color-rango0); }
+  .badge-rango1 { background-color: var(--color-rango1-light); color: var(--color-rango1); }
+  .badge-rango2 { background-color: var(--color-rango2-light); color: var(--color-rango2); }
+  .badge-rango3 { background-color: var(--color-rango3-light); color: var(--color-rango3); }
 }
