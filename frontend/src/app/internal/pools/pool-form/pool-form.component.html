@@ -1,0 +1,267 @@
+<div class="px-8 pb-8 max-w-3xl mx-auto">
+
+  <div class="mb-6">
+    <app-page-header [crumbs]="crumbs()" />
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate appFirstFocus class="space-y-6">
+
+    <!-- ── Sección 1: Aportes de sueros ─────────────────────────────────── -->
+    <div class="bg-surface border border-border rounded-lg p-6 space-y-5">
+      <h2 class="text-sm font-semibold text-text uppercase tracking-wider font-mono">Aportes de sueros</h2>
+
+      <!-- Filtros: Tipo y Rango -->
+      <div class="flex flex-wrap gap-4">
+        <div>
+          <label class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
+            Tipo <span class="text-danger">*</span>
+          </label>
+          <select
+            [value]="filterUso() ?? ''"
+            (change)="filterUso.set($any($event.target).value || null)"
+            class="w-44 px-3 py-2 text-sm bg-surface border border-border rounded-md text-text
+                   focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+          >
+            <option value="" disabled>Seleccioná un tipo</option>
+            <option value="CONTROL">Control</option>
+            <option value="PROBLEMA">Caso problema</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
+            Rango <span class="text-danger">*</span>
+          </label>
+          <select
+            [value]="filterRango() != null ? '' + filterRango() : ''"
+            (change)="filterRango.set($any($event.target).value !== '' ? +$any($event.target).value : null)"
+            class="w-44 px-3 py-2 text-sm bg-surface border border-border rounded-md text-text
+                   focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+          >
+            <option value="" disabled>Seleccioná un rango</option>
+            <option value="0">Rango 0</option>
+            <option value="1">Rango 1</option>
+            <option value="2">Rango 2</option>
+            <option value="3">Rango 3</option>
+          </select>
+          <p class="mt-1.5 text-xs text-text-muted">Solo aparecen sueros del tipo y rango seleccionados</p>
+        </div>
+      </div>
+
+      <!-- Tabla de sueros disponibles (expandible por suero) -->
+      @if (filterUso() && filterRango() != null) {
+        <div>
+          @if (loadingSueros()) {
+            <p class="text-sm text-text-muted py-4">Cargando sueros disponibles…</p>
+          } @else if (suerosDisponibles().length === 0) {
+            <p class="text-sm text-text-muted py-4">No hay sueros disponibles para el tipo y rango seleccionados.</p>
+          } @else {
+            <div class="overflow-x-auto rounded-md border border-border">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="bg-background border-b border-border">
+                    <th class="px-3 py-2.5 w-10"><span class="sr-only">Expandir</span></th>
+                    <th class="px-4 py-2.5 text-left text-xs font-mono text-text-muted uppercase">Código</th>
+                    <th class="px-4 py-2.5 text-left text-xs font-mono text-text-muted uppercase hidden sm:table-cell">Disponible (ml)</th>
+                    <th class="px-4 py-2.5 text-left text-xs font-mono text-text-muted uppercase">Aportar (ml)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (s of suerosDisponibles(); track s.id) {
+
+                    <!-- Fila del suero -->
+                    <tr class="border-b border-border hover:bg-background transition-colors"
+                        [class.bg-primary/5]="isExpanded(s.id)">
+                      <td class="px-3 py-3 text-center">
+                        <button
+                          type="button"
+                          (click)="toggleExpand(s.id)"
+                          class="p-1 rounded hover:bg-border transition-colors"
+                          [attr.aria-label]="(isExpanded(s.id) ? 'Colapsar' : 'Expandir') + ' suero ' + s.codigoNumerico"
+                          [attr.aria-expanded]="isExpanded(s.id)"
+                        >
+                          <svg
+                            class="w-3.5 h-3.5 text-text-muted transition-transform"
+                            [class.rotate-90]="isExpanded(s.id)"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                          >
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                          </svg>
+                        </button>
+                      </td>
+                      <td class="px-4 py-3 font-mono text-text font-medium">{{ s.codigoNumerico }}</td>
+                      <td class="px-4 py-3 font-mono text-text-muted hidden sm:table-cell">
+                        {{ s.cantidadRestante | ml }} ml
+                      </td>
+                      <td class="px-4 py-3 text-text-muted text-xs">
+                        @if (!isExpanded(s.id)) { Expandir para ver tubos }
+                      </td>
+                    </tr>
+
+                    <!-- Sub-filas de tubos (solo si expandido) -->
+                    @if (isExpanded(s.id)) {
+                      @if (isSueroLoading(s.id)) {
+                        <tr class="border-b border-border">
+                          <td colspan="4" class="px-4 py-3 pl-10 text-xs text-text-muted bg-background/50">
+                            Cargando tubos…
+                          </td>
+                        </tr>
+                      } @else if (getTubosDeSuero(s.id).length === 0) {
+                        <tr class="border-b border-border">
+                          <td colspan="4" class="px-4 py-3 pl-10 text-xs text-text-muted bg-background/50">
+                            Sin tubos disponibles
+                          </td>
+                        </tr>
+                      } @else {
+                        @for (tubo of getTubosDeSuero(s.id); track tubo.id) {
+                          @let r = restanteDespTubo(tubo, tubo.id);
+                          <tr class="border-b border-border last:border-b-0 bg-background/50 hover:bg-background transition-colors">
+                            <td class="px-3 py-2.5 pl-8 text-center">
+                              <input
+                                type="checkbox"
+                                [checked]="isAporteSelected(tubo.id)"
+                                (change)="toggleTubo(tubo.id)"
+                                class="w-4 h-4 accent-primary"
+                                [attr.aria-label]="'Tubo ' + tubo.posicion + ' de ' + s.codigoNumerico"
+                              />
+                            </td>
+                            <td class="px-4 py-2.5 font-mono text-text text-xs font-medium">
+                              {{ tubo.posicion }}
+                            </td>
+                            <td class="px-4 py-2.5 hidden sm:table-cell">
+                              <span class="font-mono text-xs text-text-muted">{{ tubo.cantidadRestante | ml }} ml</span>
+                              @if (r !== null) {
+                                <span class="ml-2 font-mono text-xs" [class]="r < 0 ? 'text-danger font-semibold' : 'text-primary'">
+                                  → {{ r | ml }} ml
+                                </span>
+                              }
+                            </td>
+                            <td class="px-4 py-2.5">
+                              @if (isAporteSelected(tubo.id)) {
+                                <input
+                                  type="number"
+                                  step="0.01"
+                                  min="0.01"
+                                  [max]="tubo.cantidadRestante"
+                                  [value]="getAporteCantidad(tubo.id) || ''"
+                                  placeholder="0.00"
+                                  (input)="updateAporte(tubo.id, $any($event.target).value)"
+                                  class="w-28 px-2 py-1.5 text-sm bg-surface border border-border rounded text-text font-mono
+                                         focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                                  [attr.aria-label]="'Cantidad a aportar del tubo ' + tubo.posicion"
+                                />
+                              }
+                            </td>
+                          </tr>
+                        }
+                      }
+                    }
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Resumen de aportes -->
+            @if (aportesSeleccionados().size > 0) {
+              <div class="mt-3 flex flex-wrap items-center gap-4 p-3 bg-background rounded-md border border-border text-sm">
+                <div>
+                  <span class="text-text-muted">Tubos seleccionados:</span>
+                  <span class="font-semibold text-text ml-1">{{ aportesSeleccionados().size }}</span>
+                </div>
+                <div>
+                  <span class="text-text-muted">Total aportes:</span>
+                  <span class="font-semibold font-mono text-text ml-1">{{ totalAportes() | ml }} ml</span>
+                </div>
+              </div>
+            }
+          }
+        </div>
+      }
+    </div>
+
+    <!-- ── Sección 2: Ubicación y tubos del pool ──────────────────────────── -->
+    <div class="bg-surface border border-border rounded-lg p-6 space-y-5">
+      <h2 class="text-sm font-semibold text-text uppercase tracking-wider font-mono">Ubicación y tubos del pool</h2>
+
+      <!-- Freezer picker -->
+      <div>
+        <app-freezer-picker (cajaIdChange)="onCajaChange($event)" />
+        @if (form.get('cajaId')?.invalid && form.get('cajaId')?.touched) {
+          <p role="alert" class="mt-1 text-xs text-danger">La ubicación es obligatoria</p>
+        }
+      </div>
+
+      <!-- Grilla + cantidades de tubos del pool -->
+      <div>
+        <p class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-2">
+          Tubos del pool <span class="text-danger">*</span>
+        </p>
+        <app-tubo-grid
+          [value]="tubosValue()"
+          [occupied]="ocupadasStr()"
+          (valueChange)="onTubosChange($event)"
+        />
+        <app-tubo-quantity-table
+          [tubos]="tubosPoolConCantidad()"
+          (tubosChange)="onTubosPoolConCantidadChange($event)"
+        />
+      </div>
+
+      <!-- Indicador de invariante Σ(aportes) == Σ(tubos pool) -->
+      @if (aportesSeleccionados().size > 0 || tubosPoolConCantidad().length > 0) {
+        <div class="p-3 rounded-md border text-sm font-mono"
+             [class]="invarianteOk() && totalAportes() > 0
+               ? 'bg-success/5 border-success/30'
+               : 'bg-warning/5 border-warning/30'">
+          <div class="flex flex-wrap gap-x-6 gap-y-1 text-text">
+            <span>Aportes: <strong>{{ totalAportes() | ml }} ml</strong></span>
+            <span>Tubos pool: <strong>{{ totalPoolTubos() | ml }} ml</strong></span>
+            @if (!invarianteOk()) {
+              <span class="text-warning font-semibold">
+                Diferencia: {{ absDiferencia() | ml }} ml — deben coincidir
+              </span>
+            } @else if (totalAportes() > 0) {
+              <span class="text-success font-semibold">&#10003; Volúmenes coinciden</span>
+            }
+          </div>
+        </div>
+      }
+    </div>
+
+    @if (error()) {
+      <div role="alert" class="px-4 py-3 bg-danger/10 border border-danger/30 rounded-md text-sm text-danger">
+        {{ error() }}
+      </div>
+    }
+
+    <div class="flex items-center gap-3">
+      <button
+        type="submit"
+        [disabled]="loading()"
+        class="px-5 py-2 bg-primary text-white text-sm font-medium rounded-md
+               hover:bg-primary-dark transition-colors disabled:opacity-50"
+      >
+        {{ loading() ? 'Guardando…' : 'Crear pool' }}
+      </button>
+      <button
+        type="button"
+        (click)="handleEscape()"
+        class="px-5 py-2 text-sm font-medium text-white bg-danger rounded-md hover:opacity-90 transition-opacity"
+      >
+        Cancelar
+      </button>
+    </div>
+
+  </form>
+</div>
+
+@if (showExitConfirm()) {
+  <app-confirm-modal
+    title="¿Salir sin guardar?"
+    message="Tenés cambios sin guardar. Si salís ahora los perderás."
+    confirmLabel="Salir"
+    cancelLabel="Quedarme"
+    (confirmed)="confirmExit()"
+    (cancelled)="showExitConfirm.set(false)"
+  />
+}

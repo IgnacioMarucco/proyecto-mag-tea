@@ -1,0 +1,205 @@
+@if (loading()) {
+  <div class="px-8 pb-8 flex items-center justify-center text-text-muted text-sm">Cargando…</div>
+} @else if (loadError()) {
+  <div class="px-8 pb-8">
+    <p class="text-danger text-sm">{{ loadError() }}</p>
+    <a routerLink="/internal/pools" class="mt-3 inline-block text-sm text-primary hover:underline">← Volver a pools</a>
+  </div>
+} @else if (pool(); as p) {
+
+<div class="px-8 pb-0">
+  <div class="mb-6">
+    <app-page-header [crumbs]="crumbs()">
+      <app-status-badge [value]="p.uso" [labels]="usoLabels" [colorMap]="usoColors" />
+      <app-status-badge [value]="'' + p.rango" [labels]="rangoLabels" [colorMap]="rangoColors" />
+    </app-page-header>
+  </div>
+</div>
+
+<div class="px-8 pb-8 flex flex-col gap-4">
+
+  <!-- Datos básicos del pool -->
+  <div class="bg-surface border border-border rounded-lg p-6">
+    <div class="flex items-start justify-between mb-4">
+      <h2 class="text-sm font-semibold text-text uppercase tracking-wider font-mono">Datos del pool</h2>
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          (click)="requestDelete()"
+          [disabled]="deleting()"
+          class="px-3 py-1.5 text-xs font-medium text-danger border border-danger/30 rounded-md
+                 hover:bg-danger/10 transition-colors disabled:opacity-50"
+        >
+          Dar de baja
+        </button>
+      </div>
+    </div>
+
+    <dl class="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4 text-sm">
+      <div>
+        <dt class="text-xs font-mono text-text-muted uppercase tracking-wider mb-0.5">Fecha creación</dt>
+        <dd class="text-text font-mono">{{ formatDate(p.fechaCreacion) }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs font-mono text-text-muted uppercase tracking-wider mb-0.5">Caja</dt>
+        <dd class="text-text font-mono">#{{ p.cajaId }}</dd>
+      </div>
+      <div>
+        <dt class="text-xs font-mono text-text-muted uppercase tracking-wider mb-0.5">Total</dt>
+        <dd class="text-text font-mono font-medium">{{ p.cantidadTotal | ml }} ml</dd>
+      </div>
+      <div>
+        <dt class="text-xs font-mono text-text-muted uppercase tracking-wider mb-0.5">Restante</dt>
+        <dd class="text-accent font-mono font-semibold">{{ p.cantidadRestante | ml }} ml</dd>
+      </div>
+    </dl>
+  </div>
+
+  <!-- Aportes de sueros -->
+  <div class="bg-surface border border-border rounded-lg p-6">
+    <h2 class="text-sm font-semibold text-text uppercase tracking-wider font-mono mb-4">
+      Aportes de sueros ({{ p.aportes.length }})
+    </h2>
+
+    @if (p.aportes.length === 0) {
+      <p class="text-sm text-text-muted">Sin aportes registrados en este pool.</p>
+    } @else {
+      <div class="overflow-x-auto rounded-md border border-border">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-background border-b border-border">
+              <th class="px-4 py-2.5 text-left text-xs font-mono text-text-muted uppercase">Suero</th>
+              <th class="px-4 py-2.5 text-left text-xs font-mono text-text-muted uppercase hidden sm:table-cell">Paciente</th>
+              <th class="px-4 py-2.5 text-left text-xs font-mono text-text-muted uppercase">Posición</th>
+              <th class="px-4 py-2.5 text-left text-xs font-mono text-text-muted uppercase">ml aportados</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (a of p.aportes; track a.sueroTuboId) {
+              <tr class="border-b border-border last:border-0">
+                <td class="px-4 py-3 text-text font-mono">{{ a.codigoSuero }}</td>
+                <td class="px-4 py-3 text-text-muted font-mono hidden sm:table-cell">{{ a.codigoPaciente }}</td>
+                <td class="px-4 py-3 text-text font-mono">{{ a.posicion }}</td>
+                <td class="px-4 py-3 text-text font-mono font-medium">{{ a.cantidadAportada | ml }} ml</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  <!-- Tubos del pool -->
+  <div class="bg-surface border border-border rounded-lg p-6">
+    <h2 class="text-sm font-semibold text-text uppercase tracking-wider font-mono mb-4">
+      Tubos del pool ({{ p.tubos.length }})
+    </h2>
+
+    @if (p.tubos.length === 0) {
+      <p class="text-sm text-text-muted">Sin tubos registrados en este pool.</p>
+    } @else {
+      <div class="overflow-x-auto rounded-md border border-border">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-background border-b border-border">
+              <th class="px-4 py-2.5 text-left text-xs font-mono text-text-muted uppercase">Posición</th>
+              <th class="px-4 py-2.5 text-left text-xs font-mono text-text-muted uppercase">Inicial (ml)</th>
+              <th class="px-4 py-2.5 text-left text-xs font-mono text-text-muted uppercase">Restante (ml)</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (t of p.tubos; track t.id) {
+              <tr class="border-b border-border last:border-0">
+                <td class="px-4 py-3 text-text font-mono font-medium">{{ t.posicion }}</td>
+                <td class="px-4 py-3 text-text font-mono">{{ t.cantidadInicial | ml }} ml</td>
+                <td class="px-4 py-3 font-mono font-medium"
+                    [class]="t.cantidadRestante > 0 ? 'text-accent' : 'text-text-muted'">
+                  {{ t.cantidadRestante | ml }} ml
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+  <!-- Modelos animales -->
+  <div class="bg-surface border border-border rounded-lg p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-sm font-semibold text-text uppercase tracking-wider font-mono">
+        Modelos animales ({{ modelosAnimales().length }})
+      </h2>
+      <a
+        [routerLink]="['/internal/modelos-animales/nuevo']"
+        [queryParams]="{ poolId: p.id }"
+        class="inline-flex items-center gap-1 px-3 py-1.5 bg-primary text-white text-xs font-medium rounded-md hover:bg-primary-dark transition-colors"
+      >
+        + Registrar ratón
+      </a>
+    </div>
+
+    @if (modelosAnimales().length === 0) {
+      <p class="text-sm text-text-muted">No hay modelos animales inoculados con este pool aún.</p>
+    } @else {
+      <div class="overflow-x-auto rounded-md border border-border">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="bg-background border-b border-border">
+              <th class="px-4 py-2.5 text-left text-xs font-mono text-text-muted uppercase">Identificador</th>
+              <th class="px-4 py-2.5 text-left text-xs font-mono text-text-muted uppercase hidden sm:table-cell">Sexo</th>
+              <th class="px-4 py-2.5 text-left text-xs font-mono text-text-muted uppercase hidden sm:table-cell">Fecha nac.</th>
+              <th class="px-4 py-2.5 text-left text-xs font-mono text-text-muted uppercase">Alertas</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (ma of modelosAnimales(); track ma.id) {
+              <tr class="border-b border-border last:border-0 hover:bg-background transition-colors">
+                <td class="px-4 py-3">
+                  <a [routerLink]="['/internal/modelos-animales', ma.id]"
+                     class="text-primary font-medium font-mono hover:underline">
+                    {{ ma.identificador }}
+                  </a>
+                </td>
+                <td class="px-4 py-3 hidden sm:table-cell">
+                  <app-status-badge [value]="ma.sexo" [labels]="sexoLabels" [colorMap]="sexoColors" />
+                </td>
+                <td class="px-4 py-3 hidden sm:table-cell text-text-muted font-mono">
+                  {{ formatDate(ma.fechaNacimiento) }}
+                </td>
+                <td class="px-4 py-3">
+                  <div class="flex flex-wrap gap-1">
+                    @if (ma.necesitaVocalizaciones) {
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning/10 text-warning">
+                        VUS hoy
+                      </span>
+                    }
+                    @if (ma.necesitaTresCamaras) {
+                      <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning/10 text-warning">
+                        3C hoy
+                      </span>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+
+</div>
+
+}
+
+@if (pendingDelete()) {
+  <app-confirm-modal
+    title="¿Dar de baja el pool?"
+    message="El pool quedará inactivo. Los modelos animales asociados conservan su registro."
+    confirmLabel="Dar de baja"
+    cancelLabel="Cancelar"
+    (confirmed)="confirmDelete()"
+    (cancelled)="cancelDelete()"
+  />
+}

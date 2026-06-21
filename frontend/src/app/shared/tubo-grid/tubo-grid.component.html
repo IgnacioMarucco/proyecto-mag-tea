@@ -1,0 +1,32 @@
+<div>
+  <!-- Encabezado de columnas -->
+  <div class="flex mb-1 ml-6">
+    @for (col of cols; track col) {
+      <div class="w-7 text-center text-xs font-mono text-text-muted select-none">{{ col }}</div>
+    }
+  </div>
+
+  <!-- Filas -->
+  @for (row of rows; track row) {
+    <div class="flex items-center mb-0.5">
+      <div class="w-6 text-xs font-mono text-text-muted select-none">{{ row }}</div>
+      @for (col of cols; track col) {
+        <button
+          type="button"
+          (click)="toggle(row, col)"
+          [class]="cellClass(row, col)"
+          [attr.aria-pressed]="isSelected(row, col)"
+          [attr.aria-disabled]="isOccupied(row, col)"
+          [attr.title]="isOccupied(row, col) ? 'Posición ocupada' : null"
+          [attr.aria-label]="'Tubo ' + row + col"
+        >{{ col }}</button>
+      }
+    </div>
+  }
+
+  @if (value()) {
+    <p class="mt-2 text-xs text-text-muted font-mono">
+      Seleccionados: <span class="text-text">{{ value() }}</span>
+    </p>
+  }
+</div>

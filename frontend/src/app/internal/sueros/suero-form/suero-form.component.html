@@ -1,0 +1,178 @@
+<div class="px-8 pb-8 max-w-2xl mx-auto">
+
+  <div class="mb-6">
+    <app-page-header [crumbs]="crumbs()" />
+  </div>
+
+  <div class="bg-surface border border-border rounded-lg p-6">
+  <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate appFirstFocus class="space-y-6">
+
+    <!-- ── Código del suero (solo creación) ────────────────────────────── -->
+    @if (!isEdit) {
+      <div>
+        <label for="codigoInput" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
+          Código del suero <span class="text-danger">*</span>
+        </label>
+
+        @if (!pacienteResuelto()) {
+          <div class="flex gap-2">
+            <input
+              id="codigoInput"
+              type="text"
+              [value]="codigoInput()"
+              (input)="codigoInput.set($any($event.target).value)"
+              (blur)="onCodigoBlur()"
+              (keydown)="onCodigoKeydown($event)"
+              placeholder="Ingresá el código del rótulo"
+              class="flex-1 px-3 py-2 text-sm bg-surface border border-border rounded-md text-text font-mono
+                     focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+              [class.border-danger]="form.get('pacienteId')?.invalid && form.get('pacienteId')?.touched"
+              autocomplete="off"
+            />
+            @if (lookupLoading()) {
+              <div class="flex items-center px-3 text-text-muted text-xs">Buscando…</div>
+            }
+          </div>
+          @if (lookupError()) {
+            <p role="alert" class="mt-1 text-xs text-danger">{{ lookupError() }}</p>
+          }
+          @if (form.get('pacienteId')?.invalid && form.get('pacienteId')?.touched && !lookupError()) {
+            <p role="alert" class="mt-1 text-xs text-danger">Ingresá un código válido antes de continuar</p>
+          }
+          <p class="mt-1.5 text-xs text-text-muted">Presioná Enter o hacé clic fuera del campo para buscar</p>
+        }
+
+        @if (pacienteResuelto(); as p) {
+          <div class="flex items-center justify-between px-4 py-3 bg-success/5 border border-success/30 rounded-md">
+            <div class="flex items-center gap-3">
+              <app-icon name="check" class="w-4 h-4 text-success flex-shrink-0" />
+              <div class="flex items-baseline gap-3">
+                <span class="text-sm font-medium text-text font-mono">{{ p.codigoNumerico }}</span>
+                @switch (p.tipoPaciente) {
+                  @case ('CONTROL') {
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-background text-text-muted border border-border">
+                      Control
+                    </span>
+                  }
+                  @case ('PROBLEMA') {
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs text-primary">
+                      Caso problema
+                    </span>
+                  }
+                }
+                @if (p.fechaExtraccion) {
+                  <span class="text-xs text-text-muted">Extracción: {{ formatDate(p.fechaExtraccion) }}</span>
+                }
+              </div>
+            </div>
+            <button type="button" (click)="clearPaciente()"
+              class="px-3 py-1.5 text-xs font-medium bg-primary text-white rounded-md hover:bg-primary-dark transition-colors ml-4">
+              Cambiar
+            </button>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ── Info del suero (modo edición) ──────────────────────────────── -->
+    @if (isEdit && sueroLoaded(); as s) {
+      <div class="px-4 py-3 bg-background border border-border rounded-md">
+        <p class="text-xs font-mono text-text-muted uppercase tracking-wider mb-1">Suero</p>
+        <div class="flex items-baseline gap-3">
+          <span class="text-sm font-mono font-medium text-text">{{ s.codigoNumerico }}</span>
+          <span class="text-xs text-text-muted">Extracción: {{ formatDate(s.fechaExtraccion) }}</span>
+        </div>
+      </div>
+    }
+
+    <!-- ── Ubicación en freezer ─────────────────────────────────────────── -->
+    <div>
+      <app-freezer-picker
+        [defaultCajaId]="sueroLoaded()?.cajaId ?? null"
+        (cajaIdChange)="onCajaChange($event)"
+      />
+      @if (form.get('cajaId')?.invalid && form.get('cajaId')?.touched) {
+        <p role="alert" class="mt-1 text-xs text-danger">La ubicación es obligatoria</p>
+      }
+    </div>
+
+    <!-- ── Grilla y cantidades de tubos ────────────────────────────────── -->
+    <div>
+      <p class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-2">
+        Tubos <span class="text-danger">*</span>
+      </p>
+      <app-tubo-grid
+        [value]="tubosValue()"
+        [occupied]="ocupadasStr()"
+        (valueChange)="onTubosChange($event)"
+      />
+      <app-tubo-quantity-table
+        [tubos]="tubosConCantidad()"
+        (tubosChange)="onTubosConCantidadChange($event)"
+      />
+    </div>
+
+    <!-- ── Valor anticuerpos (opcional) ────────────────────────────────── -->
+    <div class="max-w-xs">
+      <label for="valorAnticuerpos" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
+        Valor anticuerpos (BTU)
+        <span class="ml-1 text-text-muted font-normal normal-case tracking-normal">— opcional</span>
+      </label>
+      <div class="flex items-center gap-3">
+        <input
+          id="valorAnticuerpos" type="number" formControlName="valorAnticuerpos"
+          step="1" min="0" placeholder="Ej: 3200"
+          class="flex-1 px-3 py-2 text-sm bg-surface border border-border rounded-md text-text font-mono
+                 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+        />
+        @if (rangoPreview()) {
+          <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap {{ rangoPreviewColor() }}">
+            {{ rangoPreview() }}
+          </span>
+        }
+      </div>
+      <p class="mt-1.5 text-xs text-text-muted">
+        ≤ 1313 → Rango 0 &nbsp;·&nbsp; ≤ 2500 → R1 &nbsp;·&nbsp; ≤ 8000 → R2 &nbsp;·&nbsp; > 8000 → R3
+      </p>
+    </div>
+
+    <!-- ── Error global ────────────────────────────────────────────────── -->
+    @if (error()) {
+      <div role="alert" class="px-4 py-3 bg-danger/10 border border-danger/30 rounded-md text-sm text-danger">
+        {{ error() }}
+      </div>
+    }
+
+    <!-- ── Acciones ─────────────────────────────────────────────────────── -->
+    <div class="flex items-center gap-3 pt-2">
+      <button
+        type="submit"
+        [disabled]="loading()"
+        class="px-5 py-2 bg-primary text-white text-sm font-medium rounded-md
+               hover:bg-primary-dark transition-colors disabled:opacity-50"
+      >
+        {{ loading() ? 'Guardando…' : (isEdit ? 'Guardar cambios' : 'Registrar suero') }}
+      </button>
+      <button
+        type="button"
+        (click)="handleEscape()"
+        class="px-5 py-2 text-sm font-medium text-text-muted bg-surface border border-border rounded-md hover:bg-background transition-colors"
+      >
+        Cancelar
+      </button>
+    </div>
+
+  </form>
+  </div>
+</div>
+
+@if (showExitConfirm()) {
+  <app-confirm-modal
+    title="¿Salir sin guardar?"
+    message="Tenés cambios sin guardar. Si salís ahora los perderás."
+    confirmLabel="Salir"
+    cancelLabel="Quedarme"
+    (confirmed)="confirmExit()"
+    (cancelled)="showExitConfirm.set(false)"
+  />
+}
