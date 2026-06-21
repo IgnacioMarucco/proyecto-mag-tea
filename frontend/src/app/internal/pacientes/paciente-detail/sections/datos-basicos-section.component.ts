@@ -60,7 +60,7 @@ export class DatosBasicosSectionComponent {
   confirmConsent(): void {
     this.confirming.set(true);
     this.confirmError.set(null);
-    this.service.patchConsentimiento(this.paciente().id, { consentimientoFirmado: true }).subscribe({
+    this.service.patchConsentimiento(this.paciente().codigoNumerico, { consentimientoFirmado: true }).subscribe({
       next:  p   => { this.updated.emit(p); this.showConfirmModal.set(false); this.confirming.set(false); },
       error: err => { this.confirmError.set(extractErrorMessage(err, 'Error al guardar')); this.confirming.set(false); },
     });

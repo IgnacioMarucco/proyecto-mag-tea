@@ -86,7 +86,7 @@ export class MchatSectionComponent {
     this.saveError.set(null);
     this.mchatService.upsertRespuestasByPaciente(this.paciente().id, dto).pipe(
       tap(r => this.mchatRespuestas.set(r)),
-      switchMap(() => this.pacienteService.findById(this.paciente().id)),
+      switchMap(() => this.pacienteService.findDetail(this.paciente().codigoNumerico)),
     ).subscribe({
       next:  p   => { this.updated.emit(p); this.editMode.set(false); this.saving.set(false); },
       error: err => { this.saveError.set(extractErrorMessage(err, 'Error al guardar')); this.saving.set(false); },
@@ -95,7 +95,7 @@ export class MchatSectionComponent {
 
   reenviar(): void {
     this.reenviarError.set(null);
-    this.pacienteService.reenviarMchat(this.paciente().id).subscribe({
+    this.pacienteService.reenviarMchat(this.paciente().codigoNumerico).subscribe({
       next:  p => this.updated.emit(p),
       error: () => this.reenviarError.set('No se pudo reenviar el enlace. Intentá de nuevo.'),
     });

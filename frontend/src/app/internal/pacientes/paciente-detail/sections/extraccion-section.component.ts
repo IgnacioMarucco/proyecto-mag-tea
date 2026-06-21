@@ -1,19 +1,26 @@
-import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { PacienteService } from '../../../../core/services/paciente.service';
+import { AuthService } from '../../../../core/services/auth.service';
 import { extractErrorMessage } from '../../../../shared/utils/error.utils';
 import { PacienteResponse } from '../../../../core/models/paciente.model';
 import { ModalContainerComponent } from '../../../../shared/modal-container/modal-container.component';
 
 @Component({
   selector: 'app-extraccion-section',
-  imports: [ReactiveFormsModule, ModalContainerComponent],
+  imports: [ReactiveFormsModule, RouterLink, ModalContainerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './extraccion-section.component.html',
 })
 export class ExtraccionSectionComponent {
-  private readonly service = inject(PacienteService);
-  private readonly fb      = inject(FormBuilder);
+  private readonly service  = inject(PacienteService);
+  private readonly auth     = inject(AuthService);
+  private readonly fb       = inject(FormBuilder);
+
+  readonly isInvestigadorPrincipal = computed(
+    () => this.auth.currentUser()?.role === 'INVESTIGADOR_PRINCIPAL'
+  );
 
   paciente = input.required<PacienteResponse>();
   updated  = output<PacienteResponse>();
@@ -36,7 +43,7 @@ export class ExtraccionSectionComponent {
     if (!fecha) { this.saveError.set('La fecha de extracción es obligatoria'); return; }
     this.saving.set(true);
     this.saveError.set(null);
-    this.service.patchSegundaVisita(this.paciente().id, { fechaExtraccion: fecha }).subscribe({
+    this.service.patchSegundaVisita(this.paciente().codigoNumerico, { fechaExtraccion: fecha }).subscribe({
       next: p  => { this.updated.emit(p); this.showModal.set(false); this.saving.set(false); },
       error: err => { this.saveError.set(extractErrorMessage(err, 'Error al guardar')); this.saving.set(false); },
     });

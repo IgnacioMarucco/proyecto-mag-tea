@@ -14,11 +14,21 @@
     </button>
   </div>
   @if (p.fechaExtraccion) {
-    <div class="px-6 py-4 text-sm">
+    <div class="px-6 py-4 text-sm flex items-center justify-between gap-4">
       <div>
         <p class="text-xs text-text-muted mb-0.5">Fecha de extracción</p>
         <p class="text-text">{{ formatDate(p.fechaExtraccion) }}</p>
       </div>
+      @if (isInvestigadorPrincipal() && p.pacienteEstado === 'EXTRACCION_REALIZADA') {
+        <a
+          routerLink="/internal/sueros"
+          [queryParams]="{ codigoPaciente: p.codigoNumerico }"
+          class="shrink-0 text-xs px-3 py-1.5 border border-primary/40 text-primary rounded-md
+                 hover:bg-primary/5 transition-colors"
+        >
+          Ver suero registrado →
+        </a>
+      }
     </div>
   }
 </section>

@@ -1,16 +1,16 @@
 @if (loading()) {
-  <div class="p-8 flex items-center justify-center text-text-muted text-sm">Cargando…</div>
+  <div class="px-8 pb-8 flex items-center justify-center text-text-muted text-sm">Cargando…</div>
 } @else if (loadError()) {
-  <div class="p-8">
+  <div class="px-8 pb-8">
     <p class="text-danger text-sm">{{ loadError() }}</p>
     <a routerLink="/internal/pacientes" class="mt-3 inline-block text-sm text-primary hover:underline">← Volver a la lista</a>
   </div>
 } @else if (paciente(); as p) {
 
-<div class="p-8 pb-0">
-  <div class="mb-6">
+<div class="px-8 pb-0">
+  <div class="mb-4">
     <app-page-header [crumbs]="crumbs()">
-      <span class="font-mono text-xs text-text-muted bg-surface border border-border rounded px-2 py-0.5">{{ p.codigoNumerico }}</span>
+      <app-copy-badge [value]="p.codigoNumerico" />
       <app-status-badge [value]="p.tipoPaciente"
         [labels]="{ CONTROL: 'Control', PROBLEMA: 'Caso problema' }"
         [colorMap]="{ CONTROL: 'bg-background text-text-muted border border-border', PROBLEMA: 'bg-primary-light text-primary' }" />
@@ -19,9 +19,28 @@
         [colorMap]="{ ADMITIDO: 'bg-background text-text-muted border border-border', MCHAT_RESPONDIDO: 'bg-warning/10 text-warning', EXTRACCION_PENDIENTE: 'bg-primary-light text-primary', EXTRACCION_REALIZADA: 'bg-accent-light text-accent' }" />
     </app-page-header>
   </div>
+
+  <!-- Protocol progress timeline -->
+  <div class="relative flex items-start mb-6 px-1">
+    <div class="absolute left-3 right-3 top-3 h-px bg-border"></div>
+    @for (step of protocolSteps(); track step.label) {
+      <div class="relative flex flex-col items-center flex-1 z-10">
+        <div class="w-6 h-6 rounded-full flex items-center justify-center ring-2 ring-background transition-colors"
+             [class]="step.state === 'done' ? 'bg-accent' : step.state === 'current' ? 'bg-primary' : 'bg-border'">
+          @if (step.state === 'done') {
+            <app-icon name="check" class="w-3 h-3 text-white" />
+          }
+        </div>
+        <span class="mt-1.5 text-[10px] font-medium whitespace-nowrap transition-colors"
+              [class]="step.state === 'done' ? 'text-accent' : step.state === 'current' ? 'text-primary' : 'text-text-muted'">
+          {{ step.label }}
+        </span>
+      </div>
+    }
+  </div>
 </div>
 
-<div class="px-8 pb-8 flex flex-col gap-2">
+<div class="px-8 pb-8 flex flex-col gap-4">
 
   <app-datos-basicos-section [paciente]="p" (updated)="onUpdated($event)" />
 
@@ -30,7 +49,7 @@
   }
 
   @if (!consentimientoFirmado()) {
-    <div class="bg-background border border-border rounded-lg px-6 py-4 text-sm text-text-muted">
+    <div class="bg-primary/5 border border-primary/20 rounded-md px-5 py-3 text-sm text-text-muted">
       Registrá el consentimiento informado (pestaña "Consentimiento" de arriba) para habilitar las secciones de evaluación clínica.
     </div>
   } @else {
@@ -59,14 +78,10 @@
       } @placeholder {
         <div class="h-20 rounded-lg bg-surface border border-border animate-pulse"></div>
       }
-    } @else if (p.criteriosRegistrados) {
+    } @else {
       <div class="bg-danger-light border border-danger/20 rounded-lg px-6 py-4 text-sm text-danger">
         El paciente no puede continuar en el protocolo porque no cumple los criterios de inclusión/exclusión.
         Las secciones de evaluación clínica están deshabilitadas.
-      </div>
-    } @else {
-      <div class="bg-background border border-border rounded-lg px-6 py-4 text-sm text-text-muted">
-        Registrá los criterios de inclusión/exclusión (pestaña "Criterios" de arriba) para habilitar las secciones de evaluación clínica.
       </div>
     }
   }

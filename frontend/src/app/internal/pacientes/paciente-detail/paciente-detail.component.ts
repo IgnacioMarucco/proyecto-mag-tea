@@ -13,6 +13,7 @@ import { filter, switchMap, tap } from 'rxjs';
 import { PacienteService } from '../../../core/services/paciente.service';
 import { PacienteResponse } from '../../../core/models/paciente.model';
 import { StatusBadgeComponent } from '../../../shared/status-badge/status-badge.component';
+import { CopyBadgeComponent } from '../../../shared/copy-badge/copy-badge.component';
 import { DatosBasicosSectionComponent } from './sections/datos-basicos-section.component';
 import { MchatSectionComponent } from './sections/mchat-section.component';
 import { ResultadoMchatSectionComponent } from './sections/resultado-mchat-section.component';
@@ -20,12 +21,14 @@ import { CarsSectionComponent } from './sections/cars-section.component';
 import { VinelandSectionComponent } from './sections/vineland-section.component';
 import { ExtraccionSectionComponent } from './sections/extraccion-section.component';
 import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-header.component';
+import { IconComponent } from '../../../shared/icon/icon.component';
 
 @Component({
   selector: 'app-paciente-detail',
   imports: [
     RouterLink,
     StatusBadgeComponent,
+    CopyBadgeComponent,
     PageHeaderComponent,
     DatosBasicosSectionComponent,
     MchatSectionComponent,
@@ -33,12 +36,13 @@ import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-hea
     CarsSectionComponent,
     VinelandSectionComponent,
     ExtraccionSectionComponent,
+    IconComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './paciente-detail.component.html',
 })
 export class PacienteDetailComponent {
-  readonly id = input.required<string>();
+  readonly codigo = input.required<string>();
 
   private readonly pacienteService = inject(PacienteService);
   private readonly route      = inject(ActivatedRoute);
@@ -53,6 +57,33 @@ export class PacienteDetailComponent {
   consentimientoFirmado = computed(() => this.paciente()?.consentimientoFirmado ?? false);
   requiereSeguimiento   = computed(() => this.paciente()?.mchatResultado === 'MEDIANO_RIESGO');
 
+  readonly protocolSteps = computed(() => {
+    const p = this.paciente();
+    if (!p) return [];
+    const estado = p.pacienteEstado;
+    const control = this.isControl();
+
+    const raw: { label: string; done: boolean }[] = control
+      ? [
+          { label: 'Admisión',   done: true },
+          { label: '1ª visita',  done: p.fechaExtraccion != null },
+          { label: 'Extracción', done: estado === 'EXTRACCION_REALIZADA' },
+        ]
+      : [
+          { label: 'Admisión',   done: true },
+          { label: 'M-CHAT',     done: ['MCHAT_RESPONDIDO', 'EXTRACCION_PENDIENTE', 'EXTRACCION_REALIZADA'].includes(estado) },
+          { label: '1ª visita',  done: p.fechaExtraccion != null },
+          { label: 'Extracción', done: estado === 'EXTRACCION_REALIZADA' },
+        ];
+
+    let foundCurrent = false;
+    return raw.map(s => {
+      if (s.done) return { ...s, state: 'done' as const };
+      if (!foundCurrent) { foundCurrent = true; return { ...s, state: 'current' as const }; }
+      return { ...s, state: 'upcoming' as const };
+    });
+  });
+
   readonly crumbs = computed<Crumb[]>(() => {
     const base: Crumb[] = this.route.snapshot.data['crumbs'] ?? [];
     const p = this.paciente();
@@ -61,10 +92,10 @@ export class PacienteDetailComponent {
   });
 
   constructor() {
-    toObservable(computed(() => Number(this.id()))).pipe(
-      filter(id => !!id),
+    toObservable(this.codigo).pipe(
+      filter(codigo => !!codigo),
       tap(() => { this.loading.set(true); this.loadError.set(null); }),
-      switchMap(id => this.pacienteService.findById(id)),
+      switchMap(codigo => this.pacienteService.findDetail(codigo)),
       takeUntilDestroyed(this.destroyRef),
     ).subscribe({
       next:  p => { this.paciente.set(p); this.loading.set(false); },

@@ -8,6 +8,7 @@
       <div class="relative flex-1 min-w-0">
         <span class="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted text-sm pointer-events-none select-none">⌕</span>
         <input
+          #searchInput
           type="text"
           [value]="searchValue()"
           (input)="onInput($any($event.target).value)"

@@ -100,7 +100,7 @@ export class CarsSectionComponent {
     } as any;
     this.saving.set(true);
     this.saveError.set(null);
-    this.service.patchCars(this.paciente().id, dto).subscribe({
+    this.service.patchCars(this.paciente().codigoNumerico, dto).subscribe({
       next:  p   => { this.updated.emit(p); this.showModal.set(false); this.saving.set(false); },
       error: err => { this.saveError.set(extractErrorMessage(err, 'Error al guardar')); this.saving.set(false); },
     });

@@ -87,7 +87,7 @@ export class CriteriosSectionComponent {
     if (this.saving()) return;
     this.saving.set(true);
     this.saveError.set(null);
-    this.service.patchCriterios(this.paciente().id, this.form.getRawValue() as PacienteCriterios).subscribe({
+    this.service.patchCriterios(this.paciente().codigoNumerico, this.form.getRawValue() as PacienteCriterios).subscribe({
       next: p  => { this.updated.emit(p); this.showModal.set(false); this.saving.set(false); },
       error: err => { this.saveError.set(extractErrorMessage(err, 'Error al guardar')); this.saving.set(false); },
     });

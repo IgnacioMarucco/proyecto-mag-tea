@@ -19,6 +19,7 @@ export class DataTableComponent {
   emptyTitle    = input('Sin resultados');
   emptySubtitle = input('Probá con otro criterio de búsqueda');
   currentSort   = input<SortState | null>(null);
+  loading       = input(false);
 
   sortChange = output<SortState>();
 
@@ -37,12 +38,18 @@ export class DataTableComponent {
     this.sortChange.emit({ key: col.sortKey, direction });
   }
 
+  getAriaSort(col: TableColumn): 'ascending' | 'descending' | 'none' | null {
+    if (!col.sortKey) return null;
+    const sort = this.currentSort();
+    if (!sort || sort.key !== col.sortKey) return 'none';
+    return sort.direction === 'asc' ? 'ascending' : 'descending';
+  }
+
   thClass(col: TableColumn): string {
     const hidden =
       col.hidden === 'sm' ? ' hidden sm:table-cell' :
       col.hidden === 'md' ? ' hidden md:table-cell' :
       col.hidden === 'lg' ? ' hidden lg:table-cell' : '';
-    const base = 'text-left px-5 py-3 text-xs font-mono text-text-muted tracking-wider uppercase' + hidden;
-    return col.sortKey ? base + ' cursor-pointer select-none hover:text-text transition-colors' : base;
+    return 'text-left px-5 py-3 text-xs font-mono text-text-muted tracking-wider uppercase' + hidden;
   }
 }

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, OnInit, computed, inject, input, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { map, startWith } from 'rxjs';
@@ -9,12 +9,16 @@ import { FormularioInteresService } from '../../../core/services/formulario-inte
 import { AuthService } from '../../../core/services/auth.service';
 import { PacienteCreate, PacienteUpdate } from '../../../core/models/paciente.model';
 import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-header.component';
+import { FirstFocusDirective } from '../../../shared/directives/first-focus.directive';
+import { ConfirmModalComponent } from '../../../shared/confirm-modal/confirm-modal.component';
+import { ToastService } from '../../../core/services/toast.service';
 
 @Component({
   selector: 'app-paciente-form',
-  imports: [ReactiveFormsModule, PageHeaderComponent],
+  imports: [ReactiveFormsModule, PageHeaderComponent, FirstFocusDirective, ConfirmModalComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './paciente-form.component.html',
+  host: { '(keydown)': 'onKeydown($event)' },
 })
 export class PacienteFormComponent implements OnInit {
   private readonly fb               = inject(FormBuilder);
@@ -23,6 +27,8 @@ export class PacienteFormComponent implements OnInit {
   private readonly authService      = inject(AuthService);
   private readonly router           = inject(Router);
   private readonly route            = inject(ActivatedRoute);
+  private readonly elRef            = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly toast            = inject(ToastService);
 
   readonly crumbs = toSignal(
     this.route.data.pipe(map(d => d['crumbs'] as Crumb[] ?? [])),
@@ -30,13 +36,14 @@ export class PacienteFormComponent implements OnInit {
   );
 
   formularioId = input<string>();
-  id           = input<string>();
+  codigo       = input<string>();
 
-  readonly isEdit       = computed(() => !!this.id());
+  readonly isEdit       = computed(() => !!this.codigo());
 
-  loading     = signal(false);
-  error       = signal<string | null>(null);
-  currentStep = signal(1);
+  loading         = signal(false);
+  error           = signal<string | null>(null);
+  currentStep     = signal(1);
+  showExitConfirm = signal(false);
 
   form = this.fb.group({
     // Paso 1
@@ -129,9 +136,9 @@ export class PacienteFormComponent implements OnInit {
       });
     }
 
-    const id = this.id();
+    const id = this.codigo();
     if (id) {
-      this.pacienteService.findById(+id).subscribe({
+      this.pacienteService.findDetail(id).subscribe({
         next: p => this.form.patchValue({
           apellidoTutor:       p.apellidoTutor,
           nombreTutor:         p.nombreTutor,
@@ -166,7 +173,13 @@ export class PacienteFormComponent implements OnInit {
   }
 
   onSubmit(): void {
-    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      const firstInvalid = this.elRef.nativeElement.querySelector<HTMLElement>('[aria-invalid="true"]');
+      firstInvalid?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      firstInvalid?.focus();
+      return;
+    }
     if (!this.isEdit() && !this.criteriosApto()) return;
     this.loading.set(true);
     this.error.set(null);
@@ -186,8 +199,8 @@ export class PacienteFormComponent implements OnInit {
         fechaPrimeraVisita:  v.fechaPrimeraVisita || undefined,
         fechaExtraccion:     v.fechaExtraccion || undefined,
       };
-      this.pacienteService.update(+this.id()!, dto).subscribe({
-        next: p   => this.router.navigate(['/internal/pacientes', p.id]),
+      this.pacienteService.update(this.codigo()!, dto).subscribe({
+        next: p   => { this.toast.show('Paciente actualizado'); this.router.navigate(['/internal/pacientes', p.codigoNumerico]); },
         error: err => { this.error.set(extractErrorMessage(err, 'Error al guardar')); this.loading.set(false); },
       });
     } else {
@@ -221,16 +234,40 @@ export class PacienteFormComponent implements OnInit {
       };
       this.pacienteService.create(dto).subscribe({
         next: p => {
-          this.router.navigate(['/internal/pacientes', p.id]);
+          this.toast.show('Paciente registrado');
+          this.router.navigate(['/internal/pacientes', p.codigoNumerico]);
         },
         error: err => { this.error.set(extractErrorMessage(err, 'Error al registrar')); this.loading.set(false); },
       });
     }
   }
 
+  onKeydown(event: KeyboardEvent): void {
+    if ((event.ctrlKey || event.metaKey) && event.key === 's') {
+      event.preventDefault();
+      if (!this.isEdit() && this.currentStep() === 1) this.goToStep2();
+      else this.onSubmit();
+    }
+    if (event.key === 'Escape') this.handleEscape();
+  }
+
+  handleEscape(): void {
+    if (!this.isEdit() && this.currentStep() === 2) {
+      this.goToStep1();
+      return;
+    }
+    if (this.form.dirty) this.showExitConfirm.set(true);
+    else this.cancel();
+  }
+
+  confirmExit(): void {
+    this.showExitConfirm.set(false);
+    this.cancel();
+  }
+
   cancel(): void {
     if (this.isEdit()) {
-      this.router.navigate(['/internal/pacientes', this.id()]);
+      this.router.navigate(['/internal/pacientes', this.codigo()]);
     } else {
       this.router.navigate(['/internal/pacientes']);
     }

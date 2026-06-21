@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { BehaviorSubject, catchError, map, of, switchMap } from 'rxjs';
+import { BehaviorSubject, catchError, combineLatest, map, of, switchMap, tap, timer } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { PacienteService, PacienteListParams } from '../../../core/services/paciente.service';
+import { ToastService } from '../../../core/services/toast.service';
 import { ListToolbarComponent, FilterGroup } from '../../../shared/list-toolbar/list-toolbar.component';
 import { ConfirmModalComponent } from '../../../shared/confirm-modal/confirm-modal.component';
 import { DataTableComponent, TableColumn } from '../../../shared/data-table/data-table.component';
@@ -23,11 +24,14 @@ const ALL_ESTADOS = ['ADMITIDO', 'MCHAT_RESPONDIDO', 'EXTRACCION_PENDIENTE', 'EX
   imports: [RouterLink, ListToolbarComponent, ConfirmModalComponent, DataTableComponent, StatusBadgeComponent, RowActionsComponent, PaginatorComponent, IconComponent, PageHeaderComponent, EdadPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './paciente-list.component.html',
+  host: { '(window:keydown)': 'onGlobalKey($event)' },
 })
 export class PacienteListComponent {
   private readonly service = inject(PacienteService);
   private readonly router  = inject(Router);
   private readonly route   = inject(ActivatedRoute);
+  private readonly toolbar = viewChild(ListToolbarComponent);
+  private readonly toast   = inject(ToastService);
 
   readonly crumbs = toSignal(
     this.route.data.pipe(map(d => d['crumbs'] as Crumb[] ?? [])),
@@ -39,9 +43,16 @@ export class PacienteListComponent {
     estados: ['ADMITIDO', 'MCHAT_RESPONDIDO', 'EXTRACCION_PENDIENTE'],
   });
 
+  error   = signal(false);
+  loading = signal(false);
+
   private readonly response = toSignal(
-    this.params$.pipe(
-      switchMap(params => this.service.findAll(params).pipe(catchError(() => of(null))))
+    combineLatest([this.params$, timer(0, 60_000)]).pipe(
+      tap(() => { this.error.set(false); this.loading.set(true); }),
+      switchMap(([params]) => this.service.findAll(params).pipe(
+        tap(() => this.loading.set(false)),
+        catchError(() => { this.error.set(true); this.loading.set(false); return of(null); })
+      ))
     ),
     { initialValue: null }
   );
@@ -54,8 +65,8 @@ export class PacienteListComponent {
   search          = signal('');
   activeFilters   = signal<Record<string, string | string[]>>({ estado: ['ADMITIDO', 'MCHAT_RESPONDIDO', 'EXTRACCION_PENDIENTE'] });
   sortState       = signal<SortState>({ key: 'createdAt', direction: 'desc' });
-  deleting        = signal<number | null>(null);
-  pendingDeleteId = signal<number | null>(null);
+  deleting        = signal<string | null>(null);
+  pendingDeleteId = signal<string | null>(null);
 
   readonly filterGroups: FilterGroup[] = [
     {
@@ -81,12 +92,11 @@ export class PacienteListComponent {
   ];
 
   readonly columns: TableColumn[] = [
-    { label: 'Tutor/a' },
-    { label: 'Niño/a' },
-    { label: 'Edad',   hidden: 'sm' },
-    { label: 'Tipo',   hidden: 'sm' },
+    { label: 'Paciente' },
+    { label: 'Edad' },
+    { label: 'Tipo' },
     { label: 'Estado' },
-    { label: 'Fecha',  hidden: 'md', sortKey: 'createdAt' },
+    { label: 'Fecha', sortKey: 'createdAt' },
   ];
 
   readonly tipoLabels: Record<string, string> = {
@@ -158,8 +168,15 @@ export class PacienteListComponent {
   }
 
   private hasActiveSearch(): boolean {
-    const p = this.params$.value as Record<string, unknown>;
-    return !!(p['q'] || (p['estados'] as string[] | undefined)?.length);
+    if (this.search()) return true;
+    const f = this.activeFilters();
+    return this.filterGroups.some(group => {
+      const val = f[group.key];
+      if (val === undefined) return false;
+      return group.multiSelect
+        ? (val as string[]).length < group.options.length
+        : val !== group.options[0]?.key;
+    });
   }
 
 proximaFecha(p: PacienteListItem): { label: string; valor: string } | null {
@@ -191,13 +208,13 @@ proximaFecha(p: PacienteListItem): { label: string; valor: string } | null {
 
   getActionsFor(p: PacienteListItem): RowAction[] {
     return [
-      { label: 'Detalles', style: 'primary', onClick: () => this.router.navigate(['/internal/pacientes', p.id]) },
-      { label: 'Editar',      style: 'default', onClick: () => this.router.navigate(['/internal/pacientes', p.id, 'editar']) },
-      { label: 'Dar de baja', style: 'danger',  disabled: this.deleting() === p.id, onClick: () => this.requestDelete(p.id) },
+      { label: 'Detalles', onClick: () => this.router.navigate(['/internal/pacientes', p.codigoNumerico]) },
+      { label: 'Editar',      style: 'default', onClick: () => this.router.navigate(['/internal/pacientes', p.codigoNumerico, 'editar']) },
+      { label: 'Dar de baja', style: 'danger',  disabled: this.deleting() === p.codigoNumerico, onClick: () => this.requestDelete(p.codigoNumerico) },
     ];
   }
 
-  requestDelete(id: number): void { this.pendingDeleteId.set(id); }
+  requestDelete(id: string): void { this.pendingDeleteId.set(id); }
   cancelDelete(): void            { this.pendingDeleteId.set(null); }
 
   confirmDelete(): void {
@@ -206,8 +223,18 @@ proximaFecha(p: PacienteListItem): { label: string; valor: string } | null {
     this.pendingDeleteId.set(null);
     this.deleting.set(id);
     this.service.delete(id).subscribe({
-      next:  () => { this.deleting.set(null); this.reload(); },
+      next:  () => { this.deleting.set(null); this.toast.show('Paciente dado de baja'); this.reload(); },
       error: () =>   this.deleting.set(null),
     });
+  }
+
+  onGlobalKey(event: KeyboardEvent): void {
+    const tag = (event.target as HTMLElement).tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (event.key === '/') { event.preventDefault(); this.toolbar()?.focusSearch(); }
+    if ((event.ctrlKey || event.metaKey) && event.key === 'n') {
+      event.preventDefault();
+      this.router.navigate(['/internal/pacientes/nuevo']);
+    }
   }
 }

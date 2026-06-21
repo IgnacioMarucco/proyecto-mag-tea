@@ -50,7 +50,7 @@ export class ResultadoMchatSectionComponent {
     const dto = Object.fromEntries(respuestas.map((v, i) => [`item${i + 1}`, v])) as unknown as PacienteMchatSeguimiento;
     this.saving.set(true);
     this.saveError.set(null);
-    this.service.patchMchatSeguimiento(this.paciente().id, dto).subscribe({
+    this.service.patchMchatSeguimiento(this.paciente().codigoNumerico, dto).subscribe({
       next: p  => { this.updated.emit(p); this.showModal.set(false); this.saving.set(false); },
       error: err => { this.saveError.set(extractErrorMessage(err, 'Error al guardar')); this.saving.set(false); },
     });

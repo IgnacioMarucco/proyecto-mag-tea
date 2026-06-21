@@ -16,6 +16,7 @@ export interface FilterGroup {
   selector: 'app-list-toolbar',
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './list-toolbar.component.html',
+  host: { '(keydown.escape)': 'closePanel()' },
 })
 export class ListToolbarComponent {
   placeholder   = input('Buscar…');
@@ -26,7 +27,8 @@ export class ListToolbarComponent {
   searchChange  = output<string>();
   filtersChange = output<Record<string, string | string[]>>();
 
-  private readonly triggerBtn = viewChild<ElementRef<HTMLButtonElement>>('triggerBtn');
+  private readonly triggerBtn  = viewChild<ElementRef<HTMLButtonElement>>('triggerBtn');
+  private readonly searchInput = viewChild<ElementRef<HTMLInputElement>>('searchInput');
 
   searchValue  = signal('');
   panelOpen    = signal(false);
@@ -44,6 +46,14 @@ export class ListToolbarComponent {
       return !!filters[group.key] && filters[group.key] !== defaultKey;
     }).length;
   });
+
+  focusSearch(): void {
+    this.searchInput()?.nativeElement.focus();
+  }
+
+  closePanel(): void {
+    this.panelOpen.set(false);
+  }
 
   onInput(value: string): void {
     this.searchValue.set(value);
