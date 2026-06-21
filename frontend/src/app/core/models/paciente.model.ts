@@ -9,8 +9,18 @@ export type MchatEstado = 'PENDIENTE' | 'COMPLETADO' | 'EXPIRADO' | 'NO_ENVIADO'
 export type PacienteEstado = 'ADMITIDO' | 'MCHAT_RESPONDIDO' | 'EXTRACCION_PENDIENTE' | 'EXTRACCION_REALIZADA';
 export type CriteriosAptitud = 'APTO' | 'EXCLUIDO' | 'INCOMPLETO';
 
+export interface PacientePorCodigo {
+  id: number;
+  codigoNumerico: string;
+  nombreNino: string;
+  apellidoNino: string;
+  fechaExtraccion: string | null;
+  tipoPaciente: TipoPaciente;
+}
+
 export interface PacienteListItem {
   id: number;
+  codigoNumerico: string;
   apellidoTutor: string;
   nombreTutor: string;
   apellidoNino: string;

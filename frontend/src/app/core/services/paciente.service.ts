@@ -7,6 +7,7 @@ import {
   PacienteUpdate,
   PacienteResponse,
   PacienteListItem,
+  PacientePorCodigo,
   PacienteCriterios,
   PacienteMchatSeguimiento,
   PacienteCars,
@@ -38,51 +39,55 @@ export class PacienteService {
     return this.http.get<PageResponse<PacienteListItem>>(this.base, { params: p });
   }
 
-  findById(id: number): Observable<PacienteResponse> {
-    return this.http.get<PacienteResponse>(`${this.base}/${id}`);
+  findDetail(codigo: string): Observable<PacienteResponse> {
+    return this.http.get<PacienteResponse>(`${this.base}/${encodeURIComponent(codigo)}`);
+  }
+
+  findByCodigo(codigo: string): Observable<PacientePorCodigo> {
+    return this.http.get<PacientePorCodigo>(`${this.base}/by-codigo/${encodeURIComponent(codigo)}`);
   }
 
   create(dto: PacienteCreate): Observable<PacienteResponse> {
     return this.http.post<PacienteResponse>(this.base, dto);
   }
 
-  update(id: number, dto: PacienteUpdate): Observable<PacienteResponse> {
-    return this.http.put<PacienteResponse>(`${this.base}/${id}`, dto);
+  update(codigo: string, dto: PacienteUpdate): Observable<PacienteResponse> {
+    return this.http.put<PacienteResponse>(`${this.base}/${encodeURIComponent(codigo)}`, dto);
   }
 
-  patchPrimeraVisita(id: number, dto: PacientePrimeraVisita): Observable<PacienteResponse> {
-    return this.http.patch<PacienteResponse>(`${this.base}/${id}/primera-visita`, dto);
+  patchPrimeraVisita(codigo: string, dto: PacientePrimeraVisita): Observable<PacienteResponse> {
+    return this.http.patch<PacienteResponse>(`${this.base}/${encodeURIComponent(codigo)}/primera-visita`, dto);
   }
 
-  patchConsentimiento(id: number, dto: PacienteConsentimiento): Observable<PacienteResponse> {
-    return this.http.patch<PacienteResponse>(`${this.base}/${id}/consentimiento`, dto);
+  patchConsentimiento(codigo: string, dto: PacienteConsentimiento): Observable<PacienteResponse> {
+    return this.http.patch<PacienteResponse>(`${this.base}/${encodeURIComponent(codigo)}/consentimiento`, dto);
   }
 
-  patchCriterios(id: number, dto: PacienteCriterios): Observable<PacienteResponse> {
-    return this.http.patch<PacienteResponse>(`${this.base}/${id}/criterios`, dto);
+  patchCriterios(codigo: string, dto: PacienteCriterios): Observable<PacienteResponse> {
+    return this.http.patch<PacienteResponse>(`${this.base}/${encodeURIComponent(codigo)}/criterios`, dto);
   }
 
-  patchMchatSeguimiento(id: number, dto: PacienteMchatSeguimiento): Observable<PacienteResponse> {
-    return this.http.patch<PacienteResponse>(`${this.base}/${id}/mchat-seguimiento`, dto);
+  patchMchatSeguimiento(codigo: string, dto: PacienteMchatSeguimiento): Observable<PacienteResponse> {
+    return this.http.patch<PacienteResponse>(`${this.base}/${encodeURIComponent(codigo)}/mchat-seguimiento`, dto);
   }
 
-  patchCars(id: number, dto: PacienteCars): Observable<PacienteResponse> {
-    return this.http.patch<PacienteResponse>(`${this.base}/${id}/cars`, dto);
+  patchCars(codigo: string, dto: PacienteCars): Observable<PacienteResponse> {
+    return this.http.patch<PacienteResponse>(`${this.base}/${encodeURIComponent(codigo)}/cars`, dto);
   }
 
-  patchVineland(id: number, dto: PacienteVineland): Observable<PacienteResponse> {
-    return this.http.patch<PacienteResponse>(`${this.base}/${id}/vineland`, dto);
+  patchVineland(codigo: string, dto: PacienteVineland): Observable<PacienteResponse> {
+    return this.http.patch<PacienteResponse>(`${this.base}/${encodeURIComponent(codigo)}/vineland`, dto);
   }
 
-  patchSegundaVisita(id: number, dto: PacienteSegundaVisita): Observable<PacienteResponse> {
-    return this.http.patch<PacienteResponse>(`${this.base}/${id}/segunda-visita`, dto);
+  patchSegundaVisita(codigo: string, dto: PacienteSegundaVisita): Observable<PacienteResponse> {
+    return this.http.patch<PacienteResponse>(`${this.base}/${encodeURIComponent(codigo)}/segunda-visita`, dto);
   }
 
-  reenviarMchat(id: number): Observable<PacienteResponse> {
-    return this.http.post<PacienteResponse>(`${this.base}/${id}/reenviar-mchat`, {});
+  reenviarMchat(codigo: string): Observable<PacienteResponse> {
+    return this.http.post<PacienteResponse>(`${this.base}/${encodeURIComponent(codigo)}/reenviar-mchat`, {});
   }
 
-  delete(id: number): Observable<void> {
-    return this.http.delete<void>(`${this.base}/${id}`);
+  delete(codigo: string): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${encodeURIComponent(codigo)}`);
   }
 }
