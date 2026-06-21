@@ -120,8 +120,9 @@ public class DonacionService {
 
     @Transactional(readOnly = true)
     public PageResponse<DonacionResponseDTO> findAll(int page, int size) {
+        String sortField = "createdAt";
         Page<Donacion> result = repository.findAll(
-                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
+                PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, sortField)));
         return new PageResponse<>(
                 result.map(mapper::toDTO).getContent(),
                 result.getTotalElements(),

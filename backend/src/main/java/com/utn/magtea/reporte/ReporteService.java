@@ -308,7 +308,7 @@ public class ReporteService {
                 double to   = CARS_BIN_EDGES[i + 1];
                 boolean lastBin = (i == CARS_BIN_EDGES.length - 2);
                 if (val >= from && (lastBin ? val <= to : val < to)) {
-                    bins.merge(binLabel(from, to), 1L, Long::sum);
+                    bins.merge(binLabel(from, to), 1L, (a, b) -> a + b);
                     break;
                 }
             }

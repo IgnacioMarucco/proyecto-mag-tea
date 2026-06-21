@@ -274,7 +274,8 @@ public class SueroService {
         Sort.Direction dir = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
         String field = SORT_FIELDS_VALIDOS.contains(sortBy) ? sortBy : defaultField;
         if ("codigoNumerico".equals(field)) {
-            return Sort.by(dir, "paciente.codigoNumerico");
+            String nestedField = "paciente.codigoNumerico";
+            return Sort.by(dir, nestedField);
         }
         return Sort.by(dir, field);
     }
