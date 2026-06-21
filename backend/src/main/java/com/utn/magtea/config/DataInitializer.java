@@ -32,6 +32,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import com.utn.magtea.caja.Caja;
@@ -39,15 +40,24 @@ import com.utn.magtea.caja.CajaRepository;
 import com.utn.magtea.suero.Suero;
 import com.utn.magtea.suero.SueroRepository;
 import com.utn.magtea.suero.SueroRangoUtil;
+import com.utn.magtea.suero.SueroUso;
 import com.utn.magtea.pool.Pool;
 import com.utn.magtea.pool.PoolRepository;
+import com.utn.magtea.pool.PoolSueroAporte;
+import com.utn.magtea.pool.PoolSueroAporteRepository;
+import com.utn.magtea.tubo.Tubo;
+import com.utn.magtea.tubo.TipoTubo;
+import com.utn.magtea.tubo.TuboRepository;
 import com.utn.magtea.camada.Camada;
 import com.utn.magtea.camada.CamadaRepository;
 import com.utn.magtea.modeloanimal.ModeloAnimal;
 import com.utn.magtea.modeloanimal.ModeloAnimalRepository;
+import com.utn.magtea.modeloanimal.ModeloAnimalPoolAporte;
+import com.utn.magtea.modeloanimal.ModeloAnimalPoolAporteRepository;
 import com.utn.magtea.modeloanimal.SexoRaton;
 import com.utn.magtea.modeloanimal.estudios.VocalizacionesUltrasonicas;
 import com.utn.magtea.modeloanimal.estudios.TresCamaras;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @RequiredArgsConstructor
@@ -63,9 +73,12 @@ public class DataInitializer implements ApplicationRunner {
     private final PasswordEncoder passwordEncoder;
     private final CajaRepository cajaRepository;
     private final SueroRepository sueroRepository;
+    private final TuboRepository tuboRepository;
     private final PoolRepository poolRepository;
+    private final PoolSueroAporteRepository poolSueroAporteRepository;
     private final CamadaRepository camadaRepository;
     private final ModeloAnimalRepository modeloAnimalRepository;
+    private final ModeloAnimalPoolAporteRepository modeloAnimalPoolAporteRepository;
     private final Clock clock;
 
     private static final Set<Integer> MCHAT_INVERTIDAS = Set.of(2, 5, 12);
@@ -95,16 +108,17 @@ public class DataInitializer implements ApplicationRunner {
     private String seedTecnicoPassword;
 
     @Override
+    @Transactional
     public void run(ApplicationArguments args) {
         seedProfesionales();
         seedFormularios();
-        seedPacientes();
-        seedEvaluaciones();
+        // seedPacientes();
+        // seedEvaluaciones();
         seedCajas();
-        seedSueros();
-        seedPools();
-        seedCamadas();
-        seedModelosAnimales();
+        // seedSueros();
+        // seedPools();
+        // seedCamadas();
+        // seedModelosAnimales();
     }
 
     // ===========================
@@ -133,8 +147,6 @@ public class DataInitializer implements ApplicationRunner {
 
     // ===========================
     // FORMULARIOS DE INTERÉS (40)
-    // 20 ADMITIDO · 10 CONTACTADO · 10 PENDIENTE
-    // Los 20 ADMITIDO se corresponden 1:1 con los 20 pacientes.
     // ===========================
 
     private void seedFormularios() {
@@ -143,7 +155,6 @@ public class DataInitializer implements ApplicationRunner {
         String em = "ignaciomarucco@gmail.com";
 
         var formularios = List.of(
-            // ── ADMITIDO (20) ─────────────────────────────────────────────────────────
             f("Flores",    "Cecilia",   em, "11-4700-1122",  "Flores",    "Mateo",     LocalDate.of(2021,  2, 18), ComoConocioProyecto.SUGERIDO_MEDICO,             "Miércoles",            LocalDate.of(2026, 1, 10), EstadoFormulario.ADMITIDO),
             f("Jiménez",   "Héctor",    em, "351-620-4433",  "Jiménez",   "Valentina", LocalDate.of(2020,  7, 31), ComoConocioProyecto.INSTAGRAM,                   "Jueves o viernes",     LocalDate.of(2026, 1, 15), EstadoFormulario.ADMITIDO),
             f("Torres",    "Ricardo",   em, "351-300-9988",  "Torres",    "Camila",    LocalDate.of(2021,  7,  6), ComoConocioProyecto.SUGERIDO_EQUIPO_TERAPEUTICO,  "Martes o miércoles",   LocalDate.of(2026, 1, 20), EstadoFormulario.ADMITIDO),
@@ -164,8 +175,6 @@ public class DataInitializer implements ApplicationRunner {
             f("Fernández", "Marcela",   em, "351-712-0034",  "Fernández", "Santiago",  LocalDate.of(2021,  9, 10), ComoConocioProyecto.INSTAGRAM,                   "Lunes",                LocalDate.of(2026, 3, 25), EstadoFormulario.ADMITIDO),
             f("Romero",    "Florencia", em, "11-3341-9920",  "Romero",    "Luca",      LocalDate.of(2020, 11,  5), ComoConocioProyecto.SUGERIDO_EQUIPO_TERAPEUTICO,  "Cualquier día",        LocalDate.of(2026, 3, 28), EstadoFormulario.ADMITIDO),
             f("García",    "Claudia",   em, "11-4523-8871",  "García",    "Matías",    LocalDate.of(2021,  3, 15), ComoConocioProyecto.INSTAGRAM,                   "Lunes y miércoles",    LocalDate.of(2026, 4,  1), EstadoFormulario.ADMITIDO),
-
-            // ── CONTACTADO (10) ───────────────────────────────────────────────────────
             f("López",     "Roberto",   em, "351-608-4412",  "López",     "Valentina", LocalDate.of(2022,  7, 20), ComoConocioProyecto.SUGERIDO_MEDICO,             "Martes por la tarde",  LocalDate.of(2026, 4,  8), EstadoFormulario.CONTACTADO),
             f("Díaz",      "Carolina",  em, "11-6200-8899",  "Díaz",      "Martina",   LocalDate.of(2022,  4, 17), ComoConocioProyecto.SUGERIDO_MEDICO,             "Jueves",               LocalDate.of(2026, 4, 12), EstadoFormulario.CONTACTADO),
             f("Velázquez", "Marcelo",   em, "351-723-1155",  "Velázquez", "Thiago",    LocalDate.of(2021,  8, 14), ComoConocioProyecto.INSTAGRAM,                   "Lunes y martes",       LocalDate.of(2026, 4, 15), EstadoFormulario.CONTACTADO),
@@ -176,8 +185,6 @@ public class DataInitializer implements ApplicationRunner {
             f("Aguirre",   "Estela",    em, "11-6510-4433",  "Aguirre",   "Rodrigo",   LocalDate.of(2021,  3, 25), ComoConocioProyecto.SUGERIDO_MEDICO,             "Cualquier día",        LocalDate.of(2026, 5,  2), EstadoFormulario.CONTACTADO),
             f("Núñez",     "Horacio",   em, "351-334-7766",  "Núñez",     "Alma",      LocalDate.of(2023,  7, 18), ComoConocioProyecto.INSTAGRAM,                   "Martes o jueves",      LocalDate.of(2026, 5,  6), EstadoFormulario.CONTACTADO),
             f("Espínola",  "Valeria",   em, "11-4800-2211",  "Espínola",  "Iara",      LocalDate.of(2022,  2, 28), ComoConocioProyecto.SUGERIDO_EQUIPO_TERAPEUTICO,  "Lunes",                LocalDate.of(2026, 5, 10), EstadoFormulario.CONTACTADO),
-
-            // ── PENDIENTE (10) ────────────────────────────────────────────────────────
             f("Molina",    "Eduardo",   em, "11-5900-6688",  "Molina",    "Enzo",      LocalDate.of(2022,  8, 12), ComoConocioProyecto.SUGERIDO_PARTICIPANTE,        "Lunes",                LocalDate.of(2026, 5, 14), EstadoFormulario.PENDIENTE),
             f("Ortega",    "Graciela",  em, "351-315-7744",  "Ortega",    "Miranda",   LocalDate.of(2021,  4, 23), ComoConocioProyecto.SUGERIDO_EQUIPO_TERAPEUTICO,  "Martes",               LocalDate.of(2026, 5, 17), EstadoFormulario.PENDIENTE),
             f("Rojas",     "Felipe",    em, "351-678-1133",  "Rojas",     "Delfina",   LocalDate.of(2023,  1,  5), ComoConocioProyecto.INSTAGRAM,                   "Miércoles o viernes",  LocalDate.of(2026, 5, 20), EstadoFormulario.PENDIENTE),
@@ -195,15 +202,6 @@ public class DataInitializer implements ApplicationRunner {
 
     // ===========================
     // PACIENTES (20)
-    //
-    // CONTROL (5):
-    //   C0001–C0004 → EXTRACCION_PENDIENTE (con fecha)
-    //   C0005       → ADMITIDO (sin fecha)
-    //
-    // PROBLEMA Grupo A (5): sin M-CHAT → ADMITIDO
-    // PROBLEMA Grupo B (2): M-CHAT score 0-2 (bajo riesgo) → NEGATIVA, sin seguimiento → EXTRACCION_PENDIENTE
-    // PROBLEMA Grupo C (8): M-CHAT score 3-7 (mediano riesgo) → con seguimiento → EXTRACCION_PENDIENTE
-    //   6 POSITIVA (fallas ≥ 2) · 2 NEGATIVA (fallas ≤ 1)
     // ===========================
 
     private void seedPacientes() {
@@ -211,30 +209,21 @@ public class DataInitializer implements ApplicationRunner {
 
         String em = "ignaciomarucco@gmail.com";
 
-        // ── CONTROL D1: 4 con fecha de extracción ────────────────────────────────
         saveControl("Flores",    "Cecilia",  em, "11-4700-1122",  "Flores",    "Mateo",     LocalDate.of(2021,  2, 18), Sexo.MASCULINO, "C0001", LocalDate.of(2026, 1, 10), LocalDateTime.of(2026, 1, 20, 10, 0), LocalDate.of(2026, 7, 10));
         saveControl("Jiménez",   "Héctor",   em, "351-620-4433",  "Jiménez",   "Valentina", LocalDate.of(2020,  7, 31), Sexo.FEMENINO,  "C0002", LocalDate.of(2026, 1, 15), LocalDateTime.of(2026, 1, 25, 10, 0), LocalDate.of(2026, 7, 12));
         saveControl("Torres",    "Ricardo",  em, "351-300-9988",  "Torres",    "Camila",    LocalDate.of(2021,  7,  6), Sexo.FEMENINO,  "C0003", LocalDate.of(2026, 1, 20), LocalDateTime.of(2026, 1, 30, 10, 0), LocalDate.of(2026, 7, 15));
         saveControl("Medina",    "Patricia", em, "11-5800-3344",  "Medina",    "Julián",    LocalDate.of(2021, 11, 20), Sexo.MASCULINO, "C0004", LocalDate.of(2026, 1, 25), LocalDateTime.of(2026, 2,  4, 10, 0), LocalDate.of(2026, 7, 20));
-
-        // ── CONTROL D2: 1 sin fecha de extracción ────────────────────────────────
         saveControl("Vargas",    "Mónica",   em, "11-4400-7755",  "Vargas",    "Lucas",     LocalDate.of(2020,  9, 18), Sexo.MASCULINO, "C0005", LocalDate.of(2026, 2,  1), LocalDateTime.of(2026, 2, 12, 10, 0), null);
 
-        // ── PROBLEMA Grupo A: sin M-CHAT (5) → ADMITIDO ──────────────────────────
         saveProblema("García",    "Claudia",   em, "11-4523-8871",  "García",    "Matías",    LocalDate.of(2021,  3, 15), Sexo.MASCULINO, "P0001", LocalDate.of(2026, 4,  1), LocalDateTime.of(2026, 4, 10, 10, 0));
         saveProblema("Romero",    "Florencia", em, "11-3341-9920",  "Romero",    "Luca",      LocalDate.of(2020, 11,  5), Sexo.MASCULINO, "P0002", LocalDate.of(2026, 3, 28), LocalDateTime.of(2026, 4,  7, 10, 0));
         saveProblema("Fernández", "Marcela",   em, "351-712-0034",  "Fernández", "Santiago",  LocalDate.of(2021,  9, 10), Sexo.MASCULINO, "P0003", LocalDate.of(2026, 3, 25), LocalDateTime.of(2026, 4,  3, 10, 0));
         saveProblema("Martínez",  "Pablo",     em, "11-5500-2233",  "Martínez",  "Sofía",     LocalDate.of(2022,  1, 25), Sexo.FEMENINO,  "P0004", LocalDate.of(2026, 3, 22), LocalDateTime.of(2026, 4,  1, 10, 0));
         saveProblema("González",  "Andrea",    em, "351-489-6677",  "González",  "Tomás",     LocalDate.of(2020,  6, 12), Sexo.MASCULINO, "P0005", LocalDate.of(2026, 3, 18), LocalDateTime.of(2026, 3, 28, 10, 0));
 
-        // ── PROBLEMA Grupo B: M-CHAT bajo riesgo, sin seguimiento (2) ────────────
-        // Score 0-2 → BAJO_RIESGO → resultadoFinal NEGATIVA directo, sin seguimiento
         saveProblemaConMchat("Herrera", "Jorge",   em, "11-4801-3322",  "Herrera", "Emma",   LocalDate.of(2023,  2,  8), Sexo.FEMENINO,  "P0006", LocalDate.of(2026, 3, 12), LocalDateTime.of(2026, 3, 22, 10, 0), LocalDate.of(2026, 7, 18), 1, MchatResultadoFinal.NEGATIVA);
         saveProblemaConMchat("Morales", "Silvana", em, "351-601-5544",  "Morales", "Franco", LocalDate.of(2021, 12,  3), Sexo.MASCULINO, "P0007", LocalDate.of(2026, 3, 15), LocalDateTime.of(2026, 3, 25, 10, 0), LocalDate.of(2026, 7, 22), 2, MchatResultadoFinal.NEGATIVA);
 
-        // ── PROBLEMA Grupo C: M-CHAT mediano riesgo + seguimiento (8) ────────────
-        // Score 3-7 → MEDIANO_RIESGO → se aplica seguimiento; resultadoFinal refleja el resultado del seguimiento
-        // 6 POSITIVA (fallas ≥ 2) · 2 NEGATIVA (fallas ≤ 1)
         saveProblemaConMchatYSeguimiento("Sánchez",   "Natalia",  em, "11-5701-4466",  "Sánchez",   "Isabella", LocalDate.of(2022, 10, 30), Sexo.FEMENINO,  "P0008", LocalDate.of(2026, 3,  8), LocalDateTime.of(2026, 3, 18, 10, 0), LocalDate.of(2026, 8,  5), 5, 3, MchatResultadoFinal.POSITIVA);
         saveProblemaConMchatYSeguimiento("Ruiz",       "Daniel",   em, "351-420-3355",  "Ruiz",       "Nicolás",  LocalDate.of(2023,  3, 22), Sexo.MASCULINO, "P0009", LocalDate.of(2026, 3,  5), LocalDateTime.of(2026, 3, 15, 10, 0), LocalDate.of(2026, 8, 10), 4, 2, MchatResultadoFinal.POSITIVA);
         saveProblemaConMchatYSeguimiento("Pereyra",    "Gustavo",  em, "351-555-7766",  "Pereyra",    "Benjamín", LocalDate.of(2020,  8, 29), Sexo.MASCULINO, "P0010", LocalDate.of(2026, 3,  1), LocalDateTime.of(2026, 3, 11, 10, 0), LocalDate.of(2026, 8, 12), 6, 4, MchatResultadoFinal.POSITIVA);
@@ -244,10 +233,6 @@ public class DataInitializer implements ApplicationRunner {
         saveProblemaConMchatYSeguimiento("Domínguez",  "Sergio",   em, "351-402-8800",  "Domínguez",  "Catalina", LocalDate.of(2022,  6, 27), Sexo.FEMENINO,  "P0014", LocalDate.of(2026, 2, 18), LocalDateTime.of(2026, 2, 28, 10, 0), LocalDate.of(2026, 8, 25), 4, 1, MchatResultadoFinal.NEGATIVA);
         saveProblemaConMchatYSeguimiento("Gutiérrez",  "Laura",    em, "11-6100-5577",  "Gutiérrez",  "Máximo",   LocalDate.of(2023,  1, 14), Sexo.MASCULINO, "P0015", LocalDate.of(2026, 2, 14), LocalDateTime.of(2026, 2, 24, 10, 0), LocalDate.of(2026, 8, 28), 6, 1, MchatResultadoFinal.NEGATIVA);
     }
-
-    // ──────────────────────────────────────────────────────────────────────────
-    // Métodos de persistencia de pacientes
-    // ──────────────────────────────────────────────────────────────────────────
 
     private void saveControl(
             String apellidoTutor, String nombreTutor, String correo, String telefono,
@@ -334,10 +319,6 @@ public class DataInitializer implements ApplicationRunner {
         return p;
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Builders de M-CHAT
-    // ──────────────────────────────────────────────────────────────────────────
-
     private MchatFamilia buildMchatFamilia(Paciente paciente, int score, MchatResultadoFinal resultado) {
         boolean[] r = respuestasConScore(score);
         MchatFamilia m = new MchatFamilia();
@@ -363,16 +344,10 @@ public class DataInitializer implements ApplicationRunner {
         return s;
     }
 
-    /**
-     * Genera 20 respuestas de M-CHAT coherentes con un score dado.
-     * Ítems normales: true = pasa, false = falla.
-     * Ítems invertidos (2, 5, 12): false = pasa, true = falla.
-     * Parte de estado "todos pasan" y voltea ítems hasta alcanzar el score.
-     */
     private boolean[] respuestasConScore(int score) {
         boolean[] r = new boolean[20];
         for (int i = 0; i < 20; i++) {
-            r[i] = !MCHAT_INVERTIDAS.contains(i + 1); // normal=true (pasa), invertida=false (pasa)
+            r[i] = !MCHAT_INVERTIDAS.contains(i + 1);
         }
         int pendiente = score;
         for (int i = 0; i < 20 && pendiente > 0; i++) {
@@ -386,13 +361,6 @@ public class DataInitializer implements ApplicationRunner {
 
     // ===========================
     // EVALUACIONES CARS-2 Y VINELAND-II
-    // Solo pacientes PROBLEMA con fechaExtraccion (P0006–P0015).
-    // Raw scores calculados como suma exacta de los 15 ítems.
-    //
-    // Agrupación clínica coherente con resultado M-CHAT:
-    //   NEGATIVA       → P0006, P0007, P0014, P0015 → CARS < 30
-    //   POSITIVA L/M   → P0009, P0012, P0013        → CARS 30–36.5
-    //   POSITIVA Severo → P0008, P0010, P0011       → CARS ≥ 37
     // ===========================
 
     private void seedEvaluaciones() {
@@ -401,55 +369,42 @@ public class DataInitializer implements ApplicationRunner {
         Map<String, Paciente> porCodigo = pacienteRepository.findAll().stream()
                 .collect(Collectors.toMap(Paciente::getCodigoNumerico, p -> p));
 
-        // ── NEGATIVA — CARS < 30, Vineland 82–95 ──────────────────────────────
-        // P0006 Emma Herrera   · raw = 4×1.0 + 11×1.5 = 20.5
         seedCars(porCodigo, "P0006", 40.0, 10,
                 1.0, 1.5, 1.0, 1.5, 1.5, 1.5, 1.0, 1.5, 1.5, 1.5, 1.0, 1.5, 1.5, 1.5, 1.5);
         seedVineland(porCodigo, "P0006", 95, 98, 92, 100, 95, 18, 17, 19);
 
-        // P0007 Franco Morales · raw = 2×2.0 + 13×1.5 = 23.5
         seedCars(porCodigo, "P0007", 44.0, 20,
                 1.5, 1.5, 1.5, 1.5, 2.0, 1.5, 1.5, 1.5, 1.5, 1.5, 2.0, 1.5, 1.5, 1.5, 1.5);
         seedVineland(porCodigo, "P0007", 90, 92, 88, 95, 90, 20, 19, 21);
 
-        // P0014 Catalina Domínguez · raw = 6×1.5 + 9×2.0 = 27.0
         seedCars(porCodigo, "P0014", 47.0, 35,
                 1.5, 2.0, 1.5, 2.0, 2.0, 1.5, 2.0, 1.5, 2.0, 2.0, 1.5, 2.0, 1.5, 2.0, 2.0);
         seedVineland(porCodigo, "P0014", 88, 90, 85, 92, 88, 18, 17, 19);
 
-        // P0015 Máximo Gutiérrez · raw = 3×1.5 + 12×2.0 = 28.5
         seedCars(porCodigo, "P0015", 49.0, 40,
                 2.0, 2.0, 2.0, 2.0, 2.0, 1.5, 2.0, 2.0, 2.0, 2.0, 1.5, 2.0, 2.0, 2.0, 1.5);
         seedVineland(porCodigo, "P0015", 82, 88, 80, 90, 85, 19, 18, 20);
 
-        // ── POSITIVA Leve-Moderado — CARS 30–36.5, Vineland 72–82 ─────────────
-        // P0009 Nicolás Ruiz   · raw = 7×2.0 + 8×2.5 = 34.0
         seedCars(porCodigo, "P0009", 55.0, 70,
                 2.0, 2.5, 2.0, 2.5, 2.5, 2.0, 2.5, 2.0, 2.5, 2.5, 2.0, 2.5, 2.0, 2.5, 2.0);
         seedVineland(porCodigo, "P0009", 75, 80, 74, 85, 78, 21, 20, 22);
 
-        // P0012 Victoria Ramos · raw = 9×2.0 + 6×2.5 = 33.0
         seedCars(porCodigo, "P0012", 52.0, 60,
                 2.0, 2.0, 2.5, 2.0, 2.0, 2.5, 2.0, 2.0, 2.5, 2.0, 2.5, 2.0, 2.0, 2.5, 2.0);
         seedVineland(porCodigo, "P0012", 80, 85, 78, 90, 82, 19, 18, 20);
 
-        // P0013 Renata Acosta  · raw = 5×2.0 + 10×2.5 = 35.0
         seedCars(porCodigo, "P0013", 58.0, 78,
                 2.5, 2.5, 2.5, 2.5, 2.0, 2.5, 2.5, 2.0, 2.5, 2.5, 2.0, 2.5, 2.5, 2.0, 2.0);
         seedVineland(porCodigo, "P0013", 70, 75, 68, 82, 72, 22, 20, 23);
 
-        // ── POSITIVA Severo — CARS ≥ 37, Vineland 55–68 ───────────────────────
-        // P0008 Isabella Sánchez · raw = 4×3.0 + 11×2.5 = 39.5
         seedCars(porCodigo, "P0008", 64.0, 91,
                 2.5, 3.0, 2.5, 3.0, 2.5, 2.5, 2.5, 2.5, 2.5, 2.5, 3.0, 2.5, 2.5, 2.5, 3.0);
         seedVineland(porCodigo, "P0008", 65, 72, 60, 80, 68, 24, 22, 25);
 
-        // P0010 Benjamín Pereyra · raw = 9×3.0 + 6×2.5 = 42.0
         seedCars(porCodigo, "P0010", 68.0, 96,
                 3.0, 3.0, 3.0, 3.0, 3.0, 2.5, 3.0, 2.5, 3.0, 2.5, 3.0, 2.5, 3.0, 2.5, 3.0);
         seedVineland(porCodigo, "P0010", 55, 62, 50, 72, 58, 26, 25, 28);
 
-        // P0011 Agustina Castro  · raw = 3×3.0 + 12×2.5 = 39.0
         seedCars(porCodigo, "P0011", 63.0, 89,
                 2.5, 3.0, 2.5, 2.5, 3.0, 2.5, 2.5, 2.5, 2.5, 3.0, 2.5, 2.5, 2.5, 2.5, 2.5);
         seedVineland(porCodigo, "P0011", 60, 70, 58, 78, 65, 23, 21, 24);
@@ -496,10 +451,6 @@ public class DataInitializer implements ApplicationRunner {
         return BigDecimal.valueOf(val);
     }
 
-    // ──────────────────────────────────────────────────────────────────────────
-    // Builder de formularios
-    // ──────────────────────────────────────────────────────────────────────────
-
     private FormularioInteres f(
             String apellidoTutor, String nombreTutor, String correo, String telefono,
             String apellidoNino, String nombreNino, LocalDate fechaNacNino,
@@ -521,7 +472,7 @@ public class DataInitializer implements ApplicationRunner {
     }
 
     // ===========================
-    // BASIC STAGE (FASE 6) SEEDING
+    // BASIC STAGE SEEDING
     // ===========================
 
     private void seedCajas() {
@@ -552,48 +503,61 @@ public class DataInitializer implements ApplicationRunner {
                 .collect(Collectors.toMap(Paciente::getCodigoNumerico, p -> p));
 
         List<Caja> cajas = cajaRepository.findAll();
-        Caja cajaControl = cajas.get(0);
-        Caja cajaProblema = cajas.get(1);
+        Caja cajaControl  = cajas.get(0);  // Caja A/1/1
+        Caja cajaProblema = cajas.get(1);  // Caja A/1/2
 
-        // Control sueros (rango 0)
-        saveSuero(porCodigo.get("C0001"), cajaControl, "A1,A2", 2.0, 0.0);
-        saveSuero(porCodigo.get("C0002"), cajaControl, "A3,A4", 2.0, 0.0);
-        saveSuero(porCodigo.get("C0003"), cajaControl, "A5,A6", 2.0, 0.0);
-        saveSuero(porCodigo.get("C0004"), cajaControl, "A7,A8", 2.0, 0.0);
+        // Control: rango 0
+        saveSueroConTubos(porCodigo.get("C0001"), cajaControl,  0.0,  "A1", 1.0, "A2", 1.0);
+        saveSueroConTubos(porCodigo.get("C0002"), cajaControl,  0.0,  "A3", 1.0, "A4", 1.0);
+        saveSueroConTubos(porCodigo.get("C0003"), cajaControl,  0.0,  "A5", 1.0, "A6", 1.0);
+        saveSueroConTubos(porCodigo.get("C0004"), cajaControl,  0.0,  "A7", 1.0, "A8", 1.0);
 
-        // Problem sueros
-        // Rango 1: 1314–2500 BTU (P0006, P0007, P0014, P0015)
-        saveSuero(porCodigo.get("P0006"), cajaProblema, "B1,B2", 1.5, 1800.0);
-        saveSuero(porCodigo.get("P0007"), cajaProblema, "B3,B4", 1.5, 2000.0);
-        saveSuero(porCodigo.get("P0014"), cajaProblema, "B5,B6", 1.5, 1500.0);
-        saveSuero(porCodigo.get("P0015"), cajaProblema, "B7,B8", 1.5, 2200.0);
+        // Rango 1 (1314–2500 BTU)
+        saveSueroConTubos(porCodigo.get("P0006"), cajaProblema, 1800.0, "B1", 0.75, "B2", 0.75);
+        saveSueroConTubos(porCodigo.get("P0007"), cajaProblema, 2000.0, "B3", 0.75, "B4", 0.75);
+        saveSueroConTubos(porCodigo.get("P0014"), cajaProblema, 1500.0, "B5", 0.75, "B6", 0.75);
+        saveSueroConTubos(porCodigo.get("P0015"), cajaProblema, 2200.0, "B7", 0.75, "B8", 0.75);
 
-        // Rango 2: 2501–8000 BTU (P0009, P0012, P0013)
-        saveSuero(porCodigo.get("P0009"), cajaProblema, "C1,C2", 1.5, 5000.0);
-        saveSuero(porCodigo.get("P0012"), cajaProblema, "C3,C4", 1.5, 4000.0);
-        saveSuero(porCodigo.get("P0013"), cajaProblema, "C5,C6", 1.5, 4500.0);
+        // Rango 2 (2501–8000 BTU)
+        saveSueroConTubos(porCodigo.get("P0009"), cajaProblema, 5000.0, "C1", 0.75, "C2", 0.75);
+        saveSueroConTubos(porCodigo.get("P0012"), cajaProblema, 4000.0, "C3", 0.75, "C4", 0.75);
+        saveSueroConTubos(porCodigo.get("P0013"), cajaProblema, 4500.0, "C5", 0.75, "C6", 0.75);
 
-        // Rango 3: > 8000 BTU (P0008, P0010, P0011)
-        saveSuero(porCodigo.get("P0008"), cajaProblema, "D1,D2", 1.5, 9000.0);
-        saveSuero(porCodigo.get("P0010"), cajaProblema, "D3,D4", 1.5, 9500.0);
-        saveSuero(porCodigo.get("P0011"), cajaProblema, "D5,D6", 1.5, 8500.0);
+        // Rango 3 (> 8000 BTU)
+        saveSueroConTubos(porCodigo.get("P0008"), cajaProblema, 9000.0, "D1", 0.75, "D2", 0.75);
+        saveSueroConTubos(porCodigo.get("P0010"), cajaProblema, 9500.0, "D3", 0.75, "D4", 0.75);
+        saveSueroConTubos(porCodigo.get("P0011"), cajaProblema, 8500.0, "D5", 0.75, "D6", 0.75);
     }
 
-    private void saveSuero(Paciente paciente, Caja caja, String tubos, double cantidadTotal, double valorAnticuerpos) {
+    private void saveSueroConTubos(Paciente paciente, Caja caja, double valorAnticuerpos,
+                                    String pos1, double cant1, String pos2, double cant2) {
         if (paciente == null) return;
+
         Suero s = new Suero();
         s.setPaciente(paciente);
         s.setCaja(caja);
-        s.setTubos(tubos);
         s.setFechaExtraccion(paciente.getFechaExtraccion());
-        s.setCantidadTotal(cantidadTotal);
-        s.setCantidadUsada(0.0);
         s.setValorAnticuerpos(valorAnticuerpos);
         s.setRango(SueroRangoUtil.calcularRango(valorAnticuerpos));
-        s.setActivo(true);
-        sueroRepository.save(s);
+        s.setUso(paciente.getTipoPaciente() == TipoPaciente.CONTROL ? SueroUso.CONTROL : SueroUso.PROBLEMA);
+        Suero saved = sueroRepository.save(s);
 
-        // Update Patient clinical state
+        Tubo t1 = new Tubo();
+        t1.setTipo(TipoTubo.SUERO);
+        t1.setCaja(caja);
+        t1.setSuero(saved);
+        t1.setPosicion(pos1);
+        t1.setCantidadInicial(cant1);
+        tuboRepository.save(t1);
+
+        Tubo t2 = new Tubo();
+        t2.setTipo(TipoTubo.SUERO);
+        t2.setCaja(caja);
+        t2.setSuero(saved);
+        t2.setPosicion(pos2);
+        t2.setCantidadInicial(cant2);
+        tuboRepository.save(t2);
+
         paciente.setEstadoClinico(PacienteEstado.EXTRACCION_REALIZADA);
         pacienteRepository.save(paciente);
     }
@@ -602,52 +566,87 @@ public class DataInitializer implements ApplicationRunner {
         if (poolRepository.count() > 0) return;
 
         List<Caja> cajas = cajaRepository.findAll();
-        Caja cajaPools = cajas.get(2); // Caja 3
+        Caja cajaPools = cajas.get(2);  // Caja B/2/1
 
-        Map<String, Suero> suerosPorPacienteCodigo = sueroRepository.findAll().stream()
-                .collect(Collectors.toMap(s -> s.getPaciente().getCodigoNumerico(), s -> s));
+        // Buscar tubos de suero por posición
+        Map<String, Tubo> tubosPorPosicion = tuboRepository.findBySueroActivoTrue().stream()
+                .collect(Collectors.toMap(Tubo::getPosicion, t -> t));
 
-        // Pool 1: Rango 2 (uses P0009 and P0012)
-        Suero s0009 = suerosPorPacienteCodigo.get("P0009");
-        Suero s0012 = suerosPorPacienteCodigo.get("P0012");
-        if (s0009 != null && s0012 != null) {
-            s0009.setCantidadUsada(s0009.getCantidadUsada() + 0.3);
-            s0012.setCantidadUsada(s0012.getCantidadUsada() + 0.3);
-            sueroRepository.save(s0009);
-            sueroRepository.save(s0012);
+        Tubo st_C1 = tubosPorPosicion.get("C1");
+        Tubo st_C2 = tubosPorPosicion.get("C2");
+        Tubo st_C3 = tubosPorPosicion.get("C3");
+        Tubo st_C4 = tubosPorPosicion.get("C4");
+        Tubo st_D1 = tubosPorPosicion.get("D1");
+        Tubo st_D2 = tubosPorPosicion.get("D2");
+        Tubo st_D3 = tubosPorPosicion.get("D3");
+        Tubo st_D4 = tubosPorPosicion.get("D4");
 
+        // Pool 1: Rango 2 (P0009 + P0012) — usa tubos C1, C2, C3, C4
+        // Aportes: 0.5 mL de cada tubo → total 2.0 mL
+        // Pool tubo: P2-A con 2.0 mL initial
+        if (st_C1 != null && st_C2 != null && st_C3 != null && st_C4 != null) {
             Pool pool1 = new Pool();
-            pool1.setSueros(List.of(s0009, s0012));
+            pool1.setCodigo(generarCodigoPool());
             pool1.setCaja(cajaPools);
-            pool1.setTubos("P2-A");
             pool1.setFechaCreacion(LocalDate.now(clock).minusDays(20));
             pool1.setRango(2);
-            pool1.setCantidadTotal(0.6);
-            pool1.setCantidadUsada(0.0);
+            pool1.setUso(SueroUso.PROBLEMA);
             pool1.setActivo(true);
-            poolRepository.save(pool1);
+            Pool savedPool1 = poolRepository.save(pool1);
+
+            Tubo pt1 = new Tubo();
+            pt1.setTipo(TipoTubo.POOL);
+            pt1.setCaja(cajaPools);
+            pt1.setPool(savedPool1);
+            pt1.setPosicion("P2-A");
+            pt1.setCantidadInicial(2.0);
+            Tubo savedPt1 = tuboRepository.save(pt1);
+
+            crearAporte(savedPool1, st_C1, 0.5);
+            crearAporte(savedPool1, st_C2, 0.5);
+            crearAporte(savedPool1, st_C3, 0.5);
+            crearAporte(savedPool1, st_C4, 0.5);
+
+            // Seed algunos aportes de modelos animales en pool1 (se usan en seedModelosAnimales)
+            // Pool tubo P2-A tendrá cantidadUsada = 0 por ahora; se actualiza en seedModelosAnimales
+            poolRepository.save(savedPool1);
         }
 
-        // Pool 2: Rango 3 (uses P0008 and P0010)
-        Suero s0008 = suerosPorPacienteCodigo.get("P0008");
-        Suero s0010 = suerosPorPacienteCodigo.get("P0010");
-        if (s0008 != null && s0010 != null) {
-            s0008.setCantidadUsada(s0008.getCantidadUsada() + 0.4);
-            s0010.setCantidadUsada(s0010.getCantidadUsada() + 0.4);
-            sueroRepository.save(s0008);
-            sueroRepository.save(s0010);
-
+        // Pool 2: Rango 3 (P0008 + P0010) — usa tubos D1, D2, D3, D4
+        if (st_D1 != null && st_D2 != null && st_D3 != null && st_D4 != null) {
             Pool pool2 = new Pool();
-            pool2.setSueros(List.of(s0008, s0010));
+            pool2.setCodigo(generarCodigoPool());
             pool2.setCaja(cajaPools);
-            pool2.setTubos("P3-A");
             pool2.setFechaCreacion(LocalDate.now(clock).minusDays(10));
             pool2.setRango(3);
-            pool2.setCantidadTotal(0.8);
-            pool2.setCantidadUsada(0.0);
+            pool2.setUso(SueroUso.PROBLEMA);
             pool2.setActivo(true);
-            poolRepository.save(pool2);
+            Pool savedPool2 = poolRepository.save(pool2);
+
+            Tubo pt2 = new Tubo();
+            pt2.setTipo(TipoTubo.POOL);
+            pt2.setCaja(cajaPools);
+            pt2.setPool(savedPool2);
+            pt2.setPosicion("P3-A");
+            pt2.setCantidadInicial(2.0);
+            tuboRepository.save(pt2);
+
+            crearAporte(savedPool2, st_D1, 0.5);
+            crearAporte(savedPool2, st_D2, 0.5);
+            crearAporte(savedPool2, st_D3, 0.5);
+            crearAporte(savedPool2, st_D4, 0.5);
         }
+    }
+
+    private void crearAporte(Pool pool, Tubo tubo, double cantidad) {
+        PoolSueroAporte aporte = new PoolSueroAporte();
+        aporte.setPool(pool);
+        aporte.setTubo(tubo);
+        aporte.setCantidadAportada(cantidad);
+        poolSueroAporteRepository.save(aporte);
+
+        tubo.setCantidadUsada(tubo.getCantidadUsada() + cantidad);
+        tuboRepository.save(tubo);
     }
 
     private void seedCamadas() {
@@ -673,8 +672,8 @@ public class DataInitializer implements ApplicationRunner {
         List<Pool> pools = poolRepository.findAll();
         if (pools.size() < 2) return;
 
-        Pool pool1 = pools.get(0); // Rango 2
-        Pool pool2 = pools.get(1); // Rango 3
+        Pool pool1 = pools.get(0);
+        Pool pool2 = pools.get(1);
 
         List<Camada> camadas = camadaRepository.findAll();
         if (camadas.size() < 2) return;
@@ -684,8 +683,11 @@ public class DataInitializer implements ApplicationRunner {
 
         LocalDate hoy = LocalDate.now(clock);
 
-        // Raton 1: M-R2-A
-        // Rango 2, Camada 1, Male, complete studies
+        // Buscar tubo de pool P2-A del pool1
+        List<Tubo> tubosPool1 = tuboRepository.findByPoolId(pool1.getId());
+        Tubo tuboP2A = tubosPool1.isEmpty() ? null : tubosPool1.get(0);
+
+        // Ratón 1: M-R2-A — rango 2, estudios completos
         ModeloAnimal m1 = new ModeloAnimal();
         m1.setIdentificador("M-R2-A");
         m1.setPool(pool1);
@@ -695,7 +697,6 @@ public class DataInitializer implements ApplicationRunner {
         m1.setFechaDia1Inoculacion(hoy.minusDays(19));
         m1.setNumCelulasGanglionares(150);
         m1.setNumCelulasPurkinje(85);
-        m1.setActivo(true);
 
         VocalizacionesUltrasonicas vus1 = new VocalizacionesUltrasonicas();
         vus1.setModeloAnimal(m1);
@@ -710,11 +711,17 @@ public class DataInitializer implements ApplicationRunner {
         tc1.setM2TiempoRatonDesconocido(5.0);
         tc1.setM2TiempoRatonFamiliar(2.5);
         m1.setTresCamaras(tc1);
+        m1.setActivo(true);
+        ModeloAnimal savedM1 = modeloAnimalRepository.save(m1);
 
-        modeloAnimalRepository.save(m1);
+        if (tuboP2A != null) {
+            crearAporteModelo(savedM1, tuboP2A, 0.2, 1);
+            crearAporteModelo(savedM1, tuboP2A, 0.2, 2);
+            crearAporteModelo(savedM1, tuboP2A, 0.2, 3);
+            crearAporteModelo(savedM1, tuboP2A, 0.2, 4);
+        }
 
-        // Raton 2: M-R2-B
-        // Rango 2, Camada 1, Female, only Vocalizaciones registered
+        // Ratón 2: M-R2-B — rango 2, solo vocalizaciones
         ModeloAnimal m2 = new ModeloAnimal();
         m2.setIdentificador("M-R2-B");
         m2.setPool(pool1);
@@ -724,18 +731,16 @@ public class DataInitializer implements ApplicationRunner {
         m2.setFechaDia1Inoculacion(hoy.minusDays(19));
         m2.setNumCelulasGanglionares(160);
         m2.setNumCelulasPurkinje(90);
-        m2.setActivo(true);
 
         VocalizacionesUltrasonicas vus2 = new VocalizacionesUltrasonicas();
         vus2.setModeloAnimal(m2);
         vus2.setMuestra1Khz(30.0);
         vus2.setMuestra2Khz(40.0);
         m2.setVocalizaciones(vus2);
-
+        m2.setActivo(true);
         modeloAnimalRepository.save(m2);
 
-        // Raton 3: M-R3-A
-        // Rango 3, Camada 2, Male, no studies yet. Born exactly 5 days ago to trigger "necesitaVocalizaciones" alert.
+        // Ratón 3: M-R3-A — rango 3, sin estudios, nacido hace 5 días → alerta vocalizaciones
         ModeloAnimal m3 = new ModeloAnimal();
         m3.setIdentificador("M-R3-A");
         m3.setPool(pool2);
@@ -746,8 +751,7 @@ public class DataInitializer implements ApplicationRunner {
         m3.setActivo(true);
         modeloAnimalRepository.save(m3);
 
-        // Raton 4: M-R3-B
-        // Rango 3, Camada 2, Female, no studies yet. Born exactly 19 days ago to trigger "necesitaTresCamaras" alert.
+        // Ratón 4: M-R3-B — rango 3, sin estudios, nacido hace 19 días → alerta tres cámaras
         ModeloAnimal m4 = new ModeloAnimal();
         m4.setIdentificador("M-R3-B");
         m4.setPool(pool2);
@@ -759,4 +763,23 @@ public class DataInitializer implements ApplicationRunner {
         modeloAnimalRepository.save(m4);
     }
 
+    private void crearAporteModelo(ModeloAnimal modelo, Tubo tubo, double cantidadConsumida, int dia) {
+        ModeloAnimalPoolAporte aporte = new ModeloAnimalPoolAporte();
+        aporte.setModeloAnimal(modelo);
+        aporte.setTubo(tubo);
+        aporte.setCantidadConsumida(cantidadConsumida);
+        aporte.setDia(dia);
+        modeloAnimalPoolAporteRepository.save(aporte);
+
+        tubo.setCantidadUsada(tubo.getCantidadUsada() + cantidadConsumida);
+        tuboRepository.save(tubo);
+    }
+
+    private String generarCodigoPool() {
+        String codigo;
+        do {
+            codigo = UUID.randomUUID().toString().replace("-", "").substring(0, 6).toUpperCase();
+        } while (poolRepository.existsByCodigo(codigo));
+        return codigo;
+    }
 }
