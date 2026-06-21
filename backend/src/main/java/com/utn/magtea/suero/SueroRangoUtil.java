@@ -11,7 +11,8 @@ public final class SueroRangoUtil {
 
     private SueroRangoUtil() {}
 
-    public static int calcularRango(double valorAnticuerpos) {
+    public static Integer calcularRango(Double valorAnticuerpos) {
+        if (valorAnticuerpos == null) return null;
         if (valorAnticuerpos <= 1313) return 0;
         if (valorAnticuerpos <= 2500) return 1;
         if (valorAnticuerpos <= 8000) return 2;

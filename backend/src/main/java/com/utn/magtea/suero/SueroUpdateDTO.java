@@ -9,8 +9,7 @@ import jakarta.validation.constraints.PositiveOrZero;
 import java.time.LocalDate;
 import java.util.List;
 
-public record SueroCreateDTO(
-        Long pacienteId,
+public record SueroUpdateDTO(
         @NotNull(message = "La caja es obligatoria") Long cajaId,
         @NotNull(message = "Los tubos son obligatorios")
         @NotEmpty(message = "Debe incluir al menos un tubo")

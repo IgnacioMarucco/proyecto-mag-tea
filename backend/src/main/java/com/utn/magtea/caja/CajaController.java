@@ -26,10 +26,11 @@ public class CajaController {
     public PageResponse<CajaListDTO> findAll(
             @RequestParam(defaultValue = "0")       int page,
             @RequestParam(defaultValue = "20")      int size,
+            @RequestParam(required = false)         String q,
             @RequestParam(required = false)         String freezer,
             @RequestParam(defaultValue = "freezer") String sortBy,
             @RequestParam(defaultValue = "asc")     String sortDir) {
-        return service.findAll(page, size, freezer, sortBy, sortDir);
+        return service.findAll(page, size, q, freezer, sortBy, sortDir);
     }
 
     @GetMapping("/{id}")
@@ -68,7 +69,8 @@ public class CajaController {
     @GetMapping("/{id}/ocupacion")
     @PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Consultar posiciones ocupadas en la caja")
-    public CajaOcupacionDTO getOcupacion(@PathVariable Long id) {
-        return service.getOcupacion(id);
+    public CajaOcupacionDTO getOcupacion(@PathVariable Long id,
+                                          @RequestParam(required = false) Long excludeSueroId) {
+        return service.getOcupacion(id, excludeSueroId);
     }
 }

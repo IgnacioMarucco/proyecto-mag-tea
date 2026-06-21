@@ -8,4 +8,6 @@ import java.util.List;
 public interface PoolRepository extends JpaRepository<Pool, Long>, JpaSpecificationExecutor<Pool> {
 
     List<Pool> findByCajaIdAndActivoTrue(Long cajaId);
+
+    boolean existsByCodigo(String codigo);
 }

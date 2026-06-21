@@ -24,15 +24,17 @@ public class SueroController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Listar sueros activos (paginado, filtro por rango y uso)")
+    @Operation(summary = "Listar sueros activos (paginado, filtro por rango, uso y paciente)")
     public PageResponse<SueroListDTO> findAll(
             @RequestParam(defaultValue = "0")        int page,
             @RequestParam(defaultValue = "20")       int size,
+            @RequestParam(required = false)          String q,
             @RequestParam(required = false)          List<Integer> rangos,
             @RequestParam(required = false)          SueroUso uso,
+            @RequestParam(required = false)           String codigoPaciente,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc")     String sortDir) {
-        return service.findAll(page, size, rangos, uso, sortBy, sortDir);
+        return service.findAll(page, size, q, rangos, uso, codigoPaciente, sortBy, sortDir);
     }
 
     @GetMapping("/disponibilidad-pool")
@@ -40,6 +42,13 @@ public class SueroController {
     @Operation(summary = "Disponibilidad de sueros por rango para armar pools")
     public List<SueroDisponibilidadDTO> getDisponibilidadPool() {
         return service.getDisponibilidadPool();
+    }
+
+    @GetMapping("/by-codigo/{codigoNumerico}")
+    @PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL')")
+    @Operation(summary = "Obtener suero por código del paciente")
+    public SueroResponseDTO findByCodigoNumerico(@PathVariable String codigoNumerico) {
+        return service.findByCodigoNumerico(codigoNumerico);
     }
 
     @GetMapping("/{id}")
@@ -63,7 +72,7 @@ public class SueroController {
     @PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Actualizar suero")
     public SueroResponseDTO update(@PathVariable Long id,
-                                   @RequestBody @Valid SueroCreateDTO dto) {
+                                   @RequestBody @Valid SueroUpdateDTO dto) {
         return service.update(id, dto);
     }
 

@@ -3,8 +3,8 @@ package com.utn.magtea.caja;
 import com.utn.magtea.common.PageResponse;
 import com.utn.magtea.common.exception.DuplicateResourceException;
 import com.utn.magtea.common.exception.ResourceNotFoundException;
-import com.utn.magtea.pool.PoolRepository;
-import com.utn.magtea.suero.SueroRepository;
+import com.utn.magtea.tubo.Tubo;
+import com.utn.magtea.tubo.TuboRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -13,9 +13,10 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
@@ -25,15 +26,14 @@ public class CajaService {
 
     private final CajaRepository repository;
     private final CajaMapper mapper;
-    private final SueroRepository sueroRepository;
-    private final PoolRepository poolRepository;
+    private final TuboRepository tuboRepository;
 
     @Transactional(readOnly = true)
-    public PageResponse<CajaListDTO> findAll(int page, int size, String freezer,
+    public PageResponse<CajaListDTO> findAll(int page, int size, String q, String freezer,
                                               String sortBy, String sortDir) {
         Sort sort = buildSort(sortBy, sortDir, "freezer");
         Page<Caja> result = repository.findAll(
-                buildSpec(freezer),
+                buildSpec(q, freezer),
                 PageRequest.of(page, size, sort));
         return new PageResponse<>(
                 result.map(mapper::toListDTO).getContent(),
@@ -81,35 +81,40 @@ public class CajaService {
     }
 
     @Transactional(readOnly = true)
-    public CajaOcupacionDTO getOcupacion(Long id) {
+    public CajaOcupacionDTO getOcupacion(Long id, Long excludeSueroId) {
         findActiveById(id);
 
-        java.util.stream.Stream<String> tubosDesueros = sueroRepository.findByCajaIdAndActivoTrue(id).stream()
-                .filter(s -> s.getTubos() != null && !s.getTubos().isBlank())
-                .flatMap(s -> Arrays.stream(s.getTubos().split(",")));
+        Stream<String> tubosSueros = tuboRepository.findByCajaIdAndSueroActivoTrue(id).stream()
+                .filter(t -> excludeSueroId == null || !t.getSuero().getId().equals(excludeSueroId))
+                .filter(t -> t.getCantidadRestante() > 0)
+                .map(Tubo::getPosicion);
 
-        java.util.stream.Stream<String> tubosDePools = poolRepository.findByCajaIdAndActivoTrue(id).stream()
-                .filter(p -> p.getTubos() != null && !p.getTubos().isBlank())
-                .flatMap(p -> Arrays.stream(p.getTubos().split(",")));
+        Stream<String> tubosPools = tuboRepository.findByCajaIdAndPoolActivoTrue(id).stream()
+                .filter(t -> t.getCantidadRestante() > 0)
+                .map(Tubo::getPosicion);
 
-        List<String> ocupadas = java.util.stream.Stream.concat(tubosDesueros, tubosDePools)
-                .map(String::trim)
-                .filter(t -> !t.isBlank())
+        List<String> ocupadas = Stream.concat(tubosSueros, tubosPools)
                 .distinct()
                 .sorted()
-                .toList();
+                .collect(Collectors.toList());
 
         return new CajaOcupacionDTO(ocupadas);
     }
 
-    private Specification<Caja> buildSpec(String freezer) {
+    private Specification<Caja> buildSpec(String q, String freezer) {
         Specification<Caja> spec = activoTrue();
+        if (q != null && !q.isBlank())             spec = spec.and(searchText(q));
         if (freezer != null && !freezer.isBlank()) spec = spec.and(freezerEquals(freezer));
         return spec;
     }
 
     private Specification<Caja> activoTrue() {
         return (root, query, cb) -> cb.isTrue(root.get("activo"));
+    }
+
+    private Specification<Caja> searchText(String q) {
+        return (root, query, cb) -> cb.like(
+                cb.upper(root.get("freezer")), "%" + q.toUpperCase() + "%");
     }
 
     private Specification<Caja> freezerEquals(String freezer) {

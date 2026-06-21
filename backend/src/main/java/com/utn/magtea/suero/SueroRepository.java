@@ -10,4 +10,6 @@ public interface SueroRepository extends JpaRepository<Suero, Long>, JpaSpecific
     boolean existsByPacienteIdAndActivoTrue(Long pacienteId);
 
     List<Suero> findByCajaIdAndActivoTrue(Long cajaId);
+
+    java.util.Optional<Suero> findByPacienteCodigoNumericoAndActivoTrue(String codigoNumerico);
 }

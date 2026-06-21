@@ -12,6 +12,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import com.utn.magtea.suero.SueroUso;
+
 import java.util.List;
 
 @RestController
@@ -24,14 +26,15 @@ public class PoolController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Listar pools activos (paginado, filtro por rango)")
+    @Operation(summary = "Listar pools activos (paginado, filtro por rango y uso)")
     public PageResponse<PoolListDTO> findAll(
             @RequestParam(defaultValue = "0")        int page,
             @RequestParam(defaultValue = "20")       int size,
             @RequestParam(required = false)          List<Integer> rangos,
+            @RequestParam(required = false)          List<SueroUso> usos,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc")     String sortDir) {
-        return service.findAll(page, size, rangos, sortBy, sortDir);
+        return service.findAll(page, size, rangos, usos, sortBy, sortDir);
     }
 
     @GetMapping("/{id}")

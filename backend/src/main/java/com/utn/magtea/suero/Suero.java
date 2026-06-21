@@ -3,6 +3,7 @@ package com.utn.magtea.suero;
 import com.utn.magtea.caja.Caja;
 import com.utn.magtea.common.Auditable;
 import com.utn.magtea.paciente.Paciente;
+import com.utn.magtea.tubo.Tubo;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,6 +11,8 @@ import lombok.Setter;
 import org.hibernate.envers.Audited;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Audited
 @Entity
@@ -31,23 +34,19 @@ public class Suero extends Auditable {
     @JoinColumn(name = "caja_id", nullable = false)
     private Caja caja;
 
-    @Column(nullable = false)
-    private String tubos;
+    @OneToMany(mappedBy = "suero", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Tubo> tubos = new ArrayList<>();
 
     @Column(nullable = false)
     private LocalDate fechaExtraccion;
 
-    @Column(nullable = false)
-    private double cantidadTotal;
+    private Double valorAnticuerpos;
 
-    @Column(nullable = false)
-    private double cantidadUsada = 0.0;
+    private Integer rango;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private double valorAnticuerpos;
-
-    @Column(nullable = false)
-    private int rango;
+    private SueroUso uso;
 
     @Column(nullable = false)
     private boolean activo = true;

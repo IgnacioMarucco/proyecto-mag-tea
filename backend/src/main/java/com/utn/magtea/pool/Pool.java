@@ -2,7 +2,9 @@ package com.utn.magtea.pool;
 
 import com.utn.magtea.caja.Caja;
 import com.utn.magtea.common.Auditable;
-import com.utn.magtea.suero.Suero;
+import com.utn.magtea.modeloanimal.ModeloAnimal;
+import com.utn.magtea.suero.SueroUso;
+import com.utn.magtea.tubo.Tubo;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -25,20 +27,12 @@ public class Pool extends Auditable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(
-            name = "pool_sueros",
-            joinColumns = @JoinColumn(name = "pool_id"),
-            inverseJoinColumns = @JoinColumn(name = "suero_id")
-    )
-    private List<Suero> sueros = new ArrayList<>();
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "caja_id", nullable = false)
     private Caja caja;
 
-    @Column(nullable = false)
-    private String tubos;
+    @Column(unique = true)
+    private String codigo;
 
     @Column(nullable = false)
     private LocalDate fechaCreacion;
@@ -46,11 +40,18 @@ public class Pool extends Auditable {
     @Column(nullable = false)
     private int rango;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private double cantidadTotal;
+    private SueroUso uso;
 
-    @Column(nullable = false)
-    private double cantidadUsada = 0.0;
+    @OneToMany(mappedBy = "pool", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Tubo> tubos = new ArrayList<>();
+
+    @OneToMany(mappedBy = "pool", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PoolSueroAporte> aportes = new ArrayList<>();
+
+    @OneToMany(mappedBy = "pool", fetch = FetchType.LAZY)
+    private List<ModeloAnimal> modelosAnimales = new ArrayList<>();
 
     @Column(nullable = false)
     private boolean activo = true;
