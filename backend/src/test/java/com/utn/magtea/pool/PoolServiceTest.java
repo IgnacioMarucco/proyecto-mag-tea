@@ -5,12 +5,19 @@ import com.utn.magtea.caja.CajaRepository;
 import com.utn.magtea.common.exception.BusinessRuleException;
 import com.utn.magtea.common.exception.ResourceNotFoundException;
 import com.utn.magtea.suero.Suero;
-import com.utn.magtea.suero.SueroRepository;
+import com.utn.magtea.suero.SueroUso;
+import com.utn.magtea.tubo.Tubo;
+import com.utn.magtea.tubo.TipoTubo;
+import com.utn.magtea.tubo.TuboInputDTO;
+import com.utn.magtea.tubo.TuboRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -20,163 +27,161 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-
 @ExtendWith(MockitoExtension.class)
 class PoolServiceTest {
 
     @Mock private PoolRepository repository;
     @Mock private PoolMapper mapper;
-    @Mock private SueroRepository sueroRepository;
+    @Mock private TuboRepository tuboRepository;
+    @Mock private PoolSueroAporteRepository poolSueroAporteRepository;
     @Mock private CajaRepository cajaRepository;
 
     @InjectMocks private PoolService service;
 
+    // --- findAll ---
+
+    @Test
+    void deberia_listarPools_cuandoExisten() {
+        var pool = buildPool(1L);
+        var listDTO = new PoolListDTO(1L, "ABC123", 1, SueroUso.PROBLEMA, 0.3, 0.3, LocalDate.now(), 0, "A-1-1", 0);
+        var page = new PageImpl<>(List.of(pool));
+
+        when(repository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+        when(mapper.toListDTO(pool)).thenReturn(listDTO);
+
+        var result = service.findAll(0, 10, null, null, "createdAt", "desc");
+
+        assertThat(result.content()).hasSize(1);
+        assertThat(result.content().getFirst().id()).isEqualTo(1L);
+    }
+
+    @Test
+    void deberia_listarPools_cuandoFiltroRangosYUsos() {
+        var page = new PageImpl<Pool>(List.of());
+
+        when(repository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        var result = service.findAll(0, 10, List.of(1, 2), List.of(SueroUso.PROBLEMA), "rango", "asc");
+
+        assertThat(result.content()).isEmpty();
+    }
+
+    // --- findById ---
+
+    @Test
+    void deberia_obtenerPool_cuandoExiste() {
+        var pool = buildPool(1L);
+        var response = buildResponseDTO(1L);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(pool));
+        when(mapper.toDTO(pool)).thenReturn(response);
+
+        var result = service.findById(1L);
+
+        assertThat(result).isNotNull();
+        assertThat(result.id()).isEqualTo(1L);
+    }
+
+    @Test
+    void deberia_lanzarResourceNotFoundException_cuandoPoolNoExiste() {
+        when(repository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.findById(99L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Pool con id 99 no existe");
+    }
+
+    @Test
+    void deberia_lanzarResourceNotFoundException_cuandoPoolInactivo() {
+        var pool = buildPool(1L);
+        pool.setActivo(false);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(pool));
+
+        assertThatThrownBy(() -> service.findById(1L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Pool con id 1 no existe");
+    }
+
+    // --- create ---
+
     @Test
     void deberia_crearPool_cuandoDatosValidos() {
-        var sueroAport1 = new SueroAportDTO(1L, 0.15);
-        var sueroAport2 = new SueroAportDTO(2L, 0.15);
-        var dto = new PoolCreateDTO(1L, "T1", LocalDate.now(), List.of(sueroAport1, sueroAport2));
+        var aportes = List.of(new SueroTuboAporteInputDTO(1L, 0.15), new SueroTuboAporteInputDTO(2L, 0.15));
+        var tubos = List.of(new TuboInputDTO("P1", 0.3));
+        var dto = new PoolCreateDTO(1L, LocalDate.now(), aportes, tubos);
 
-        var caja = new Caja();
-        caja.setId(1L);
-        caja.setActivo(true);
-
-        var suero1 = new Suero();
-        suero1.setId(1L);
-        suero1.setActivo(true);
-        suero1.setRango(1);
-        suero1.setCantidadTotal(1.0);
-        suero1.setCantidadUsada(0.0);
-
-        var suero2 = new Suero();
-        suero2.setId(2L);
-        suero2.setActivo(true);
-        suero2.setRango(1);
-        suero2.setCantidadTotal(1.0);
-        suero2.setCantidadUsada(0.0);
-
-        var response = new PoolResponseDTO(
-                1L, 1L, "T1", dto.fechaCreacion(), 1, 0.3,
-                0.0, 0.3, List.of(1L, 2L), true, null
-        );
+        var caja = buildCaja(1L);
+        var st1 = buildSueroTubo(1L, 1, SueroUso.PROBLEMA, "A1", 1.0, 0.0);
+        var st2 = buildSueroTubo(2L, 1, SueroUso.PROBLEMA, "A2", 1.0, 0.0);
+        var pool = buildPool(1L);
+        var response = buildResponseDTO(1L);
 
         when(cajaRepository.findById(1L)).thenReturn(Optional.of(caja));
-        when(sueroRepository.findById(1L)).thenReturn(Optional.of(suero1));
-        when(sueroRepository.findById(2L)).thenReturn(Optional.of(suero2));
-        when(repository.save(any(Pool.class))).thenAnswer(inv -> {
-            Pool p = inv.getArgument(0);
-            p.setId(1L);
-            return p;
-        });
-        when(mapper.toDTO(any(Pool.class))).thenReturn(response);
+        when(tuboRepository.findById(1L)).thenReturn(Optional.of(st1));
+        when(tuboRepository.findById(2L)).thenReturn(Optional.of(st2));
+        when(tuboRepository.findByCajaIdAndPoolActivoTrue(1L)).thenReturn(List.of());
+        when(tuboRepository.findByCajaIdAndSueroActivoTrue(1L)).thenReturn(List.of());
+        when(repository.save(any(Pool.class))).thenReturn(pool);
+        when(repository.findById(1L)).thenReturn(Optional.of(pool));
+        when(mapper.toDTO(pool)).thenReturn(response);
 
         var result = service.create(dto);
 
         assertThat(result).isNotNull();
         assertThat(result.id()).isEqualTo(1L);
-        assertThat(result.rango()).isEqualTo(1);
-        assertThat(result.cantidadTotal()).isEqualTo(0.3);
-
-        verify(sueroRepository).save(suero1);
-        verify(sueroRepository).save(suero2);
         verify(repository).save(any(Pool.class));
     }
 
     @Test
-    void deberia_incrementarCantidadUsada_cuandoCrearPool() {
-        var sueroAport = new SueroAportDTO(1L, 0.3);
-        var dto = new PoolCreateDTO(1L, "T1", LocalDate.now(), List.of(sueroAport));
-
-        var caja = new Caja();
-        caja.setId(1L);
-        caja.setActivo(true);
-
-        var suero = new Suero();
-        suero.setId(1L);
-        suero.setActivo(true);
-        suero.setRango(1);
-        suero.setCantidadTotal(1.0);
-        suero.setCantidadUsada(0.1);
-
-        when(cajaRepository.findById(1L)).thenReturn(Optional.of(caja));
-        when(sueroRepository.findById(1L)).thenReturn(Optional.of(suero));
-        when(repository.save(any(Pool.class))).thenAnswer(inv -> inv.getArgument(0));
-
-        service.create(dto);
-
-        assertThat(suero.getCantidadUsada()).isEqualTo(0.4);
-        verify(sueroRepository).save(suero);
-    }
-
-    @Test
-    void deberia_lanzarBusinessRuleException_cuandoSueroControl() {
-        var sueroAport = new SueroAportDTO(1L, 0.3);
-        var dto = new PoolCreateDTO(1L, "T1", LocalDate.now(), List.of(sueroAport));
-
-        var caja = new Caja();
-        caja.setId(1L);
-        caja.setActivo(true);
-
-        var suero = new Suero();
-        suero.setId(1L);
-        suero.setActivo(true);
-        suero.setRango(0); // CONTROL
-
-        when(cajaRepository.findById(1L)).thenReturn(Optional.of(caja));
-        when(sueroRepository.findById(1L)).thenReturn(Optional.of(suero));
-
-        assertThatThrownBy(() -> service.create(dto))
-                .isInstanceOf(BusinessRuleException.class)
-                .hasMessageContaining("Los sueros caso control (rango 0) no pueden formar un pool");
-    }
-
-    @Test
     void deberia_lanzarBusinessRuleException_cuandoSuerosDeDistintoRango() {
-        var sueroAport1 = new SueroAportDTO(1L, 0.15);
-        var sueroAport2 = new SueroAportDTO(2L, 0.15);
-        var dto = new PoolCreateDTO(1L, "T1", LocalDate.now(), List.of(sueroAport1, sueroAport2));
+        var aportes = List.of(new SueroTuboAporteInputDTO(1L, 0.15), new SueroTuboAporteInputDTO(2L, 0.15));
+        var tubos = List.of(new TuboInputDTO("P1", 0.3));
+        var dto = new PoolCreateDTO(1L, LocalDate.now(), aportes, tubos);
 
-        var caja = new Caja();
-        caja.setId(1L);
-        caja.setActivo(true);
-
-        var suero1 = new Suero();
-        suero1.setId(1L);
-        suero1.setActivo(true);
-        suero1.setRango(1);
-
-        var suero2 = new Suero();
-        suero2.setId(2L);
-        suero2.setActivo(true);
-        suero2.setRango(2); // Diferente
+        var caja = buildCaja(1L);
+        var st1 = buildSueroTubo(1L, 1, SueroUso.PROBLEMA, "A1", 1.0, 0.0);
+        var st2 = buildSueroTubo(2L, 2, SueroUso.PROBLEMA, "A2", 1.0, 0.0); // rango distinto
 
         when(cajaRepository.findById(1L)).thenReturn(Optional.of(caja));
-        when(sueroRepository.findById(1L)).thenReturn(Optional.of(suero1));
-        when(sueroRepository.findById(2L)).thenReturn(Optional.of(suero2));
+        when(tuboRepository.findById(1L)).thenReturn(Optional.of(st1));
+        when(tuboRepository.findById(2L)).thenReturn(Optional.of(st2));
 
         assertThatThrownBy(() -> service.create(dto))
                 .isInstanceOf(BusinessRuleException.class)
-                .hasMessageContaining("Todos los sueros del pool deben ser del mismo rango");
+                .hasMessageContaining("Todos los tubos aportantes deben ser del mismo rango");
+    }
+
+    @Test
+    void deberia_lanzarBusinessRuleException_cuandoSuerosDeDistintoTipo() {
+        var aportes = List.of(new SueroTuboAporteInputDTO(1L, 0.15), new SueroTuboAporteInputDTO(2L, 0.15));
+        var tubos = List.of(new TuboInputDTO("P1", 0.3));
+        var dto = new PoolCreateDTO(1L, LocalDate.now(), aportes, tubos);
+
+        var caja = buildCaja(1L);
+        var st1 = buildSueroTubo(1L, 1, SueroUso.PROBLEMA, "A1", 1.0, 0.0);
+        var st2 = buildSueroTubo(2L, 1, SueroUso.CONTROL, "A2", 1.0, 0.0); // uso distinto
+
+        when(cajaRepository.findById(1L)).thenReturn(Optional.of(caja));
+        when(tuboRepository.findById(1L)).thenReturn(Optional.of(st1));
+        when(tuboRepository.findById(2L)).thenReturn(Optional.of(st2));
+
+        assertThatThrownBy(() -> service.create(dto))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("Todos los tubos aportantes deben ser del mismo tipo");
     }
 
     @Test
     void deberia_lanzarBusinessRuleException_cuandoCantidadTotalMenorA200uL() {
-        var sueroAport = new SueroAportDTO(1L, 0.1); // < 0.2
-        var dto = new PoolCreateDTO(1L, "T1", LocalDate.now(), List.of(sueroAport));
+        var aportes = List.of(new SueroTuboAporteInputDTO(1L, 0.1));
+        var tubos = List.of(new TuboInputDTO("P1", 0.1));
+        var dto = new PoolCreateDTO(1L, LocalDate.now(), aportes, tubos);
 
-        var caja = new Caja();
-        caja.setId(1L);
-        caja.setActivo(true);
-
-        var suero = new Suero();
-        suero.setId(1L);
-        suero.setActivo(true);
-        suero.setRango(2);
-        suero.setCantidadTotal(1.0);
-        suero.setCantidadUsada(0.0);
+        var caja = buildCaja(1L);
+        var st1 = buildSueroTubo(1L, 2, SueroUso.PROBLEMA, "A1", 1.0, 0.0);
 
         when(cajaRepository.findById(1L)).thenReturn(Optional.of(caja));
-        when(sueroRepository.findById(1L)).thenReturn(Optional.of(suero));
+        when(tuboRepository.findById(1L)).thenReturn(Optional.of(st1));
 
         assertThatThrownBy(() -> service.create(dto))
                 .isInstanceOf(BusinessRuleException.class)
@@ -185,22 +190,15 @@ class PoolServiceTest {
 
     @Test
     void deberia_lanzarBusinessRuleException_cuandoSueroSinVolumenSuficiente() {
-        var sueroAport = new SueroAportDTO(1L, 0.5);
-        var dto = new PoolCreateDTO(1L, "T1", LocalDate.now(), List.of(sueroAport));
+        var aportes = List.of(new SueroTuboAporteInputDTO(1L, 0.5));
+        var tubos = List.of(new TuboInputDTO("P1", 0.5));
+        var dto = new PoolCreateDTO(1L, LocalDate.now(), aportes, tubos);
 
-        var caja = new Caja();
-        caja.setId(1L);
-        caja.setActivo(true);
-
-        var suero = new Suero();
-        suero.setId(1L);
-        suero.setActivo(true);
-        suero.setRango(1);
-        suero.setCantidadTotal(0.5);
-        suero.setCantidadUsada(0.4); // disponible = 0.1, solicitado = 0.5
+        var caja = buildCaja(1L);
+        var st = buildSueroTubo(1L, 1, SueroUso.PROBLEMA, "A1", 0.5, 0.4); // restante = 0.1
 
         when(cajaRepository.findById(1L)).thenReturn(Optional.of(caja));
-        when(sueroRepository.findById(1L)).thenReturn(Optional.of(suero));
+        when(tuboRepository.findById(1L)).thenReturn(Optional.of(st));
 
         assertThatThrownBy(() -> service.create(dto))
                 .isInstanceOf(BusinessRuleException.class)
@@ -208,27 +206,93 @@ class PoolServiceTest {
     }
 
     @Test
-    void deberia_lanzarResourceNotFoundException_cuandoSueroNoExiste() {
-        var sueroAport = new SueroAportDTO(99L, 0.3);
-        var dto = new PoolCreateDTO(1L, "T1", LocalDate.now(), List.of(sueroAport));
+    void deberia_lanzarResourceNotFoundException_cuandoTuboNoExiste() {
+        var aportes = List.of(new SueroTuboAporteInputDTO(99L, 0.3));
+        var tubos = List.of(new TuboInputDTO("P1", 0.3));
+        var dto = new PoolCreateDTO(1L, LocalDate.now(), aportes, tubos);
 
-        var caja = new Caja();
-        caja.setId(1L);
-        caja.setActivo(true);
+        var caja = buildCaja(1L);
 
         when(cajaRepository.findById(1L)).thenReturn(Optional.of(caja));
-        when(sueroRepository.findById(99L)).thenReturn(Optional.empty());
+        when(tuboRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.create(dto))
                 .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining("Suero con id 99 no existe");
+                .hasMessageContaining("Tubo con id 99 no existe");
+    }
+
+    // --- update ---
+
+    @Test
+    void deberia_actualizarPool_cuandoDatosValidos() {
+        var pool = buildPool(1L);
+        var caja = buildCaja(1L);
+        var tubosInput = List.of(new TuboInputDTO("P1", 0.3));
+        var dto = new PoolUpdateDTO(1L, LocalDate.now(), tubosInput);
+        var response = buildResponseDTO(1L);
+
+        var tuboExistente = new Tubo();
+        tuboExistente.setTipo(TipoTubo.POOL);
+        tuboExistente.setPosicion("P1");
+        tuboExistente.setCantidadInicial(0.3);
+        tuboExistente.setCantidadUsada(0.0);
+        tuboExistente.setPool(pool);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(pool));
+        when(cajaRepository.findById(1L)).thenReturn(Optional.of(caja));
+        when(tuboRepository.findByCajaIdAndPoolActivoTrue(1L)).thenReturn(List.of());
+        when(tuboRepository.findByCajaIdAndSueroActivoTrue(1L)).thenReturn(List.of());
+        when(tuboRepository.findByPoolId(1L)).thenReturn(List.of(tuboExistente));
+        when(repository.save(pool)).thenReturn(pool);
+        when(mapper.toDTO(pool)).thenReturn(response);
+
+        var result = service.update(1L, dto);
+
+        assertThat(result).isNotNull();
+        verify(repository).save(pool);
     }
 
     @Test
+    void deberia_lanzarBusinessRuleException_cuandoTuboPoolConVolumenUsadoEliminado() {
+        var pool = buildPool(1L);
+        var caja = buildCaja(1L);
+        // dto pide P2, pero P1 tiene volumen usado → debe fallar
+        var dto = new PoolUpdateDTO(1L, LocalDate.now(), List.of(new TuboInputDTO("P2", 0.3)));
+
+        var tuboConUso = new Tubo();
+        tuboConUso.setTipo(TipoTubo.POOL);
+        tuboConUso.setPosicion("P1");
+        tuboConUso.setCantidadInicial(0.3);
+        tuboConUso.setCantidadUsada(0.1);
+        tuboConUso.setPool(pool);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(pool));
+        when(cajaRepository.findById(1L)).thenReturn(Optional.of(caja));
+        when(tuboRepository.findByCajaIdAndPoolActivoTrue(1L)).thenReturn(List.of());
+        when(tuboRepository.findByCajaIdAndSueroActivoTrue(1L)).thenReturn(List.of());
+        when(tuboRepository.findByPoolId(1L)).thenReturn(List.of(tuboConUso));
+
+        assertThatThrownBy(() -> service.update(1L, dto))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("mL usados y no puede eliminarse");
+    }
+
+    @Test
+    void deberia_lanzarResourceNotFoundException_cuandoPoolNoExisteAlActualizar() {
+        var dto = new PoolUpdateDTO(1L, LocalDate.now(), List.of());
+
+        when(repository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.update(99L, dto))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Pool con id 99 no existe");
+    }
+
+    // --- delete ---
+
+    @Test
     void deberia_darDeBajaPool_cuandoExiste() {
-        var pool = new Pool();
-        pool.setId(1L);
-        pool.setActivo(true);
+        var pool = buildPool(1L);
 
         when(repository.findById(1L)).thenReturn(Optional.of(pool));
         when(repository.save(pool)).thenReturn(pool);
@@ -236,6 +300,56 @@ class PoolServiceTest {
         service.delete(1L);
 
         assertThat(pool.isActivo()).isFalse();
-        verify(repository).save(pool);
+        verify(repository).save(argThat(p -> !p.isActivo()));
+    }
+
+    @Test
+    void deberia_lanzarResourceNotFoundException_cuandoPoolNoExisteAlEliminar() {
+        when(repository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.delete(99L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Pool con id 99 no existe");
+    }
+
+    // --- Helpers ---
+
+    private Pool buildPool(Long id) {
+        var pool = new Pool();
+        pool.setId(id);
+        pool.setActivo(true);
+        pool.setRango(1);
+        pool.setUso(SueroUso.PROBLEMA);
+        return pool;
+    }
+
+    private Caja buildCaja(Long id) {
+        var c = new Caja();
+        c.setId(id);
+        c.setActivo(true);
+        return c;
+    }
+
+    private Tubo buildSueroTubo(Long id, int rango, SueroUso uso, String posicion,
+                                 double cantidadInicial, double cantidadUsada) {
+        var suero = new Suero();
+        suero.setId(id);
+        suero.setActivo(true);
+        suero.setRango(rango);
+        suero.setUso(uso);
+
+        var t = new Tubo();
+        t.setId(id);
+        t.setTipo(TipoTubo.SUERO);
+        t.setSuero(suero);
+        t.setPosicion(posicion);
+        t.setCantidadInicial(cantidadInicial);
+        t.setCantidadUsada(cantidadUsada);
+        return t;
+    }
+
+    private PoolResponseDTO buildResponseDTO(Long id) {
+        return new PoolResponseDTO(id, "ABC123", 1L, List.of(),
+                LocalDate.now(), 1, SueroUso.PROBLEMA, 0.3, 0.3, List.of(), true, null);
     }
 }

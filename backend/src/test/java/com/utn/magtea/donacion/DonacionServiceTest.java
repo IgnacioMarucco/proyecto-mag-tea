@@ -157,4 +157,42 @@ class DonacionServiceTest {
         assertThat(donacion.getEstado()).isEqualTo(EstadoDonacion.RECHAZADO);
         verify(repository).save(donacion);
     }
+
+    @Test
+    void deberia_ignorarWebhook_cuandoExternalReferenceEsNull() throws Exception {
+        var paymentMock = mock(Payment.class);
+        when(paymentMock.getExternalReference()).thenReturn(null);
+
+        var clientMock = mock(PaymentClient.class);
+        when(clientMock.get(999L)).thenReturn(paymentMock);
+
+        when(mpClientProvider.getPaymentClient()).thenReturn(clientMock);
+
+        // No debe lanzar excepción ni guardar nada
+        service.procesarWebhook(999L);
+
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void deberia_procesarWebhook_cuandoPagoCancelado() throws Exception {
+        var paymentMock = mock(Payment.class);
+        when(paymentMock.getExternalReference()).thenReturn("1");
+        when(paymentMock.getStatus()).thenReturn("cancelled");
+
+        var clientMock = mock(PaymentClient.class);
+        when(clientMock.get(999L)).thenReturn(paymentMock);
+
+        var donacion = new Donacion();
+        donacion.setId(1L);
+        donacion.setEstado(EstadoDonacion.PENDIENTE);
+
+        when(mpClientProvider.getPaymentClient()).thenReturn(clientMock);
+        when(repository.findById(1L)).thenReturn(Optional.of(donacion));
+
+        service.procesarWebhook(999L);
+
+        assertThat(donacion.getEstado()).isEqualTo(EstadoDonacion.CANCELADO);
+        verify(repository).save(donacion);
+    }
 }

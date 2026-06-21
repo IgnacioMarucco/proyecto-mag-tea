@@ -133,4 +133,29 @@ class ProfesionalServiceTest {
         assertThat(result).isEqualTo(response);
         assertThat(entidad.getRole()).isEqualTo(Role.CUERPO_TECNICO);
     }
+
+    @Test
+    void deberia_retornarProfesional_cuandoBuscarPorEmail() {
+        var entidad = new Profesional();
+        entidad.setActivo(true);
+        entidad.setEmail("ana@test.com");
+        var response = new ProfesionalResponseDTO(1L, "Ana", "García", "ana@test.com", null, Role.CUERPO_MEDICO, true, null);
+
+        when(repository.findByEmail("ana@test.com")).thenReturn(Optional.of(entidad));
+        when(mapper.toDTO(entidad)).thenReturn(response);
+
+        var result = service.findByEmail("ana@test.com");
+
+        assertThat(result).isEqualTo(response);
+        assertThat(result.email()).isEqualTo("ana@test.com");
+    }
+
+    @Test
+    void deberia_lanzarExcepcion_cuandoEmailNoExisteEnBusqueda() {
+        when(repository.findByEmail("noexiste@test.com")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.findByEmail("noexiste@test.com"))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Profesional no encontrado");
+    }
 }

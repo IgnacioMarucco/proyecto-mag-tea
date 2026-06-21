@@ -2,6 +2,7 @@ package com.utn.magtea.modeloanimal;
 
 import com.utn.magtea.camada.Camada;
 import com.utn.magtea.camada.CamadaRepository;
+import com.utn.magtea.common.exception.BusinessRuleException;
 import com.utn.magtea.common.exception.ResourceNotFoundException;
 import com.utn.magtea.modeloanimal.estudios.TresCamaras;
 import com.utn.magtea.modeloanimal.estudios.TresCamarasDTO;
@@ -9,20 +10,28 @@ import com.utn.magtea.modeloanimal.estudios.VocalizacionesDTO;
 import com.utn.magtea.modeloanimal.estudios.VocalizacionesUltrasonicas;
 import com.utn.magtea.pool.Pool;
 import com.utn.magtea.pool.PoolRepository;
+import com.utn.magtea.tubo.Tubo;
+import com.utn.magtea.tubo.TipoTubo;
+import com.utn.magtea.tubo.TuboRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 
@@ -35,6 +44,8 @@ class ModeloAnimalServiceTest {
     @Mock private ModeloAnimalRepository repository;
     @org.mockito.Spy private ModeloAnimalMapper mapper = org.mapstruct.factory.Mappers.getMapper(ModeloAnimalMapper.class);
     @Mock private PoolRepository poolRepository;
+    @Mock private TuboRepository tuboRepository;
+    @Mock private ModeloAnimalPoolAporteRepository modeloAnimalPoolAporteRepository;
     @Mock private CamadaRepository camadaRepository;
     @Mock private Clock clock;
 
@@ -45,6 +56,34 @@ class ModeloAnimalServiceTest {
         lenient().when(clock.instant()).thenReturn(FIXED_CLOCK.instant());
         lenient().when(clock.getZone()).thenReturn(FIXED_CLOCK.getZone());
     }
+
+    // --- findAll ---
+
+    @Test
+    void deberia_listarModelosAnimales_cuandoExisten() {
+        var m = buildBaseModelo();
+        var page = new PageImpl<>(List.of(m));
+
+        when(repository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        var result = service.findAll(0, 10, null, null, "createdAt", "desc");
+
+        assertThat(result.content()).hasSize(1);
+        assertThat(result.content().getFirst().id()).isEqualTo(1L);
+    }
+
+    @Test
+    void deberia_listarModelosAnimales_cuandoFiltroPoolYSexo() {
+        var page = new PageImpl<ModeloAnimal>(List.of());
+
+        when(repository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        var result = service.findAll(0, 10, 10L, SexoRaton.MACHO, "identificador", "asc");
+
+        assertThat(result.content()).isEmpty();
+    }
+
+    // --- findById ---
 
     @Test
     void deberia_calcularNecesitaVocalizaciones_cuandoDia5YSinVocalizaciones() {
@@ -78,7 +117,7 @@ class ModeloAnimalServiceTest {
     void deberia_noNecesitarVocalizaciones_cuandoDiaNoCorrecto() {
         var hoy = LocalDate.now(FIXED_CLOCK);
         var m = buildBaseModelo();
-        m.setFechaNacimiento(hoy.minusDays(3)); // día 3, no 5
+        m.setFechaNacimiento(hoy.minusDays(3));
         m.setVocalizaciones(null);
 
         when(repository.findById(1L)).thenReturn(Optional.of(m));
@@ -101,6 +140,274 @@ class ModeloAnimalServiceTest {
 
         assertThat(result.necesitaTresCamaras()).isTrue();
     }
+
+    @Test
+    void deberia_lanzarResourceNotFoundException_cuandoModeloNoExiste() {
+        when(repository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.findById(99L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Modelo animal con id 99 no existe");
+    }
+
+    // --- create ---
+
+    @Test
+    void deberia_crearModeloAnimal_cuandoDatosValidos() {
+        var dto = new ModeloAnimalCreateDTO("M-2", 10L, 20L,
+                LocalDate.now(FIXED_CLOCK), SexoRaton.HEMBRA,
+                LocalDate.now(FIXED_CLOCK), List.of());
+
+        var pool = buildPool(10L);
+        var camada = buildCamada(20L);
+        var m = buildBaseModelo();
+        m.setId(2L);
+
+        when(poolRepository.findById(10L)).thenReturn(Optional.of(pool));
+        when(camadaRepository.findById(20L)).thenReturn(Optional.of(camada));
+        when(repository.save(any(ModeloAnimal.class))).thenReturn(m);
+        when(repository.findById(2L)).thenReturn(Optional.of(m));
+
+        var result = service.create(dto);
+
+        assertThat(result).isNotNull();
+        assertThat(result.id()).isEqualTo(2L);
+        verify(repository).save(any(ModeloAnimal.class));
+    }
+
+    @Test
+    void deberia_crearModeloAnimal_cuandoTieneAportes() {
+        var aporte = new ModeloAnimalPoolAporteInputDTO(100L, 0.1, 1);
+        var dto = new ModeloAnimalCreateDTO("M-3", 10L, 20L,
+                LocalDate.now(FIXED_CLOCK), SexoRaton.MACHO,
+                LocalDate.now(FIXED_CLOCK), List.of(aporte));
+
+        var pool = buildPool(10L);
+        var camada = buildCamada(20L);
+        var m = buildBaseModelo();
+        m.setId(3L);
+
+        var tuboPool = new Tubo();
+        tuboPool.setId(100L);
+        tuboPool.setTipo(TipoTubo.POOL);
+        tuboPool.setPool(pool);
+        tuboPool.setCantidadInicial(1.0);
+        tuboPool.setCantidadUsada(0.0);
+
+        when(poolRepository.findById(10L)).thenReturn(Optional.of(pool));
+        when(camadaRepository.findById(20L)).thenReturn(Optional.of(camada));
+        when(repository.save(any(ModeloAnimal.class))).thenReturn(m);
+        when(tuboRepository.findById(100L)).thenReturn(Optional.of(tuboPool));
+        when(repository.findById(3L)).thenReturn(Optional.of(m));
+
+        var result = service.create(dto);
+
+        assertThat(result).isNotNull();
+        verify(modeloAnimalPoolAporteRepository).save(any(ModeloAnimalPoolAporte.class));
+        verify(tuboRepository).save(tuboPool);
+    }
+
+    @Test
+    void deberia_lanzarResourceNotFoundException_cuandoPoolNoExisteAlCrear() {
+        var dto = new ModeloAnimalCreateDTO("M-X", 99L, 20L,
+                LocalDate.now(FIXED_CLOCK), SexoRaton.MACHO,
+                LocalDate.now(FIXED_CLOCK), null);
+
+        when(poolRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.create(dto))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Pool con id 99 no existe");
+    }
+
+    @Test
+    void deberia_lanzarResourceNotFoundException_cuandoCamadaNoExisteAlCrear() {
+        var dto = new ModeloAnimalCreateDTO("M-X", 10L, 99L,
+                LocalDate.now(FIXED_CLOCK), SexoRaton.MACHO,
+                LocalDate.now(FIXED_CLOCK), null);
+
+        var pool = buildPool(10L);
+        when(poolRepository.findById(10L)).thenReturn(Optional.of(pool));
+        when(camadaRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.create(dto))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Camada con id 99 no existe");
+    }
+
+    @Test
+    void deberia_lanzarBusinessRuleException_cuandoTuboAporteNoEsDePool() {
+        var aporte = new ModeloAnimalPoolAporteInputDTO(100L, 0.1, 1);
+        var dto = new ModeloAnimalCreateDTO("M-X", 10L, 20L,
+                LocalDate.now(FIXED_CLOCK), SexoRaton.MACHO,
+                LocalDate.now(FIXED_CLOCK), List.of(aporte));
+
+        var pool = buildPool(10L);
+        var camada = buildCamada(20L);
+        var m = buildBaseModelo();
+
+        var tuboSuero = new Tubo();
+        tuboSuero.setId(100L);
+        tuboSuero.setTipo(TipoTubo.SUERO); // no es POOL
+        tuboSuero.setPosicion("A1");
+
+        when(poolRepository.findById(10L)).thenReturn(Optional.of(pool));
+        when(camadaRepository.findById(20L)).thenReturn(Optional.of(camada));
+        when(repository.save(any(ModeloAnimal.class))).thenReturn(m);
+        when(tuboRepository.findById(100L)).thenReturn(Optional.of(tuboSuero));
+
+        assertThatThrownBy(() -> service.create(dto))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("no es un tubo de pool");
+    }
+
+    // --- update ---
+
+    @Test
+    void deberia_actualizarModeloAnimal_cuandoDatosValidos() {
+        var m = buildBaseModelo();
+        var pool = buildPool(10L);
+        var camada = buildCamada(20L);
+        var dto = new ModeloAnimalCreateDTO("M-1-Editado", 10L, 20L,
+                LocalDate.now(FIXED_CLOCK), SexoRaton.HEMBRA,
+                LocalDate.now(FIXED_CLOCK), null);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(m));
+        when(poolRepository.findById(10L)).thenReturn(Optional.of(pool));
+        when(camadaRepository.findById(20L)).thenReturn(Optional.of(camada));
+        when(repository.save(m)).thenReturn(m);
+
+        var result = service.update(1L, dto);
+
+        assertThat(result).isNotNull();
+        assertThat(m.getIdentificador()).isEqualTo("M-1-Editado");
+        assertThat(m.getSexo()).isEqualTo(SexoRaton.HEMBRA);
+        verify(repository).save(m);
+    }
+
+    @Test
+    void deberia_lanzarResourceNotFoundException_cuandoModeloNoExisteAlActualizar() {
+        var dto = new ModeloAnimalCreateDTO("M-X", 10L, 20L,
+                LocalDate.now(FIXED_CLOCK), SexoRaton.MACHO,
+                LocalDate.now(FIXED_CLOCK), null);
+
+        when(repository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.update(99L, dto))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Modelo animal con id 99 no existe");
+    }
+
+    // --- registrarVocalizaciones ---
+
+    @Test
+    void deberia_registrarVocalizaciones_cuandoModeloExiste() {
+        var m = buildBaseModelo();
+        m.setVocalizaciones(null);
+        var dto = new VocalizacionesDTO(30.0, 60.0, null, null);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(m));
+        when(repository.save(m)).thenReturn(m);
+
+        var result = service.registrarVocalizaciones(1L, dto);
+
+        assertThat(result.vocalizaciones()).isNotNull();
+        assertThat(m.getVocalizaciones().getMuestra1Khz()).isEqualTo(30.0);
+        verify(repository).save(m);
+    }
+
+    @Test
+    void deberia_actualizarVocalizaciones_cuandoYaExistian() {
+        var m = buildBaseModelo();
+        var vusExistente = new VocalizacionesUltrasonicas();
+        vusExistente.setId(5L);
+        vusExistente.setMuestra1Khz(10.0);
+        vusExistente.setMuestra2Khz(20.0);
+        m.setVocalizaciones(vusExistente);
+
+        var dto = new VocalizacionesDTO(40.0, 80.0, null, null);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(m));
+        when(repository.save(m)).thenReturn(m);
+
+        service.registrarVocalizaciones(1L, dto);
+
+        assertThat(m.getVocalizaciones().getId()).isEqualTo(5L);
+        assertThat(m.getVocalizaciones().getMuestra1Khz()).isEqualTo(40.0);
+    }
+
+    // --- registrarTresCamaras ---
+
+    @Test
+    void deberia_registrarTresCamaras_cuandoModeloExiste() {
+        var m = buildBaseModelo();
+        m.setTresCamaras(null);
+        var dto = new TresCamarasDTO(10.0, 5.0, 8.0, 4.0, null, null);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(m));
+        when(repository.save(m)).thenReturn(m);
+
+        var result = service.registrarTresCamaras(1L, dto);
+
+        assertThat(result.tresCamaras()).isNotNull();
+        assertThat(m.getTresCamaras().getM1TiempoRatonNovedad()).isEqualTo(10.0);
+        verify(repository).save(m);
+    }
+
+    // --- registrarMicroscopia ---
+
+    @Test
+    void deberia_registrarMicroscopia_cuandoModeloExiste() {
+        var m = buildBaseModelo();
+        var dto = new ModeloAnimalMicroscopiaDTO(150, 80);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(m));
+        when(repository.save(m)).thenReturn(m);
+
+        var result = service.registrarMicroscopia(1L, dto);
+
+        assertThat(result).isNotNull();
+        assertThat(m.getNumCelulasGanglionares()).isEqualTo(150);
+        assertThat(m.getNumCelulasPurkinje()).isEqualTo(80);
+        verify(repository).save(m);
+    }
+
+    @Test
+    void deberia_lanzarResourceNotFoundException_cuandoModeloNoExisteAlRegistrarMicroscopia() {
+        var dto = new ModeloAnimalMicroscopiaDTO(100, 50);
+
+        when(repository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.registrarMicroscopia(99L, dto))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Modelo animal con id 99 no existe");
+    }
+
+    // --- delete ---
+
+    @Test
+    void deberia_eliminarModeloAnimal_cuandoExiste() {
+        var m = buildBaseModelo();
+
+        when(repository.findById(1L)).thenReturn(Optional.of(m));
+        when(repository.save(m)).thenReturn(m);
+
+        service.delete(1L);
+
+        assertThat(m.isActivo()).isFalse();
+        verify(repository).save(argThat(ma -> !ma.isActivo()));
+    }
+
+    @Test
+    void deberia_lanzarResourceNotFoundException_cuandoModeloNoExisteAlEliminar() {
+        when(repository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.delete(99L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Modelo animal con id 99 no existe");
+    }
+
+    // --- Mapper tests (VUS y TresCamaras) ---
 
     @Test
     void deberia_calcularVusBandaAversiva_cuandoFrecuencia20a50kHz() {
@@ -154,70 +461,7 @@ class ModeloAnimalServiceTest {
         assertThat(dto.sociabilizacion2()).isEqualTo(SocializacionResultado.NORMAL);
     }
 
-    @Test
-    void deberia_registrarVocalizaciones_cuandoModeloExiste() {
-        var m = buildBaseModelo();
-        m.setVocalizaciones(null);
-        var dto = new VocalizacionesDTO(30.0, 60.0, null, null);
-
-        when(repository.findById(1L)).thenReturn(Optional.of(m));
-        when(repository.save(m)).thenReturn(m);
-
-        var result = service.registrarVocalizaciones(1L, dto);
-
-        assertThat(result.vocalizaciones()).isNotNull();
-        assertThat(m.getVocalizaciones()).isNotNull();
-        assertThat(m.getVocalizaciones().getMuestra1Khz()).isEqualTo(30.0);
-        verify(repository).save(m);
-    }
-
-    @Test
-    void deberia_actualizarVocalizaciones_cuandoYaExistian() {
-        var m = buildBaseModelo();
-        var vusExistente = new VocalizacionesUltrasonicas();
-        vusExistente.setId(5L);
-        vusExistente.setMuestra1Khz(10.0);
-        vusExistente.setMuestra2Khz(20.0);
-        m.setVocalizaciones(vusExistente);
-
-        var dto = new VocalizacionesDTO(40.0, 80.0, null, null);
-
-        when(repository.findById(1L)).thenReturn(Optional.of(m));
-        when(repository.save(m)).thenReturn(m);
-
-        var result = service.registrarVocalizaciones(1L, dto);
-
-        assertThat(result.vocalizaciones()).isNotNull();
-        assertThat(m.getVocalizaciones().getId()).isEqualTo(5L); // Reusado
-        assertThat(m.getVocalizaciones().getMuestra1Khz()).isEqualTo(40.0);
-        verify(repository).save(m);
-    }
-
-    @Test
-    void deberia_registrarTresCamaras_cuandoModeloExiste() {
-        var m = buildBaseModelo();
-        m.setTresCamaras(null);
-        var dto = new TresCamarasDTO(10.0, 5.0, 8.0, 4.0, null, null);
-
-        when(repository.findById(1L)).thenReturn(Optional.of(m));
-        when(repository.save(m)).thenReturn(m);
-
-        var result = service.registrarTresCamaras(1L, dto);
-
-        assertThat(result.tresCamaras()).isNotNull();
-        assertThat(m.getTresCamaras()).isNotNull();
-        assertThat(m.getTresCamaras().getM1TiempoRatonNovedad()).isEqualTo(10.0);
-        verify(repository).save(m);
-    }
-
-    @Test
-    void deberia_lanzarResourceNotFoundException_cuandoModeloNoExiste() {
-        when(repository.findById(99L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> service.findById(99L))
-                .isInstanceOf(ResourceNotFoundException.class)
-                .hasMessageContaining("Modelo animal con id 99 no existe");
-    }
+    // --- Helpers ---
 
     private ModeloAnimal buildBaseModelo() {
         var m = new ModeloAnimal();
@@ -228,16 +472,28 @@ class ModeloAnimalServiceTest {
         m.setSexo(SexoRaton.MACHO);
         m.setFechaDia1Inoculacion(LocalDate.now(FIXED_CLOCK));
 
-        var pool = new Pool();
-        pool.setId(10L);
-        pool.setRango(1);
+        var pool = buildPool(10L);
         m.setPool(pool);
 
-        var camada = new Camada();
-        camada.setId(20L);
-        camada.setNombre("C-1");
+        var camada = buildCamada(20L);
         m.setCamada(camada);
 
         return m;
+    }
+
+    private Pool buildPool(Long id) {
+        var pool = new Pool();
+        pool.setId(id);
+        pool.setActivo(true);
+        pool.setRango(1);
+        return pool;
+    }
+
+    private Camada buildCamada(Long id) {
+        var camada = new Camada();
+        camada.setId(id);
+        camada.setNombre("C-1");
+        camada.setActivo(true);
+        return camada;
     }
 }

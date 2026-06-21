@@ -226,11 +226,11 @@ class PacienteServiceTest {
         var dto = new CriteriosDTO(true, true, true,
                 false, false, false, false, false, false, false, false, false, false);
 
-        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
         when(repository.save(entidad)).thenReturn(entidad);
         when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
 
-        service.updateCriterios(1L, dto);
+        service.updateCriterios("TST00001", dto);
 
         assertThat(entidad.getCriterios()).isNotNull();
         assertThat(entidad.getCriterios().isCriterioTEADSMV()).isTrue();
@@ -242,11 +242,11 @@ class PacienteServiceTest {
         var dto = new CriteriosDTO(true, true, true,
                 true, false, false, false, false, false, false, false, false, false);
 
-        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
         when(repository.save(entidad)).thenReturn(entidad);
         when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
 
-        service.updateCriterios(1L, dto);
+        service.updateCriterios("TST00001", dto);
 
         assertThat(entidad.getCriterios()).isNotNull();
         assertThat(entidad.getCriterios().isEpilepsia()).isTrue();
@@ -262,11 +262,11 @@ class PacienteServiceTest {
         entidad.setMchatFamilia(familia);
         var dto = seguimientoConFallas(2);
 
-        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
         when(repository.save(entidad)).thenReturn(entidad);
         when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
 
-        service.updateMchatSeguimiento(1L, dto);
+        service.updateMchatSeguimiento("TST00001", dto);
 
         assertThat(entidad.getMchatSeguimiento()).isNotNull();
         assertThat(entidad.getMchatSeguimiento().getFallas()).isEqualTo(2);
@@ -281,11 +281,11 @@ class PacienteServiceTest {
         entidad.setMchatFamilia(familia);
         var dto = seguimientoConFallas(1);
 
-        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
         when(repository.save(entidad)).thenReturn(entidad);
         when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
 
-        service.updateMchatSeguimiento(1L, dto);
+        service.updateMchatSeguimiento("TST00001", dto);
 
         assertThat(familia.getResultadoFinal()).isEqualTo(MchatResultadoFinal.NEGATIVA);
     }
@@ -294,9 +294,9 @@ class PacienteServiceTest {
     void deberia_lanzarExcepcion_alActualizarSeguimiento_cuandoSinFamiliaRegistrada() {
         var entidad = pacienteActivo(1L);
 
-        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
 
-        assertThatThrownBy(() -> service.updateMchatSeguimiento(1L, seguimientoConFallas(1)))
+        assertThatThrownBy(() -> service.updateMchatSeguimiento("TST00001", seguimientoConFallas(1)))
                 .isInstanceOf(BusinessRuleException.class)
                 .hasMessageContaining("seguimiento");
     }
@@ -308,9 +308,9 @@ class PacienteServiceTest {
         familia.setScoreTotal(8);
         entidad.setMchatFamilia(familia);
 
-        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
 
-        assertThatThrownBy(() -> service.updateMchatSeguimiento(1L, seguimientoConFallas(1)))
+        assertThatThrownBy(() -> service.updateMchatSeguimiento("TST00001", seguimientoConFallas(1)))
                 .isInstanceOf(BusinessRuleException.class)
                 .hasMessageContaining("3 y 7");
     }
@@ -320,9 +320,9 @@ class PacienteServiceTest {
         var entidad = pacienteActivo(1L);
         entidad.setTipoPaciente(TipoPaciente.CONTROL);
 
-        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
 
-        assertThatThrownBy(() -> service.updateMchatSeguimiento(1L, seguimientoConFallas(1)))
+        assertThatThrownBy(() -> service.updateMchatSeguimiento("TST00001", seguimientoConFallas(1)))
                 .isInstanceOf(BusinessRuleException.class)
                 .hasMessageContaining("control");
     }
@@ -334,11 +334,11 @@ class PacienteServiceTest {
         var entidad = pacienteActivo(1L);
         var dto = carsDTO(2.0);
 
-        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
         when(repository.save(entidad)).thenReturn(entidad);
         when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
 
-        service.updateCars(1L, dto);
+        service.updateCars("TST00001", dto);
 
         assertThat(entidad.getEvaluacionCars()).isNotNull();
         assertThat(entidad.getEvaluacionCars().getRawScore()).isEqualByComparingTo(new BigDecimal("30.0"));
@@ -355,7 +355,7 @@ class PacienteServiceTest {
                 null, null, null, null, null, null, null, null, null, null,
                 null, null, null, null, null, null, null);
 
-        assertThatThrownBy(() -> service.updateCars(1L, dto))
+        assertThatThrownBy(() -> service.updateCars("TST00001", dto))
                 .isInstanceOf(BusinessRuleException.class)
                 .hasMessageContaining("5.0");
     }
@@ -365,9 +365,9 @@ class PacienteServiceTest {
         var entidad = pacienteActivo(1L);
         entidad.setTipoPaciente(TipoPaciente.CONTROL);
 
-        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
 
-        assertThatThrownBy(() -> service.updateCars(1L, carsDTO(2.0)))
+        assertThatThrownBy(() -> service.updateCars("TST00001", carsDTO(2.0)))
                 .isInstanceOf(BusinessRuleException.class)
                 .hasMessageContaining("control");
     }
@@ -379,9 +379,9 @@ class PacienteServiceTest {
         var entidad = pacienteActivo(1L);
         entidad.setTipoPaciente(TipoPaciente.CONTROL);
 
-        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
 
-        assertThatThrownBy(() -> service.updateVineland(1L,
+        assertThatThrownBy(() -> service.updateVineland("TST00001",
                 new VinelandDTO(null, null, null, null, null, null, null, null)))
                 .isInstanceOf(BusinessRuleException.class)
                 .hasMessageContaining("control");
@@ -393,9 +393,9 @@ class PacienteServiceTest {
     void deberia_marcarInactivo_cuandoBajaLogica() {
         var entidad = pacienteActivo(1L);
 
-        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
 
-        service.delete(1L);
+        service.delete("TST00001");
 
         assertThat(entidad.isActivo()).isFalse();
         verify(repository).save(entidad);
@@ -536,11 +536,11 @@ class PacienteServiceTest {
                 "NinoAp", "NinoNom", LocalDate.now().minusYears(3), Sexo.FEMENINO, "Nuevas notas",
                 LocalDateTime.now(), LocalDate.now());
 
-        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
         when(repository.save(entidad)).thenReturn(entidad);
         when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
 
-        service.update(1L, dto);
+        service.update("TST00001", dto);
 
         assertThat(entidad.getApellidoTutor()).isEqualTo("TutorAp");
         assertThat(entidad.getNombreTutor()).isEqualTo("TutorNom");
@@ -558,11 +558,11 @@ class PacienteServiceTest {
         var fecha = LocalDateTime.now().minusDays(1);
         var dto = new PacientePrimeraVisitaDTO(fecha);
 
-        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
         when(repository.save(entidad)).thenReturn(entidad);
         when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
 
-        service.updatePrimeraVisita(1L, dto);
+        service.updatePrimeraVisita("TST00001", dto);
 
         assertThat(entidad.getFechaPrimeraVisita()).isEqualTo(fecha);
     }
@@ -572,11 +572,11 @@ class PacienteServiceTest {
         var entidad = pacienteActivo(1L);
         var dto = new PacienteConsentimientoDTO(true);
 
-        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
         when(repository.save(entidad)).thenReturn(entidad);
         when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
 
-        service.updateConsentimiento(1L, dto);
+        service.updateConsentimiento("TST00001", dto);
 
         assertThat(entidad.isConsentimientoFirmado()).isTrue();
     }
@@ -587,11 +587,11 @@ class PacienteServiceTest {
         var fecha = LocalDate.now();
         var dto = new PacienteSegundaVisitaDTO(fecha);
 
-        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
         when(repository.save(entidad)).thenReturn(entidad);
         when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
 
-        service.updateSegundaVisita(1L, dto);
+        service.updateSegundaVisita("TST00001", dto);
 
         assertThat(entidad.getFechaExtraccion()).isEqualTo(fecha);
         assertThat(entidad.getEstadoClinico()).isEqualTo(PacienteEstado.EXTRACCION_PENDIENTE);
@@ -602,11 +602,11 @@ class PacienteServiceTest {
         var entidad = pacienteActivo(1L);
         entidad.setTipoPaciente(TipoPaciente.PROBLEMA);
 
-        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
         when(repository.save(entidad)).thenReturn(entidad);
         when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
 
-        service.reenviarMchat(1L);
+        service.reenviarMchat("TST00001");
 
         assertThat(entidad.getMchatToken()).isNotBlank();
         assertThat(entidad.getMchatTokenExpiry()).isNotNull();
@@ -618,9 +618,9 @@ class PacienteServiceTest {
         var entidad = pacienteActivo(1L);
         entidad.setTipoPaciente(TipoPaciente.CONTROL);
 
-        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
 
-        assertThatThrownBy(() -> service.reenviarMchat(1L))
+        assertThatThrownBy(() -> service.reenviarMchat("TST00001"))
                 .isInstanceOf(BusinessRuleException.class)
                 .hasMessageContaining("control");
     }
@@ -631,11 +631,11 @@ class PacienteServiceTest {
         entidad.setTipoPaciente(TipoPaciente.PROBLEMA);
         var dto = new VinelandDTO(80, 85, 75, 90, 82, 15, 10, 12);
 
-        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
         when(repository.save(entidad)).thenReturn(entidad);
         when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
 
-        service.updateVineland(1L, dto);
+        service.updateVineland("TST00001", dto);
 
         assertThat(entidad.getEvaluacionVineland()).isNotNull();
         assertThat(entidad.getEvaluacionVineland().getComunicacion()).isEqualTo(80);
@@ -683,6 +683,7 @@ class PacienteServiceTest {
     private Paciente pacienteActivo(Long id) {
         var p = new Paciente();
         p.setId(id);
+        p.setCodigoNumerico("TST00001");
         p.setActivo(true);
         p.setNombreNino("Nombre");
         p.setApellidoNino("Niño");
@@ -739,7 +740,7 @@ class PacienteServiceTest {
     }
 
     private static PacienteListDTO buildListDTO(Long id) {
-        return new PacienteListDTO(id, "García", "Ana", "Niño", "Nombre",
+        return new PacienteListDTO(id, "TST00001", "García", "Ana", "Niño", "Nombre",
                 null, TipoPaciente.PROBLEMA, PacienteEstado.ADMITIDO, null, null);
     }
 
