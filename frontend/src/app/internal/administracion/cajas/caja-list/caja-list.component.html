@@ -1,0 +1,62 @@
+<div class="px-8 pb-8">
+
+  <div class="flex items-center justify-between mb-6">
+    <app-page-header [crumbs]="crumbs()" />
+    <a routerLink="/internal/cajas/nuevo"
+      class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors whitespace-nowrap">
+      <app-icon name="plus" class="w-4 h-4" /> Nueva caja
+    </a>
+  </div>
+
+  <app-list-toolbar
+    placeholder="Buscar por freezer o número…"
+    [filterGroups]="filterGroups"
+    [activeFilters]="{}"
+    (searchChange)="onSearch($event)"
+  />
+
+  <span aria-live="polite" class="sr-only">
+    {{ totalElements() }} {{ totalElements() === 1 ? 'caja encontrada' : 'cajas encontradas' }}
+  </span>
+
+  <app-data-table
+    [columns]="columns"
+    [rows]="cajas().length"
+    ariaLabel="Listado de cajas"
+    [emptyTitle]="emptyTitle()"
+    [emptySubtitle]="emptySubtitle()"
+    [currentSort]="sortState()"
+    (sortChange)="onSortChange($event)"
+  >
+    @for (caja of cajas(); track caja.id) {
+      <tr class="border-b border-border last:border-0 hover:bg-background transition-colors">
+        <td class="px-5 py-3.5 text-text font-mono font-medium">{{ caja.freezer }}</td>
+        <td class="px-5 py-3.5 text-text-muted font-mono">{{ caja.cajon }}</td>
+        <td class="px-5 py-3.5 text-text-muted font-mono">{{ caja.numero }}</td>
+        <td class="px-5 py-3.5">
+          <app-row-actions [actions]="getActionsFor(caja)" />
+        </td>
+      </tr>
+    }
+  </app-data-table>
+
+  <app-paginator
+    [currentPage]="currentPage()"
+    [totalPages]="totalPages()"
+    [totalElements]="totalElements()"
+    itemLabel="cajas"
+    (pageChange)="goToPage($event)"
+  />
+
+</div>
+
+@if (pendingDeleteId() !== null) {
+  <app-confirm-modal
+    title="¿Dar de baja la caja?"
+    message="La caja quedará inactiva. Los sueros y pools asociados conservan su ubicación registrada."
+    confirmLabel="Dar de baja"
+    cancelLabel="Cancelar"
+    (confirmed)="confirmDelete()"
+    (cancelled)="cancelDelete()"
+  />
+}
