@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, ElementRef, effect, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, input, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
@@ -65,9 +65,7 @@ export class ProfesionalFormComponent {
     });
   }
 
-  get isEdit(): boolean {
-    return !!this.id();
-  }
+  readonly isEdit = computed(() => !!this.id());
 
   onKeydown(event: KeyboardEvent): void {
     if ((event.ctrlKey || event.metaKey) && event.key === 's') {
@@ -105,7 +103,7 @@ export class ProfesionalFormComponent {
       : this.service.create(this.form.value as ProfesionalCreate);
 
     request$.subscribe({
-      next: () => { this.toast.show(this.isEdit ? 'Profesional actualizado' : 'Profesional creado'); this.router.navigate(['/internal/profesionales']); },
+      next: () => { this.toast.show(this.isEdit() ? 'Profesional actualizado' : 'Profesional creado'); this.router.navigate(['/internal/profesionales']); },
       error: err => {
         this.error.set(extractErrorMessage(err, 'Error al guardar'));
         this.loading.set(false);

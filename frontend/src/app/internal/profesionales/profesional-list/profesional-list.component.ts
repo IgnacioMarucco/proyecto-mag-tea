@@ -11,7 +11,7 @@ import { DataTableComponent, TableColumn } from '../../../shared/data-table/data
 import { StatusBadgeComponent } from '../../../shared/status-badge/status-badge.component';
 import { RowActionsComponent, RowAction } from '../../../shared/row-actions/row-actions.component';
 import { PaginatorComponent } from '../../../shared/paginator/paginator.component';
-import { SortState } from '../../../shared/sort.utils';
+import { SortState } from '../../../shared/utils/sort.utils';
 import { IconComponent } from '../../../shared/icon/icon.component';
 import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 
@@ -70,9 +70,10 @@ export class ProfesionalListComponent {
   ];
 
   readonly columns: TableColumn[] = [
-    { label: 'Apellido, Nombre', sortKey: 'apellido' },
-    { label: 'Email' },
-    { label: 'Rol' },
+    { label: 'APELLIDO, NOMBRE', sortKey: 'apellido' },
+    { label: 'EMAIL' },
+    { label: 'TELEFONO' },
+    { label: 'ROL' },
   ];
 
   readonly rolColors: Record<string, string> = {
