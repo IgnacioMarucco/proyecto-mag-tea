@@ -3,6 +3,7 @@ package com.utn.magtea.common;
 import com.utn.magtea.common.exception.BusinessRuleException;
 import com.utn.magtea.common.exception.DuplicateResourceException;
 import com.utn.magtea.common.exception.ResourceNotFoundException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
@@ -32,6 +33,16 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DuplicateResourceException.class)
     public ResponseEntity<ErrorResponse> handleDuplicate(DuplicateResourceException ex) {
         return build(HttpStatus.CONFLICT, "Conflicto", ex.getMessage());
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex) {
+        String rootMsg = ex.getRootCause() != null ? ex.getRootCause().getMessage() : "";
+        if (rootMsg.contains("uc_tubo_caja_posicion")) {
+            return build(HttpStatus.CONFLICT, "Conflicto de posición",
+                    "La posición seleccionada ya está ocupada en esta caja. Elija otra posición.");
+        }
+        return build(HttpStatus.CONFLICT, "Conflicto", "Recurso duplicado. Intente nuevamente.");
     }
 
     @ExceptionHandler(BusinessRuleException.class)
