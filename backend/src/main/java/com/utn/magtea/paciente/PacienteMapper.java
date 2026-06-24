@@ -1,48 +1,22 @@
 package com.utn.magtea.paciente;
 
+import com.utn.magtea.common.MapperHelper;
 import com.utn.magtea.paciente.cars.CarsItemsResponseDTO;
 import com.utn.magtea.paciente.cars.CarsResultado;
 import com.utn.magtea.paciente.cars.EvaluacionCars;
-import com.utn.magtea.paciente.criterios.Criterios;
 import com.utn.magtea.paciente.criterios.CriteriosAptitud;
+import com.utn.magtea.paciente.criterios.CriteriosUtil;
 import com.utn.magtea.paciente.mchat.MchatEstado;
+import com.utn.magtea.paciente.mchat.MchatRiesgo;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-import java.math.BigDecimal;
-import java.time.LocalDateTime;
 
-
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = {MapperHelper.class}, imports = {CarsResultado.class, MchatRiesgo.class})
 public interface PacienteMapper {
 
     default CriteriosAptitud calcularCriteriosAptitud(Paciente entity) {
-        Criterios c = entity.getCriterios();
-        if (c == null) return null;
-        boolean exclusion = c.isEpilepsia() || c.isParalisisCerebral() ||
-                c.isInfeccionesCongenitas() || c.isLesionesEstructuralesSNC() ||
-                c.isFacomatosis() || c.isPatologiasNeurometabolicas() ||
-                c.isLesionesOcupantesEspacioSNC() || c.isPatologiaPsiquiatrica() ||
-                c.isOtrosSindromesGeneticos() || c.isPubertadPrecoz();
-        if (exclusion) return CriteriosAptitud.EXCLUIDO;
-        if (entity.getTipoPaciente() == TipoPaciente.CONTROL) {
-            // CONTROL: sin diagnóstico TEA/TGD, con criterio de edad
-            if (!c.isCriterioTEADSMV() && !c.isCriterioTGDDSMIV() && c.isCriterioEdad())
-                return CriteriosAptitud.APTO;
-        } else {
-            // PROBLEMA (o null como fallback): con diagnóstico TEA y TGD, con criterio de edad
-            if (c.isCriterioTEADSMV() && c.isCriterioTGDDSMIV() && c.isCriterioEdad())
-                return CriteriosAptitud.APTO;
-        }
-        return CriteriosAptitud.INCOMPLETO;
-    }
-
-    default MchatEstado calcularMchatEstado(Paciente entity) {
-        if (entity.getMchatFamilia() != null) return MchatEstado.COMPLETADO;
-        if (entity.getMchatToken() != null && entity.getMchatTokenExpiry() != null
-                && entity.getMchatTokenExpiry().isAfter(LocalDateTime.now())) return MchatEstado.PENDIENTE;
-        if (entity.getMchatToken() != null) return MchatEstado.EXPIRADO;
-        return MchatEstado.NO_ENVIADO;
+        return CriteriosUtil.calcularAptitud(entity);
     }
 
     default CarsItemsResponseDTO toCarsItems(EvaluacionCars c) {
@@ -56,23 +30,15 @@ public interface PacienteMapper {
         );
     }
 
-    default CarsResultado calcularCarsResultado(Paciente entity) {
-        if (entity.getEvaluacionCars() == null || entity.getEvaluacionCars().getRawScore() == null) return null;
-        BigDecimal raw = entity.getEvaluacionCars().getRawScore();
-        if (raw.compareTo(BigDecimal.valueOf(30)) < 0) return CarsResultado.MINIMO_NO_TEA;
-        if (raw.compareTo(BigDecimal.valueOf(37)) < 0) return CarsResultado.LEVE_MODERADO;
-        return CarsResultado.SEVERO;
-    }
-
-    @Mapping(target = "edadActual",     expression = "java(entity.getFechaNacimientoNino() != null ? java.time.Period.between(entity.getFechaNacimientoNino(), java.time.LocalDate.now()).getYears()  : null)")
-    @Mapping(target = "edadMeses",      expression = "java(entity.getFechaNacimientoNino() != null ? java.time.Period.between(entity.getFechaNacimientoNino(), java.time.LocalDate.now()).getMonths() : null)")
-    @Mapping(target = "pacienteEstado", source = "estadoClinico")
+    @Mapping(target = "edadActual",       source = "entity.fechaNacimientoNino", qualifiedByName = "calculateAgeYears")
+    @Mapping(target = "edadMeses",        source = "entity.fechaNacimientoNino", qualifiedByName = "calculateAgeMonths")
+    @Mapping(target = "pacienteEstado",   source = "entity.estadoClinico")
     @Mapping(target = "criteriosAptitud", expression = "java(calcularCriteriosAptitud(entity))")
-    @Mapping(target = "mchatEstado",    expression = "java(calcularMchatEstado(entity))")
+    @Mapping(target = "mchatEstado",      source = "mchatEstado")
     @Mapping(target = "mchatScoreTotal",    expression = "java(entity.getMchatFamilia() != null ? entity.getMchatFamilia().getScoreTotal() : null)")
     @Mapping(target = "mchatResultadoFinal",expression = "java(entity.getMchatFamilia() != null ? entity.getMchatFamilia().getResultadoFinal() : null)")
-    @Mapping(target = "mchatResultado", expression = "java(entity.getMchatFamilia() == null ? null : entity.getMchatFamilia().getScoreTotal() <= 2 ? com.utn.magtea.paciente.mchat.MchatRiesgo.BAJO_RIESGO : entity.getMchatFamilia().getScoreTotal() <= 7 ? com.utn.magtea.paciente.mchat.MchatRiesgo.MEDIANO_RIESGO : com.utn.magtea.paciente.mchat.MchatRiesgo.ALTO_RIESGO)")
-    @Mapping(target = "carsResultado",  expression = "java(calcularCarsResultado(entity))")
+    @Mapping(target = "mchatResultado", expression = "java(entity.getMchatFamilia() != null ? MchatRiesgo.from(entity.getMchatFamilia().getScoreTotal()) : null)")
+    @Mapping(target = "carsResultado",  expression = "java(entity.getEvaluacionCars() != null ? CarsResultado.from(entity.getEvaluacionCars().getRawScore()) : null)")
     // Criterios (desde sub-entidad)
     @Mapping(target = "criteriosRegistrados",          expression = "java(entity.getCriterios() != null)")
     @Mapping(target = "criterioTEADSMV",               expression = "java(entity.getCriterios() != null && entity.getCriterios().isCriterioTEADSMV())")
@@ -124,7 +90,7 @@ public interface PacienteMapper {
     @Mapping(target = "vinelandConductaDesadaptativa", expression = "java(entity.getEvaluacionVineland() != null ? entity.getEvaluacionVineland().getConductaDesadaptativa() : null)")
     @Mapping(target = "vinelandInternalizante",        expression = "java(entity.getEvaluacionVineland() != null ? entity.getEvaluacionVineland().getInternalizante()        : null)")
     @Mapping(target = "vinelandExternalizante",        expression = "java(entity.getEvaluacionVineland() != null ? entity.getEvaluacionVineland().getExternalizante()        : null)")
-    PacienteResponseDTO toDTO(Paciente entity);
+    PacienteResponseDTO toDTO(Paciente entity, MchatEstado mchatEstado);
 
     @Mapping(target = "pacienteEstado", source = "estadoClinico")
     PacienteListDTO toListDTO(Paciente entity);
@@ -143,7 +109,7 @@ public interface PacienteMapper {
     @Mapping(target = "mchatFamilia",          ignore = true)
     @Mapping(target = "mchatToken",            ignore = true)
     @Mapping(target = "mchatTokenExpiry",      ignore = true)
-    @Mapping(target = "fechaExtraccion",       ignore = true)
+    @Mapping(target = "fechaTurnoExtraccion",   ignore = true)
     @Mapping(target = "criterios",             ignore = true)
     @Mapping(target = "mchatSeguimiento",      ignore = true)
     @Mapping(target = "evaluacionCars",        ignore = true)

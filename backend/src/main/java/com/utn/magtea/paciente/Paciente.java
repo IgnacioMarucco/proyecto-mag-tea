@@ -88,7 +88,15 @@ public class Paciente extends Auditable {
     private LocalDateTime mchatTokenExpiry;
 
     // Segunda visita
-    private LocalDate fechaExtraccion;
+    private LocalDateTime fechaTurnoExtraccion;
+
+    @NotAudited
+    @org.hibernate.annotations.Formula(
+        "CASE WHEN estado_clinico IN ('ADMITIDO', 'MCHAT_RESPONDIDO') THEN fecha_primera_visita " +
+        "WHEN estado_clinico = 'EXTRACCION_PENDIENTE' THEN fecha_turno_extraccion " +
+        "ELSE NULL END"
+    )
+    private LocalDateTime proximaFechaEvento;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

@@ -1,12 +1,12 @@
 package com.utn.magtea.paciente;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public record PacientePorCodigoDTO(
         Long id,
         String codigoNumerico,
         String nombreNino,
         String apellidoNino,
-        LocalDate fechaExtraccion,
+        LocalDateTime fechaTurnoExtraccion,
         TipoPaciente tipoPaciente
 ) {}

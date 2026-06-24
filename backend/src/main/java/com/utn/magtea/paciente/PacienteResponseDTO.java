@@ -84,7 +84,7 @@ public record PacienteResponseDTO(
         Integer vinelandInternalizante,
         Integer vinelandExternalizante,
         // Segunda visita
-        LocalDate fechaExtraccion,
+        LocalDateTime fechaTurnoExtraccion,
         boolean activo,
         LocalDateTime createdAt
 ) {}

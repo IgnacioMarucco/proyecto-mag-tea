@@ -25,5 +25,5 @@ public record PacienteUpdateDTO(
         @NotNull(message = "El sexo es obligatorio") Sexo sexo,
         @Size(max = 2000, message = "Las notas no pueden superar los 2000 caracteres") String notas,
         LocalDateTime fechaPrimeraVisita,
-        LocalDate fechaExtraccion
+        LocalDateTime fechaTurnoExtraccion
 ) {}

@@ -14,5 +14,6 @@ public record PacienteListDTO(
         TipoPaciente tipoPaciente,
         PacienteEstado pacienteEstado,
         LocalDateTime fechaPrimeraVisita,
-        LocalDate fechaExtraccion
+        LocalDateTime fechaTurnoExtraccion,
+        LocalDateTime proximaFechaEvento
 ) {}

@@ -1,27 +1,33 @@
 package com.utn.magtea.paciente;
 
-import com.utn.magtea.common.MailService;
 import com.utn.magtea.common.PageResponse;
+import com.utn.magtea.common.SpecificationUtils;
 import com.utn.magtea.common.exception.BusinessRuleException;
 import com.utn.magtea.common.exception.ResourceNotFoundException;
 import com.utn.magtea.formulariointeres.FormularioInteres;
 import com.utn.magtea.formulariointeres.FormularioInteresService;
 import com.utn.magtea.paciente.cars.CarsDTO;
-import com.utn.magtea.paciente.cars.EvaluacionCars;
+import com.utn.magtea.paciente.cars.CarsService;
 import com.utn.magtea.paciente.criterios.Criterios;
 import com.utn.magtea.paciente.criterios.CriteriosAptitud;
 import com.utn.magtea.paciente.criterios.CriteriosDTO;
+import com.utn.magtea.paciente.criterios.CriteriosUtil;
+import com.utn.magtea.paciente.mchat.MchatEvents;
 import com.utn.magtea.paciente.mchat.MchatFamilia;
+import com.utn.magtea.paciente.mchat.MchatService;
+import com.utn.magtea.paciente.mchat.MchatTokenService;
 import com.utn.magtea.paciente.mchat.MchatInfoDTO;
-import com.utn.magtea.paciente.mchat.MchatResultadoFinal;
-import com.utn.magtea.paciente.mchat.MchatScoringUtil;
-import com.utn.magtea.paciente.mchat.MchatSeguimiento;
 import com.utn.magtea.paciente.mchat.MchatSeguimientoDTO;
 import com.utn.magtea.paciente.vineland.EvaluacionVineland;
 import com.utn.magtea.paciente.vineland.VinelandDTO;
+import com.utn.magtea.pool.PoolSueroAporteRepository;
+import com.utn.magtea.suero.Suero;
+import com.utn.magtea.suero.SueroRepository;
+import com.utn.magtea.tubo.TuboRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.context.event.EventListener;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -29,41 +35,40 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
+import com.utn.magtea.common.CodigoUtil;
+import com.utn.magtea.paciente.mchat.MchatEstado;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class PacienteService {
 
-    private static final List<BigDecimal> CARS_VALORES_VALIDOS = List.of(
-            new BigDecimal("1.0"), new BigDecimal("1.5"), new BigDecimal("2.0"),
-            new BigDecimal("2.5"), new BigDecimal("3.0"), new BigDecimal("3.5"),
-            new BigDecimal("4.0"));
-    private static final Set<String>  SORT_FIELDS_VALIDOS  = Set.of("createdAt", "apellidoNino", "apellidoTutor", "nombreNino");
+    private static final Set<String> SORT_FIELDS_VALIDOS = Set.of("createdAt", "apellidoNino", "apellidoTutor", "nombreNino", "proximaFechaEvento");
 
     private final PacienteRepository repository;
     private final PacienteMapper mapper;
     private final FormularioInteresService formularioService;
-    private final MailService mailService;
+    private final MchatTokenService mchatTokenService;
+    private final MchatService mchatService;
+    private final CarsService carsService;
+    private final ApplicationEventPublisher events;
+    private final PoolSueroAporteRepository poolSueroAporteRepository;
+    private final SueroRepository sueroRepository;
+    private final TuboRepository tuboRepository;
     private final Clock clock;
-
-    @Value("${app.mchat.token-expiry-days:30}")
-    private int tokenExpiryDays;
 
     @Transactional(readOnly = true)
     public PageResponse<PacienteListDTO> findAll(int page, int size, String q,
                                                   List<PacienteEstado> estados,
                                                   List<TipoPaciente> tipos,
                                                   String sortBy, String sortDir) {
-        Sort sort = buildSort(sortBy, sortDir, "createdAt");
+        Sort sort = SpecificationUtils.buildSort(sortBy, sortDir, "proximaFechaEvento", SORT_FIELDS_VALIDOS);
         Page<PacienteListProjection> result = repository.findBy(
                 buildSpec(q, estados, tipos),
                 fq -> fq.as(PacienteListProjection.class).page(PageRequest.of(page, size, sort))
@@ -73,7 +78,7 @@ public class PacienteService {
                         p.getId(), p.getCodigoNumerico(), p.getApellidoTutor(), p.getNombreTutor(),
                         p.getApellidoNino(), p.getNombreNino(), p.getFechaNacimientoNino(),
                         p.getTipoPaciente(), p.getEstadoClinico(),
-                        p.getFechaPrimeraVisita(), p.getFechaExtraccion()
+                        p.getFechaPrimeraVisita(), p.getFechaTurnoExtraccion(), p.getProximaFechaEvento()
                 ))
                 .toList();
         return new PageResponse<>(content, result.getTotalElements(),
@@ -82,7 +87,8 @@ public class PacienteService {
 
     @Transactional(readOnly = true)
     public PacienteResponseDTO findById(Long id) {
-        return mapper.toDTO(findActiveById(id));
+        Paciente p = findActiveById(id);
+        return mapper.toDTO(p, calcularMchatEstado(p));
     }
 
     @Transactional(readOnly = true)
@@ -90,7 +96,7 @@ public class PacienteService {
         Paciente p = repository.findActiveByCodigoNumericoWithGraph(codigo)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Paciente con código " + codigo + " no existe"));
-        return mapper.toDTO(p);
+        return mapper.toDTO(p, calcularMchatEstado(p));
     }
 
     @Transactional(readOnly = true)
@@ -105,7 +111,7 @@ public class PacienteService {
         return new PacientePorCodigoDTO(
                 p.getId(), p.getCodigoNumerico(),
                 p.getNombreNino(), p.getApellidoNino(),
-                p.getFechaExtraccion(), p.getTipoPaciente());
+                p.getFechaTurnoExtraccion(), p.getTipoPaciente());
     }
 
     @Transactional
@@ -127,22 +133,15 @@ public class PacienteService {
 
         Criterios criterios = new Criterios();
         criterios.setPaciente(paciente);
-        criterios.setCriterioTEADSMV(dto.criterioTEADSMV());
-        criterios.setCriterioTGDDSMIV(dto.criterioTGDDSMIV());
-        criterios.setCriterioEdad(dto.criterioEdad());
-        criterios.setEpilepsia(dto.epilepsia());
-        criterios.setParalisisCerebral(dto.paralisisCerebral());
-        criterios.setInfeccionesCongenitas(dto.infeccionesCongenitas());
-        criterios.setLesionesEstructuralesSNC(dto.lesionesEstructuralesSNC());
-        criterios.setFacomatosis(dto.facomatosis());
-        criterios.setPatologiasNeurometabolicas(dto.patologiasNeurometabolicas());
-        criterios.setLesionesOcupantesEspacioSNC(dto.lesionesOcupantesEspacioSNC());
-        criterios.setPatologiaPsiquiatrica(dto.patologiaPsiquiatrica());
-        criterios.setOtrosSindromesGeneticos(dto.otrosSindromesGeneticos());
-        criterios.setPubertadPrecoz(dto.pubertadPrecoz());
+        mapCriterios(criterios, new CriteriosDTO(
+                dto.criterioTEADSMV(), dto.criterioTGDDSMIV(), dto.criterioEdad(),
+                dto.epilepsia(), dto.paralisisCerebral(), dto.infeccionesCongenitas(),
+                dto.lesionesEstructuralesSNC(), dto.facomatosis(), dto.patologiasNeurometabolicas(),
+                dto.lesionesOcupantesEspacioSNC(), dto.patologiaPsiquiatrica(),
+                dto.otrosSindromesGeneticos(), dto.pubertadPrecoz()));
         paciente.setCriterios(criterios);
 
-        CriteriosAptitud aptitud = mapper.calcularCriteriosAptitud(paciente);
+        CriteriosAptitud aptitud = CriteriosUtil.calcularAptitud(paciente);
         if (aptitud != CriteriosAptitud.APTO) {
             String mensaje = aptitud == CriteriosAptitud.EXCLUIDO
                     ? "El paciente presenta un criterio de exclusión y no puede ser admitido al protocolo."
@@ -155,27 +154,18 @@ public class PacienteService {
         paciente.setEstadoClinico(PacienteEstado.ADMITIDO);
 
         if (dto.tipoPaciente() == TipoPaciente.PROBLEMA) {
-            paciente.setMchatToken(UUID.randomUUID().toString());
-            paciente.setMchatTokenExpiry(LocalDateTime.now(clock).plusDays(tokenExpiryDays));
+            mchatTokenService.generarToken(paciente);
         }
 
         Paciente saved = repository.save(paciente);
 
         if (dto.tipoPaciente() == TipoPaciente.PROBLEMA) {
-            try {
-                mailService.enviarLinkMchat(
-                        saved.getCorreoTutor(),
-                        saved.getNombreTutor(),
-                        saved.getApellidoNino(),
-                        saved.getNombreNino(),
-                        saved.getMchatToken()
-                );
-            } catch (Exception e) {
-                log.warn("No se pudo enviar el mail M-CHAT para paciente {}: {}", saved.getId(), e.getMessage());
-            }
+            events.publishEvent(new MchatEvents.MchatEnviadoEvent(
+                    saved.getCorreoTutor(), saved.getNombreTutor(),
+                    saved.getApellidoNino(), saved.getNombreNino(), saved.getMchatToken()));
         }
 
-        return mapper.toDTO(saved);
+        return mapper.toDTO(saved, calcularMchatEstado(saved));
     }
 
     @Transactional
@@ -191,22 +181,25 @@ public class PacienteService {
         paciente.setSexo(dto.sexo());
         paciente.setNotas(dto.notas());
         if (dto.fechaPrimeraVisita() != null) paciente.setFechaPrimeraVisita(dto.fechaPrimeraVisita());
-        if (dto.fechaExtraccion() != null) paciente.setFechaExtraccion(dto.fechaExtraccion());
-        return mapper.toDTO(repository.save(paciente));
+        if (dto.fechaTurnoExtraccion() != null) paciente.setFechaTurnoExtraccion(dto.fechaTurnoExtraccion());
+        Paciente saved = repository.save(paciente);
+        return mapper.toDTO(saved, calcularMchatEstado(saved));
     }
 
     @Transactional
     public PacienteResponseDTO updatePrimeraVisita(String codigo, PacientePrimeraVisitaDTO dto) {
         Paciente paciente = findActiveByCodigo(codigo);
         paciente.setFechaPrimeraVisita(dto.fechaPrimeraVisita());
-        return mapper.toDTO(repository.save(paciente));
+        Paciente saved = repository.save(paciente);
+        return mapper.toDTO(saved, calcularMchatEstado(saved));
     }
 
     @Transactional
     public PacienteResponseDTO updateConsentimiento(String codigo, PacienteConsentimientoDTO dto) {
         Paciente paciente = findActiveByCodigo(codigo);
         paciente.setConsentimientoFirmado(dto.consentimientoFirmado());
-        return mapper.toDTO(repository.save(paciente));
+        Paciente saved = repository.save(paciente);
+        return mapper.toDTO(saved, calcularMchatEstado(saved));
     }
 
     @Transactional
@@ -214,21 +207,10 @@ public class PacienteService {
         Paciente paciente = findActiveByCodigo(codigo);
         Criterios criterios = Optional.ofNullable(paciente.getCriterios())
                 .orElseGet(() -> { var c = new Criterios(); c.setPaciente(paciente); return c; });
-        criterios.setCriterioTEADSMV(dto.criterioTEADSMV());
-        criterios.setCriterioTGDDSMIV(dto.criterioTGDDSMIV());
-        criterios.setCriterioEdad(dto.criterioEdad());
-        criterios.setEpilepsia(dto.epilepsia());
-        criterios.setParalisisCerebral(dto.paralisisCerebral());
-        criterios.setInfeccionesCongenitas(dto.infeccionesCongenitas());
-        criterios.setLesionesEstructuralesSNC(dto.lesionesEstructuralesSNC());
-        criterios.setFacomatosis(dto.facomatosis());
-        criterios.setPatologiasNeurometabolicas(dto.patologiasNeurometabolicas());
-        criterios.setLesionesOcupantesEspacioSNC(dto.lesionesOcupantesEspacioSNC());
-        criterios.setPatologiaPsiquiatrica(dto.patologiaPsiquiatrica());
-        criterios.setOtrosSindromesGeneticos(dto.otrosSindromesGeneticos());
-        criterios.setPubertadPrecoz(dto.pubertadPrecoz());
+        mapCriterios(criterios, dto);
         paciente.setCriterios(criterios);
-        return mapper.toDTO(repository.save(paciente));
+        Paciente saved = repository.save(paciente);
+        return mapper.toDTO(saved, calcularMchatEstado(saved));
     }
 
     @Transactional
@@ -245,55 +227,21 @@ public class PacienteService {
                     "El seguimiento M-CHAT solo aplica cuando el score está entre 3 y 7");
         }
 
-        MchatSeguimiento seg = Optional.ofNullable(paciente.getMchatSeguimiento())
-                .orElseGet(() -> { var s = new MchatSeguimiento(); s.setPaciente(paciente); return s; });
-        seg.setItem1(dto.item1());   seg.setItem2(dto.item2());   seg.setItem3(dto.item3());
-        seg.setItem4(dto.item4());   seg.setItem5(dto.item5());   seg.setItem6(dto.item6());
-        seg.setItem7(dto.item7());   seg.setItem8(dto.item8());   seg.setItem9(dto.item9());
-        seg.setItem10(dto.item10()); seg.setItem11(dto.item11()); seg.setItem12(dto.item12());
-        seg.setItem13(dto.item13()); seg.setItem14(dto.item14()); seg.setItem15(dto.item15());
-        seg.setItem16(dto.item16()); seg.setItem17(dto.item17()); seg.setItem18(dto.item18());
-        seg.setItem19(dto.item19()); seg.setItem20(dto.item20());
-
-        int fallas = contarFallas(dto);
-        seg.setFallas(fallas);
-        paciente.setMchatSeguimiento(seg);
-        familia.setResultadoFinal(fallas <= 1
-                ? MchatResultadoFinal.NEGATIVA
-                : MchatResultadoFinal.POSITIVA);
-
-        return mapper.toDTO(repository.save(paciente));
+        mchatService.aplicarSeguimiento(paciente, dto);
+        Paciente saved = repository.save(paciente);
+        return mapper.toDTO(saved, calcularMchatEstado(saved));
     }
 
     @Transactional
     public PacienteResponseDTO updateCars(String codigo, CarsDTO dto) {
-        validarItemsCars(dto);
+        carsService.validarItems(dto);
         Paciente paciente = findActiveByCodigo(codigo);
         if (paciente.getTipoPaciente() == TipoPaciente.CONTROL) {
             throw new BusinessRuleException("CARS-2 no aplica para pacientes caso control");
         }
-
-        BigDecimal rawScore = dto.item1().add(dto.item2()).add(dto.item3()).add(dto.item4()).add(dto.item5())
-                .add(dto.item6()).add(dto.item7()).add(dto.item8()).add(dto.item9()).add(dto.item10())
-                .add(dto.item11()).add(dto.item12()).add(dto.item13()).add(dto.item14()).add(dto.item15());
-
-        EvaluacionCars cars = Optional.ofNullable(paciente.getEvaluacionCars())
-                .orElseGet(() -> { var c = new EvaluacionCars(); c.setPaciente(paciente); return c; });
-        cars.setItem1(dto.item1());   cars.setItem2(dto.item2());   cars.setItem3(dto.item3());
-        cars.setItem4(dto.item4());   cars.setItem5(dto.item5());   cars.setItem6(dto.item6());
-        cars.setItem7(dto.item7());   cars.setItem8(dto.item8());   cars.setItem9(dto.item9());
-        cars.setItem10(dto.item10()); cars.setItem11(dto.item11()); cars.setItem12(dto.item12());
-        cars.setItem13(dto.item13()); cars.setItem14(dto.item14()); cars.setItem15(dto.item15());
-        cars.setObs1(dto.obs1());     cars.setObs2(dto.obs2());     cars.setObs3(dto.obs3());
-        cars.setObs4(dto.obs4());     cars.setObs5(dto.obs5());     cars.setObs6(dto.obs6());
-        cars.setObs7(dto.obs7());     cars.setObs8(dto.obs8());     cars.setObs9(dto.obs9());
-        cars.setObs10(dto.obs10());   cars.setObs11(dto.obs11());   cars.setObs12(dto.obs12());
-        cars.setObs13(dto.obs13());   cars.setObs14(dto.obs14());   cars.setObs15(dto.obs15());
-        cars.setRawScore(rawScore);
-        cars.setTScore(dto.tScore());
-        cars.setPercentil(dto.percentil());
-        paciente.setEvaluacionCars(cars);
-        return mapper.toDTO(repository.save(paciente));
+        carsService.aplicar(paciente, dto);
+        Paciente saved = repository.save(paciente);
+        return mapper.toDTO(saved, calcularMchatEstado(saved));
     }
 
     @Transactional
@@ -313,15 +261,17 @@ public class PacienteService {
         vineland.setInternalizante(dto.internalizante());
         vineland.setExternalizante(dto.externalizante());
         paciente.setEvaluacionVineland(vineland);
-        return mapper.toDTO(repository.save(paciente));
+        Paciente saved = repository.save(paciente);
+        return mapper.toDTO(saved, calcularMchatEstado(saved));
     }
 
     @Transactional
     public PacienteResponseDTO updateSegundaVisita(String codigo, PacienteSegundaVisitaDTO dto) {
         Paciente paciente = findActiveByCodigo(codigo);
-        paciente.setFechaExtraccion(dto.fechaExtraccion());
+        paciente.setFechaTurnoExtraccion(dto.fechaTurnoExtraccion());
         paciente.setEstadoClinico(calcularEstado(paciente));
-        return mapper.toDTO(repository.save(paciente));
+        Paciente saved = repository.save(paciente);
+        return mapper.toDTO(saved, calcularMchatEstado(saved));
     }
 
     @Transactional
@@ -330,65 +280,79 @@ public class PacienteService {
         if (paciente.getTipoPaciente() == TipoPaciente.CONTROL) {
             throw new BusinessRuleException("El formulario M-CHAT no aplica para pacientes caso control");
         }
-        paciente.setMchatToken(UUID.randomUUID().toString());
-        paciente.setMchatTokenExpiry(LocalDateTime.now(clock).plusDays(tokenExpiryDays));
+        mchatTokenService.generarToken(paciente);
         Paciente saved = repository.save(paciente);
-
-        try {
-            mailService.enviarLinkMchat(
-                    saved.getCorreoTutor(),
-                    saved.getNombreTutor(),
-                    saved.getApellidoNino(),
-                    saved.getNombreNino(),
-                    saved.getMchatToken()
-            );
-        } catch (Exception e) {
-            log.warn("No se pudo reenviar el mail M-CHAT para paciente {}: {}", saved.getId(), e.getMessage());
-        }
-
-        return mapper.toDTO(saved);
+        events.publishEvent(new MchatEvents.MchatEnviadoEvent(
+                saved.getCorreoTutor(), saved.getNombreTutor(),
+                saved.getApellidoNino(), saved.getNombreNino(), saved.getMchatToken()));
+        return mapper.toDTO(saved, calcularMchatEstado(saved));
     }
 
     @Transactional
     public void delete(String codigo) {
         Paciente paciente = findActiveByCodigo(codigo);
+        Optional<Suero> sueroOpt = sueroRepository.findByPacienteCodigoNumericoAndActivoTrue(codigo);
+        if (sueroOpt.isPresent()) {
+            Suero suero = sueroOpt.get();
+            boolean tieneAportesActivos = suero.getTubos().stream()
+                    .anyMatch(t -> poolSueroAporteRepository.existsByTuboIdAndPool_ActivoTrue(t.getId()));
+            if (tieneAportesActivos) {
+                throw new BusinessRuleException(
+                        "El paciente tiene un suero con aportes en pools activos. Dé de baja los pools primero.");
+            }
+            suero.getTubos().forEach(t -> { t.setPosicion(null); tuboRepository.save(t); });
+            suero.setActivo(false);
+            sueroRepository.save(suero);
+        }
+        paciente.setMchatToken(null);
+        paciente.setMchatTokenExpiry(null);
         paciente.setActivo(false);
         repository.save(paciente);
     }
 
     @Transactional(readOnly = true)
     public MchatInfoDTO validarTokenMchat(String token) {
-        Paciente p = repository.findByMchatToken(token)
-                .filter(paciente -> paciente.getMchatTokenExpiry() != null
-                        && paciente.getMchatTokenExpiry().isAfter(LocalDateTime.now(clock)))
-                .orElseThrow(() -> new ResourceNotFoundException("El enlace no es válido o ha expirado"));
-        return new MchatInfoDTO(p.getId(), p.getNombreNino(), p.getApellidoNino());
+        return mchatTokenService.validarToken(token);
     }
 
-    @Transactional
-    public void procesarMchatPublico(Long pacienteId) {
-        Paciente paciente = findActiveById(pacienteId);
-        if (paciente.getTipoPaciente() == TipoPaciente.CONTROL) {
-            throw new BusinessRuleException("El formulario M-CHAT no aplica para pacientes caso control");
-        }
+    @EventListener
+    void onMchatFamiliaGuardada(MchatEvents.MchatFamiliaGuardadaEvent event) {
+        log.debug("Evento {} para paciente {}", "MchatFamiliaGuardadaEvent", event.pacienteId());
+        Paciente paciente = findActiveById(event.pacienteId());
+        if (paciente.getTipoPaciente() == TipoPaciente.CONTROL) return;
         paciente.setMchatToken(null);
         paciente.setMchatTokenExpiry(null);
         paciente.setEstadoClinico(calcularEstado(paciente));
         repository.save(paciente);
     }
 
-    @Transactional
-    public void actualizarMchatInterno(Long pacienteId) {
-        Paciente paciente = findActiveById(pacienteId);
-        if (paciente.getTipoPaciente() == TipoPaciente.CONTROL) {
-            throw new BusinessRuleException("El formulario M-CHAT no aplica para pacientes caso control");
-        }
+    @EventListener
+    void onMchatFamiliaActualizada(MchatEvents.MchatFamiliaActualizadaEvent event) {
+        log.debug("Evento {} para paciente {}", "MchatFamiliaActualizadaEvent", event.pacienteId());
+        Paciente paciente = findActiveById(event.pacienteId());
+        if (paciente.getTipoPaciente() == TipoPaciente.CONTROL) return;
         MchatFamilia familia = paciente.getMchatFamilia();
         if (familia != null && (familia.getScoreTotal() < 3 || familia.getScoreTotal() > 7)) {
             paciente.setMchatSeguimiento(null);
         }
         paciente.setEstadoClinico(calcularEstado(paciente));
         repository.save(paciente);
+    }
+
+    @EventListener
+    void onSueroRegistrado(PacienteEvents.SueroRegistradoEvent event) {
+        log.debug("Evento {} para paciente {}", "SueroRegistradoEvent", event.pacienteId());
+        Paciente p = findActiveById(event.pacienteId());
+        p.setEstadoClinico(PacienteEstado.EXTRACCION_REALIZADA);
+        repository.save(p);
+    }
+
+    @EventListener
+    void onSueroEliminado(PacienteEvents.SueroEliminadoEvent event) {
+        log.debug("Evento {} para paciente {}", "SueroEliminadoEvent", event.pacienteId());
+        Paciente p = findActiveById(event.pacienteId());
+        p.setEstadoClinico(PacienteEstado.EXTRACCION_PENDIENTE);
+        repository.save(p);
     }
 
     private Paciente findActiveById(Long id) {
@@ -405,15 +369,11 @@ public class PacienteService {
     }
 
     private Specification<Paciente> buildSpec(String q, List<PacienteEstado> estados, List<TipoPaciente> tipos) {
-        Specification<Paciente> spec = activoTrue();
+        Specification<Paciente> spec = SpecificationUtils.activoTrue();
         if (q != null && !q.isBlank()) spec = spec.and(searchText(q));
         if (estados != null && !estados.isEmpty()) spec = spec.and(estadoIn(estados));
         if (tipos   != null && !tipos.isEmpty())   spec = spec.and(tipoIn(tipos));
         return spec;
-    }
-
-    private Specification<Paciente> activoTrue() {
-        return (root, query, cb) -> cb.isTrue(root.get("activo"));
     }
 
     private Specification<Paciente> searchText(String q) {
@@ -434,43 +394,41 @@ public class PacienteService {
         return (root, query, cb) -> root.get("tipoPaciente").in(tipos);
     }
 
-    private Sort buildSort(String sortBy, String sortDir, String defaultField) {
-        String field = SORT_FIELDS_VALIDOS.contains(sortBy) ? sortBy : defaultField;
-        Sort.Direction dir = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        return Sort.by(dir, field);
-    }
-
     private String generarCodigoNumerico() {
-        String codigo;
-        do {
-            codigo = UUID.randomUUID().toString().replace("-", "").substring(0, 6).toUpperCase();
-        } while (repository.existsByCodigoNumerico(codigo));
-        return codigo;
+        return CodigoUtil.generarCodigo(repository::existsByCodigoNumerico);
     }
 
-    private int contarFallas(MchatSeguimientoDTO dto) {
-        return MchatScoringUtil.calcularScore(dto.toBooleanArray());
+    private static void mapCriterios(Criterios c, CriteriosDTO dto) {
+        c.setCriterioTEADSMV(dto.criterioTEADSMV());
+        c.setCriterioTGDDSMIV(dto.criterioTGDDSMIV());
+        c.setCriterioEdad(dto.criterioEdad());
+        c.setEpilepsia(dto.epilepsia());
+        c.setParalisisCerebral(dto.paralisisCerebral());
+        c.setInfeccionesCongenitas(dto.infeccionesCongenitas());
+        c.setLesionesEstructuralesSNC(dto.lesionesEstructuralesSNC());
+        c.setFacomatosis(dto.facomatosis());
+        c.setPatologiasNeurometabolicas(dto.patologiasNeurometabolicas());
+        c.setLesionesOcupantesEspacioSNC(dto.lesionesOcupantesEspacioSNC());
+        c.setPatologiaPsiquiatrica(dto.patologiaPsiquiatrica());
+        c.setOtrosSindromesGeneticos(dto.otrosSindromesGeneticos());
+        c.setPubertadPrecoz(dto.pubertadPrecoz());
     }
 
-    private void validarItemsCars(CarsDTO dto) {
-        BigDecimal[] items = {
-            dto.item1(), dto.item2(), dto.item3(), dto.item4(), dto.item5(),
-            dto.item6(), dto.item7(), dto.item8(), dto.item9(), dto.item10(),
-            dto.item11(), dto.item12(), dto.item13(), dto.item14(), dto.item15()
-        };
-        for (int i = 0; i < items.length; i++) {
-            BigDecimal item = items[i];
-            if (item == null || CARS_VALORES_VALIDOS.stream().noneMatch(v -> v.compareTo(item) == 0)) {
-                throw new BusinessRuleException(
-                        "Valor inválido en ítem " + (i + 1) + " de CARS-2: " + items[i]
-                        + ". Valores permitidos: 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0");
-            }
-        }
+    private MchatEstado calcularMchatEstado(Paciente p) {
+        if (p.getMchatFamilia() != null) return MchatEstado.COMPLETADO;
+        if (p.getMchatToken() != null && p.getMchatTokenExpiry() != null
+                && p.getMchatTokenExpiry().isAfter(LocalDateTime.now(clock))) return MchatEstado.PENDIENTE;
+        if (p.getMchatToken() != null) return MchatEstado.EXPIRADO;
+        return MchatEstado.NO_ENVIADO;
     }
 
     private PacienteEstado calcularEstado(Paciente p) {
-        if (p.getFechaExtraccion() != null)
+        if (p.getEstadoClinico() == PacienteEstado.EXTRACCION_REALIZADA)
+            return PacienteEstado.EXTRACCION_REALIZADA;
+        if (p.getFechaTurnoExtraccion() != null)
             return PacienteEstado.EXTRACCION_PENDIENTE;
+        if (p.getTipoPaciente() == TipoPaciente.CONTROL && p.getMchatFamilia() != null)
+            log.warn("Paciente CONTROL {} tiene mchatFamilia asignado — inconsistencia de datos", p.getCodigoNumerico());
         if (p.getTipoPaciente() == TipoPaciente.PROBLEMA && p.getMchatFamilia() != null)
             return PacienteEstado.MCHAT_RESPONDIDO;
         return PacienteEstado.ADMITIDO;

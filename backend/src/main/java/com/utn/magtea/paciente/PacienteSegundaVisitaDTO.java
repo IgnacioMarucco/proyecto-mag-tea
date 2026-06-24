@@ -2,8 +2,8 @@ package com.utn.magtea.paciente;
 
 import jakarta.validation.constraints.NotNull;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 public record PacienteSegundaVisitaDTO(
-        @NotNull LocalDate fechaExtraccion
+        @NotNull LocalDateTime fechaTurnoExtraccion
 ) {}

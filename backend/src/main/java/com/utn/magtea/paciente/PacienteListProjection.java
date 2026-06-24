@@ -14,5 +14,6 @@ public interface PacienteListProjection {
     TipoPaciente getTipoPaciente();
     PacienteEstado getEstadoClinico();
     LocalDateTime getFechaPrimeraVisita();
-    LocalDate getFechaExtraccion();
+    LocalDateTime getFechaTurnoExtraccion();
+    LocalDateTime getProximaFechaEvento();
 }
