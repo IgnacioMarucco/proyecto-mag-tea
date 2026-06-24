@@ -11,14 +11,15 @@ import { DataTableComponent, TableColumn } from '../../../../shared/data-table/d
 import { RowActionsComponent, RowAction } from '../../../../shared/row-actions/row-actions.component';
 import { PaginatorComponent } from '../../../../shared/paginator/paginator.component';
 import { IconComponent } from '../../../../shared/icon/icon.component';
-import { SortState } from '../../../../shared/sort.utils';
+import { SortState } from '../../../../shared/utils/sort.utils';
+import { FechaPipe } from '../../../../core/pipes/fecha.pipe';
 import { Crumb, PageHeaderComponent } from '../../../../shared/page-header/page-header.component';
 import { PageParams } from '../../../../core/models/page-response.model';
 
 @Component({
   selector: 'app-camada-list',
   imports: [RouterLink, ListToolbarComponent, ConfirmModalComponent, DataTableComponent,
-            RowActionsComponent, PaginatorComponent, IconComponent, PageHeaderComponent],
+            RowActionsComponent, PaginatorComponent, IconComponent, PageHeaderComponent, FechaPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './camada-list.component.html',
   host: { '(window:keydown)': 'onGlobalKey($event)' },
@@ -36,7 +37,7 @@ export class CamadaListComponent {
   );
 
   private readonly params$ = new BehaviorSubject<PageParams>({
-    page: 0, size: 50, sortBy: 'nombre', sortDir: 'asc',
+    page: 0, size: 50, sortBy: 'fechaNacimiento', sortDir: 'desc',
   });
 
   private readonly response = toSignal(
@@ -52,14 +53,15 @@ export class CamadaListComponent {
   readonly currentPage   = computed(() => this.response()?.page ?? 0);
 
   search          = signal('');
-  sortState       = signal<SortState>({ key: 'nombre', direction: 'asc' });
+  sortState       = signal<SortState>({ key: 'fechaNacimiento', direction: 'desc' });
   deleting        = signal<number | null>(null);
   pendingDeleteId = signal<number | null>(null);
 
   readonly filterGroups: FilterGroup[] = [];
 
   readonly columns: TableColumn[] = [
-    { label: 'Nombre', sortKey: 'nombre' },
+    { label: 'NOMBRE',           sortKey: 'nombre' },
+    { label: 'FECHA NACIMIENTO', sortKey: 'fechaNacimiento' },
   ];
 
 

@@ -1,8 +1,8 @@
-import { ChangeDetectionStrategy, Component, ElementRef, effect, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, input, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { map } from 'rxjs';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { EMPTY, catchError, filter, map, switchMap } from 'rxjs';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { CajaService } from '../../../../core/services/caja.service';
 import { CajaCreate, CajaUpdate } from '../../../../core/models/caja.model';
 import { extractErrorMessage } from '../../../../shared/utils/error.utils';
@@ -19,12 +19,13 @@ import { ToastService } from '../../../../core/services/toast.service';
   host: { '(keydown)': 'onKeydown($event)' },
 })
 export class CajaFormComponent {
-  private readonly elRef   = inject<ElementRef<HTMLElement>>(ElementRef);
-  private readonly toast   = inject(ToastService);
-  private readonly fb      = inject(FormBuilder);
-  private readonly service = inject(CajaService);
-  private readonly router  = inject(Router);
-  private readonly route   = inject(ActivatedRoute);
+  private readonly elRef      = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly toast      = inject(ToastService);
+  private readonly fb         = inject(FormBuilder);
+  private readonly service    = inject(CajaService);
+  private readonly router     = inject(Router);
+  private readonly route      = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly crumbs = toSignal(
     this.route.data.pipe(map(d => d['crumbs'] as Crumb[] ?? [])),
@@ -42,18 +43,16 @@ export class CajaFormComponent {
     numero:  [null as number | null, [Validators.required, Validators.min(1)]],
   });
 
-  get isEdit(): boolean { return !!this.id(); }
+  readonly isEdit = computed(() => !!this.id());
 
   constructor() {
-    effect(() => {
-      const id = this.id();
-      if (id) {
-        this.service.findById(+id).subscribe({
-          next:  caja => this.form.patchValue(caja),
-          error: ()   => this.error.set('No se pudo cargar la caja'),
-        });
-      }
-    });
+    toObservable(this.id).pipe(
+      filter((id): id is string => !!id),
+      switchMap(id => this.service.findById(+id).pipe(
+        catchError(() => { this.error.set('No se pudo cargar la caja'); return EMPTY; })
+      )),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe(caja => this.form.patchValue(caja));
   }
 
   onKeydown(event: KeyboardEvent): void {
@@ -98,7 +97,7 @@ export class CajaFormComponent {
       : this.service.create(dto);
 
     req$.subscribe({
-      next:  () => { this.toast.show(this.isEdit ? 'Caja actualizada' : 'Caja creada'); this.router.navigate(['/internal/cajas']); },
+      next:  () => { this.toast.show(this.isEdit() ? 'Caja actualizada' : 'Caja creada'); this.router.navigate(['/internal/cajas']); },
       error: err => { this.error.set(extractErrorMessage(err, 'Error al guardar')); this.loading.set(false); },
     });
   }

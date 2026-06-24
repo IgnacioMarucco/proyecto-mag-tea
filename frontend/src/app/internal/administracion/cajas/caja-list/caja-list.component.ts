@@ -11,7 +11,7 @@ import { DataTableComponent, TableColumn } from '../../../../shared/data-table/d
 import { RowActionsComponent, RowAction } from '../../../../shared/row-actions/row-actions.component';
 import { PaginatorComponent } from '../../../../shared/paginator/paginator.component';
 import { IconComponent } from '../../../../shared/icon/icon.component';
-import { SortState } from '../../../../shared/sort.utils';
+import { SortState } from '../../../../shared/utils/sort.utils';
 import { Crumb, PageHeaderComponent } from '../../../../shared/page-header/page-header.component';
 
 @Component({
@@ -58,9 +58,9 @@ export class CajaListComponent {
   readonly filterGroups: FilterGroup[] = [];
 
   readonly columns: TableColumn[] = [
-    { label: 'Freezer', sortKey: 'freezer' },
-    { label: 'Cajón',   sortKey: 'cajon'   },
-    { label: 'N° caja', sortKey: 'numero'  },
+    { label: 'FREEZER', sortKey: 'freezer' },
+    { label: 'CAJÓN',   sortKey: 'cajon'   },
+    { label: 'CAJA',    sortKey: 'numero'  },
   ];
 
   readonly emptyTitle = computed(() =>

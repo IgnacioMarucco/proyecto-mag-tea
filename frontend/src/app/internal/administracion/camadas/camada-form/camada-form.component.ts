@@ -1,8 +1,8 @@
-import { ChangeDetectionStrategy, Component, ElementRef, effect, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, input, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { map } from 'rxjs';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { EMPTY, catchError, filter, map, switchMap } from 'rxjs';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { CamadaService } from '../../../../core/services/camada.service';
 import { CamadaCreate, CamadaUpdate } from '../../../../core/models/camada.model';
 import { extractErrorMessage } from '../../../../shared/utils/error.utils';
@@ -19,12 +19,13 @@ import { ToastService } from '../../../../core/services/toast.service';
   host: { '(keydown)': 'onKeydown($event)' },
 })
 export class CamadaFormComponent {
-  private readonly elRef   = inject<ElementRef<HTMLElement>>(ElementRef);
-  private readonly toast   = inject(ToastService);
-  private readonly fb      = inject(FormBuilder);
-  private readonly service = inject(CamadaService);
-  private readonly router  = inject(Router);
-  private readonly route   = inject(ActivatedRoute);
+  private readonly elRef      = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly toast      = inject(ToastService);
+  private readonly fb         = inject(FormBuilder);
+  private readonly service    = inject(CamadaService);
+  private readonly router     = inject(Router);
+  private readonly route      = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly crumbs = toSignal(
     this.route.data.pipe(map(d => d['crumbs'] as Crumb[] ?? [])),
@@ -37,21 +38,20 @@ export class CamadaFormComponent {
   showExitConfirm = signal(false);
 
   form = this.fb.group({
-    nombre: ['', [Validators.required, Validators.maxLength(50)]],
+    nombre:          ['', [Validators.required, Validators.maxLength(50)]],
+    fechaNacimiento: ['',  Validators.required],
   });
 
-  get isEdit(): boolean { return !!this.id(); }
+  readonly isEdit = computed(() => !!this.id());
 
   constructor() {
-    effect(() => {
-      const id = this.id();
-      if (id) {
-        this.service.findById(+id).subscribe({
-          next:  camada => this.form.patchValue(camada),
-          error: ()     => this.error.set('No se pudo cargar la camada'),
-        });
-      }
-    });
+    toObservable(this.id).pipe(
+      filter((id): id is string => !!id),
+      switchMap(id => this.service.findById(+id).pipe(
+        catchError(() => { this.error.set('No se pudo cargar la camada'); return EMPTY; })
+      )),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe(camada => this.form.patchValue(camada));
   }
 
   onKeydown(event: KeyboardEvent): void {
@@ -83,14 +83,17 @@ export class CamadaFormComponent {
     this.loading.set(true);
     this.error.set(null);
 
-    const dto: CamadaCreate = { nombre: this.form.value.nombre! };
+    const dto: CamadaCreate = {
+      nombre:          this.form.value.nombre!,
+      fechaNacimiento: this.form.value.fechaNacimiento!,
+    };
     const id = this.id();
     const req$ = id
       ? this.service.update(+id, dto as CamadaUpdate)
       : this.service.create(dto);
 
     req$.subscribe({
-      next:  () => { this.toast.show(this.isEdit ? 'Camada actualizada' : 'Camada creada'); this.router.navigate(['/internal/camadas']); },
+      next:  () => { this.toast.show(this.isEdit() ? 'Camada actualizada' : 'Camada creada'); this.router.navigate(['/internal/camadas']); },
       error: err => { this.error.set(extractErrorMessage(err, 'Error al guardar')); this.loading.set(false); },
     });
   }
