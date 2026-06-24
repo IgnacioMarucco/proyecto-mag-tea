@@ -10,7 +10,8 @@ import { DataTableComponent, TableColumn } from '../../../shared/data-table/data
 import { StatusBadgeComponent } from '../../../shared/status-badge/status-badge.component';
 import { RowActionsComponent, RowAction } from '../../../shared/row-actions/row-actions.component';
 import { PaginatorComponent } from '../../../shared/paginator/paginator.component';
-import { SortState } from '../../../shared/sort.utils';
+import { SortState } from '../../../shared/utils/sort.utils';
+import { hasActiveSearch } from '../../../shared/utils/list.utils';
 import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 import { EdadPipe } from '../../../core/pipes/edad.pipe';
 import { FechaPipe } from '../../../core/pipes/fecha.pipe';
@@ -82,12 +83,12 @@ export class BandejaComponent {
   ];
 
   readonly columns: TableColumn[] = [
-    { label: 'Paciente' },
-    { label: 'Edad' },
-    { label: 'Teléfono' },
-    { label: 'Mail' },
-    { label: 'Fecha', sortKey: 'fechaContacto' },
-    { label: 'Estado' },
+    { label: 'PACIENTE' },
+    { label: 'EDAD' },
+    { label: 'TELÉFONO' },
+    { label: 'MAIL' },
+    { label: 'FECHA', sortKey: 'fechaContacto' },
+    { label: 'ESTADO' },
   ];
 
   readonly estadoLabels: Record<EstadoFormulario, string> = {
@@ -146,15 +147,7 @@ export class BandejaComponent {
   }
 
   private hasActiveSearch(): boolean {
-    if (this.search()) return true;
-    const f = this.activeFilters();
-    return this.filterGroups.some(group => {
-      const val = f[group.key];
-      if (val === undefined) return false;
-      return group.multiSelect
-        ? (val as string[]).length < group.options.length
-        : val !== group.options[0]?.key;
-    });
+    return hasActiveSearch(this.search, this.activeFilters, this.filterGroups);
   }
 
 getActionsFor(f: FormularioInteresResponse): RowAction[] {

@@ -1,97 +1,79 @@
-<div class="fixed inset-0 bg-sidebar/50 flex items-center justify-center z-50 p-5"
-  (click)="closed.emit()"
-  (keydown.escape)="closed.emit()">
-  <div #modalDialog
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="formulario-modal-titulo"
-    tabindex="-1"
-    class="bg-surface border border-border rounded-lg w-full max-w-lg shadow-md outline-none"
-    (click)="$event.stopPropagation()"
-    (keydown)="onModalKeydown($event)">
+<app-modal-container
+  [title]="formulario().apellidoNino + ', ' + formulario().nombreNino"
+  (closed)="closed.emit()"
+>
+  <div class="px-6 py-5 space-y-5 text-sm">
 
-    <div class="flex items-start justify-between px-6 pt-5 pb-4 border-b border-border">
-      <div>
-        <p class="text-xs font-mono text-text-muted uppercase tracking-wider mb-0.5">Formulario de interés</p>
-        <h3 id="formulario-modal-titulo" class="text-base font-semibold text-text">
-          {{ formulario().apellidoNino }}, {{ formulario().nombreNino }}
-        </h3>
-      </div>
-      <button (click)="closed.emit()" aria-label="Cerrar"
-        class="text-text-muted hover:text-text transition-colors text-xl leading-none cursor-pointer ml-4">×</button>
-    </div>
+    <p class="text-xs font-mono text-text-muted uppercase tracking-wider -mb-2">Formulario de interés</p>
 
-    <div class="px-6 py-5 space-y-5 text-sm">
-
-      <div>
-        <p class="text-xs font-mono text-primary tracking-wider uppercase mb-3">Niño/a</p>
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <p class="text-xs text-text-muted mb-0.5">Apellido y nombre</p>
-            <p class="text-text font-medium">{{ formulario().apellidoNino }}, {{ formulario().nombreNino }}</p>
-          </div>
-          @if (formulario().fechaNacimientoNino) {
-            <div>
-              <p class="text-xs text-text-muted mb-0.5">Fecha de nacimiento</p>
-              <p class="text-text">
-                {{ formulario().fechaNacimientoNino | fecha }}
-                <span class="text-text-muted">({{ formulario().fechaNacimientoNino | edad }})</span>
-              </p>
-            </div>
-          }
+    <div>
+      <p class="text-xs font-mono text-primary tracking-wider uppercase mb-3">Niño/a</p>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <p class="text-xs text-text-muted mb-0.5">Apellido y nombre</p>
+          <p class="text-text font-medium">{{ formulario().apellidoNino }}, {{ formulario().nombreNino }}</p>
         </div>
-      </div>
-
-      <div>
-        <p class="text-xs font-mono text-primary tracking-wider uppercase mb-3">Tutor/a</p>
-        <div class="grid grid-cols-2 gap-3">
+        @if (formulario().fechaNacimientoNino) {
           <div>
-            <p class="text-xs text-text-muted mb-0.5">Apellido y nombre</p>
-            <p class="text-text">{{ formulario().apellidoTutor }}, {{ formulario().nombreTutor }}</p>
-          </div>
-          <div>
-            <p class="text-xs text-text-muted mb-0.5">Correo</p>
-            <p class="text-text font-mono text-xs">{{ formulario().correoTutor }}</p>
-          </div>
-          @if (formulario().telefono) {
-            <div>
-              <p class="text-xs text-text-muted mb-0.5">Teléfono</p>
-              <p class="text-text font-mono text-xs">{{ formulario().telefono }}</p>
-            </div>
-          }
-          <div>
-            <p class="text-xs text-text-muted mb-0.5">Cómo conoció el proyecto</p>
+            <p class="text-xs text-text-muted mb-0.5">Fecha de nacimiento</p>
             <p class="text-text">
-              {{ formulario().comoConocioProyecto ? comoConocioLabels[formulario().comoConocioProyecto!] : '—' }}
+              {{ formulario().fechaNacimientoNino | fecha }}
+              <span class="text-text-muted">({{ formulario().fechaNacimientoNino | edad }})</span>
             </p>
-            @if (formulario().comoConocioProyecto === 'OTRO' && formulario().otroComoConocio) {
-              <p class="text-xs text-text-muted mt-0.5">{{ formulario().otroComoConocio }}</p>
-            }
           </div>
-        </div>
+        }
       </div>
-
-      @if (formulario().diasDisponibles) {
-        <div>
-          <p class="text-xs font-mono text-primary tracking-wider uppercase mb-3">Coordinación de llamada</p>
-          <div>
-            <p class="text-xs text-text-muted mb-0.5">Días y horarios disponibles</p>
-            <p class="text-text">{{ formulario().diasDisponibles }}</p>
-          </div>
-        </div>
-      }
-
-      <div class="flex items-center justify-between pt-1 border-t border-border">
-        <div>
-          <p class="text-xs text-text-muted mb-0.5">Estado</p>
-          <app-status-badge [value]="formulario().estado" [labels]="estadoLabels" [colorMap]="estadoColors" />
-        </div>
-        <div class="text-right">
-          <p class="text-xs text-text-muted mb-0.5">Fecha de contacto</p>
-          <p class="font-mono text-xs text-text-muted">{{ formulario().fechaContacto | fecha }}</p>
-        </div>
-      </div>
-
     </div>
+
+    <div>
+      <p class="text-xs font-mono text-primary tracking-wider uppercase mb-3">Tutor/a</p>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <p class="text-xs text-text-muted mb-0.5">Apellido y nombre</p>
+          <p class="text-text">{{ formulario().apellidoTutor }}, {{ formulario().nombreTutor }}</p>
+        </div>
+        <div>
+          <p class="text-xs text-text-muted mb-0.5">Correo</p>
+          <p class="text-text font-mono text-xs">{{ formulario().correoTutor }}</p>
+        </div>
+        @if (formulario().telefono) {
+          <div>
+            <p class="text-xs text-text-muted mb-0.5">Teléfono</p>
+            <p class="text-text font-mono text-xs">{{ formulario().telefono }}</p>
+          </div>
+        }
+        <div>
+          <p class="text-xs text-text-muted mb-0.5">Cómo conoció el proyecto</p>
+          <p class="text-text">
+            {{ formulario().comoConocioProyecto ? comoConocioLabels[formulario().comoConocioProyecto!] : '—' }}
+          </p>
+          @if (formulario().comoConocioProyecto === 'OTRO' && formulario().otroComoConocio) {
+            <p class="text-xs text-text-muted mt-0.5">{{ formulario().otroComoConocio }}</p>
+          }
+        </div>
+      </div>
+    </div>
+
+    @if (formulario().diasDisponibles) {
+      <div>
+        <p class="text-xs font-mono text-primary tracking-wider uppercase mb-3">Coordinación de llamada</p>
+        <div>
+          <p class="text-xs text-text-muted mb-0.5">Días y horarios disponibles</p>
+          <p class="text-text">{{ formulario().diasDisponibles }}</p>
+        </div>
+      </div>
+    }
+
+    <div class="flex items-center justify-between pt-1 border-t border-border">
+      <div>
+        <p class="text-xs text-text-muted mb-0.5">Estado</p>
+        <app-status-badge [value]="formulario().estado" [labels]="estadoLabels" [colorMap]="estadoColors" />
+      </div>
+      <div class="text-right">
+        <p class="text-xs text-text-muted mb-0.5">Fecha de contacto</p>
+        <p class="font-mono text-xs text-text-muted">{{ formulario().fechaContacto | fecha }}</p>
+      </div>
+    </div>
+
   </div>
-</div>
+</app-modal-container>

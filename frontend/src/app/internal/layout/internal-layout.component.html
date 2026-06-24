@@ -30,13 +30,13 @@
          [class.justify-center]="collapsed()" [class.py-4]="collapsed()">
       @if (!collapsed()) {
         <div>
-          <img src="/assets/logo-magtea.png" alt="MAG-TEA" class="h-7 w-auto mb-1" />
+          <img ngSrc="/assets/logo-magtea.png" alt="MAG-TEA" width="150" height="150" class="h-7 w-auto mb-1" />
           <p class="text-sidebar-muted text-[10px] font-mono tracking-widest uppercase">
             Sistema de Investigación
           </p>
         </div>
       } @else {
-        <img src="/assets/logo-magtea.png" alt="MAG-TEA" class="h-6 w-auto max-w-[36px] object-contain object-left" />
+        <img ngSrc="/assets/logo-magtea.png" alt="MAG-TEA" width="150" height="150" class="h-6 w-auto max-w-[36px] object-contain object-left" />
       }
     </div>
 

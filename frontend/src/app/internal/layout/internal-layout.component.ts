@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
+import { NgOptimizedImage } from '@angular/common';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {
   LucideAngularModule,
@@ -101,7 +102,7 @@ const NAV_SECTIONS: NavSection[] = [
 
 @Component({
   selector: 'app-internal-layout',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive, LucideAngularModule, ToastContainerComponent],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, LucideAngularModule, ToastContainerComponent, NgOptimizedImage],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './internal-layout.component.html',
 })
