@@ -3,6 +3,7 @@ package com.utn.magtea.paciente.mchat;
 import com.utn.magtea.common.ApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,7 +24,7 @@ public class MchatPublicController {
     @PostMapping("/{token}")
     @Operation(summary = "Enviar respuestas del M-CHAT")
     public MchatFamiliaResponseDTO submitRespuestas(@PathVariable String token,
-                                                    @RequestBody MchatSubmitDTO dto) {
+                                                    @RequestBody @Valid MchatSubmitDTO dto) {
         return service.guardarRespuestas(token, dto);
     }
 }

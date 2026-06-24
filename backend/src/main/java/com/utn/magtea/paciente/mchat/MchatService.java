@@ -3,31 +3,35 @@ package com.utn.magtea.paciente.mchat;
 import com.utn.magtea.common.exception.BusinessRuleException;
 import com.utn.magtea.common.exception.ResourceNotFoundException;
 import com.utn.magtea.paciente.Paciente;
-import com.utn.magtea.paciente.PacienteService;
+import com.utn.magtea.paciente.TipoPaciente;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class MchatService {
 
-    private final PacienteService pacienteService;
+    private final ApplicationEventPublisher events;
+    private final MchatTokenService mchatTokenService;
     private final MchatFamiliaRepository familiaRepository;
     private final MchatFamiliaMapper mapper;
     private final EntityManager em;
 
     @Transactional(readOnly = true)
     public MchatPublicResponseDTO validarToken(String token) {
-        MchatInfoDTO info = pacienteService.validarTokenMchat(token);
+        MchatInfoDTO info = mchatTokenService.validarToken(token);
         boolean yaCompletado = familiaRepository.existsByPaciente_Id(info.id());
         return new MchatPublicResponseDTO(info.nombreNino(), info.apellidoNino(), yaCompletado);
     }
 
     @Transactional
     public MchatFamiliaResponseDTO guardarRespuestas(String token, MchatSubmitDTO dto) {
-        MchatInfoDTO info = pacienteService.validarTokenMchat(token);
+        MchatInfoDTO info = mchatTokenService.validarToken(token);
 
         if (familiaRepository.existsByPaciente_Id(info.id())) {
             throw new BusinessRuleException("El formulario M-CHAT ya fue completado para este paciente");
@@ -42,7 +46,7 @@ public class MchatService {
         familia.setResultadoFinal(calcularResultado(score));
         familiaRepository.save(familia);
 
-        pacienteService.procesarMchatPublico(info.id());
+        events.publishEvent(new MchatEvents.MchatFamiliaGuardadaEvent(info.id()));
         return mapper.toDTO(familia);
     }
 
@@ -56,7 +60,13 @@ public class MchatService {
 
     @Transactional
     public MchatFamiliaResponseDTO upsertRespuestasByPaciente(Long pacienteId, MchatSubmitDTO dto) {
-        pacienteService.findById(pacienteId);
+        mchatTokenService.verificarActivo(pacienteId);
+
+        Paciente paciente = em.find(Paciente.class, pacienteId);
+        if (paciente == null || !paciente.isActivo())
+            throw new ResourceNotFoundException("Paciente con id " + pacienteId + " no existe");
+        if (paciente.getTipoPaciente() == TipoPaciente.CONTROL)
+            throw new BusinessRuleException("El formulario M-CHAT no aplica para pacientes caso control");
 
         MchatFamilia familia = familiaRepository.findByPaciente_Id(pacienteId)
                 .orElseGet(() -> {
@@ -71,8 +81,31 @@ public class MchatService {
         familia.setResultadoFinal(calcularResultado(score));
         familiaRepository.save(familia);
 
-        pacienteService.actualizarMchatInterno(pacienteId);
+        events.publishEvent(new MchatEvents.MchatFamiliaActualizadaEvent(pacienteId));
         return mapper.toDTO(familia);
+    }
+
+    /**
+     * Actualiza el seguimiento M-CHAT. Recibe la entidad ya cargada por PacienteService;
+     * no guarda — el llamador persiste via cascade.
+     */
+    @Transactional
+    public void aplicarSeguimiento(Paciente paciente, MchatSeguimientoDTO dto) {
+        MchatSeguimiento seg = Optional.ofNullable(paciente.getMchatSeguimiento())
+                .orElseGet(() -> { var s = new MchatSeguimiento(); s.setPaciente(paciente); return s; });
+        seg.setItem1(dto.item1());   seg.setItem2(dto.item2());   seg.setItem3(dto.item3());
+        seg.setItem4(dto.item4());   seg.setItem5(dto.item5());   seg.setItem6(dto.item6());
+        seg.setItem7(dto.item7());   seg.setItem8(dto.item8());   seg.setItem9(dto.item9());
+        seg.setItem10(dto.item10()); seg.setItem11(dto.item11()); seg.setItem12(dto.item12());
+        seg.setItem13(dto.item13()); seg.setItem14(dto.item14()); seg.setItem15(dto.item15());
+        seg.setItem16(dto.item16()); seg.setItem17(dto.item17()); seg.setItem18(dto.item18());
+        seg.setItem19(dto.item19()); seg.setItem20(dto.item20());
+
+        int fallas = MchatScoringUtil.calcularScore(dto.toBooleanArray());
+        seg.setFallas(fallas);
+        paciente.setMchatSeguimiento(seg);
+        paciente.getMchatFamilia().setResultadoFinal(
+                fallas <= 1 ? MchatResultadoFinal.NEGATIVA : MchatResultadoFinal.POSITIVA);
     }
 
     int calcularScore(MchatSubmitDTO d) {
@@ -83,7 +116,7 @@ public class MchatService {
         if (score <= 2 || score >= 8) {
             return score <= 2 ? MchatResultadoFinal.NEGATIVA : MchatResultadoFinal.POSITIVA;
         }
-        return null; // mediano riesgo: requiere seguimiento para determinar resultado
+        return null;
     }
 
     private void mapearRespuestas(MchatFamilia r, MchatSubmitDTO dto) {

@@ -13,8 +13,8 @@ public interface EvaluacionCarsRepository extends JpaRepository<EvaluacionCars, 
 
     @Query("SELECT " +
            "SUM(CASE WHEN e.rawScore < 30 THEN 1 ELSE 0 END), " +
-           "SUM(CASE WHEN e.rawScore >= 30 AND e.rawScore <= 36.5 THEN 1 ELSE 0 END), " +
-           "SUM(CASE WHEN e.rawScore > 36.5 THEN 1 ELSE 0 END) " +
+           "SUM(CASE WHEN e.rawScore >= 30 AND e.rawScore < 37 THEN 1 ELSE 0 END), " +
+           "SUM(CASE WHEN e.rawScore >= 37 THEN 1 ELSE 0 END) " +
            "FROM EvaluacionCars e JOIN e.paciente p " +
            "WHERE p.activo = true AND p.tipoPaciente = 'PROBLEMA' AND e.rawScore IS NOT NULL")
     Object[] categoriasCars();

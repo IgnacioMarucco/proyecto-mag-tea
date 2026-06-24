@@ -12,20 +12,17 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping(ApiConstants.V1 + "/pacientes")
 @Tag(name = "M-CHAT (interno)")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
 public class MchatInternalController {
 
     private final MchatService service;
 
-    @GetMapping("/{pacienteId}/mchat/respuestas")
-    @PreAuthorize("hasAnyRole('CUERPO_MEDICO','INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Obtener respuestas M-CHAT del paciente")
+    @GetMapping("/{pacienteId}/mchat/respuestas")    @Operation(summary = "Obtener respuestas M-CHAT del paciente")
     public MchatFamiliaResponseDTO getRespuestas(@PathVariable Long pacienteId) {
         return service.getRespuestasByPaciente(pacienteId);
     }
 
-    @PutMapping("/{pacienteId}/mchat/respuestas")
-    @PreAuthorize("hasAnyRole('CUERPO_MEDICO','INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Registrar o reemplazar respuestas M-CHAT del paciente")
+    @PutMapping("/{pacienteId}/mchat/respuestas")    @Operation(summary = "Registrar o reemplazar respuestas M-CHAT del paciente")
     public MchatFamiliaResponseDTO upsertRespuestas(@PathVariable Long pacienteId,
                                                     @RequestBody @Valid MchatSubmitDTO dto) {
         return service.upsertRespuestasByPaciente(pacienteId, dto);
