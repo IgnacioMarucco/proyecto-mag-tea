@@ -11,6 +11,7 @@ import { FechaPipe } from '../../../../core/pipes/fecha.pipe';
 import { CriteriosSectionComponent } from './criterios-section.component';
 import { ConfirmModalComponent } from '../../../../shared/confirm-modal/confirm-modal.component';
 import { extractErrorMessage } from '../../../../shared/utils/error.utils';
+import { ToastService } from '../../../../core/services/toast.service';
 
 @Component({
   selector: 'app-datos-basicos-section',
@@ -21,6 +22,7 @@ import { extractErrorMessage } from '../../../../shared/utils/error.utils';
 export class DatosBasicosSectionComponent {
   private readonly injector = inject(Injector);
   private readonly service  = inject(PacienteService);
+  private readonly toast    = inject(ToastService);
 
   paciente      = input.required<PacienteResponse>();
   updated       = output<PacienteResponse>();
@@ -62,7 +64,7 @@ export class DatosBasicosSectionComponent {
     this.confirming.set(true);
     this.confirmError.set(null);
     this.service.patchConsentimiento(this.paciente().codigoNumerico, { consentimientoFirmado: true }).subscribe({
-      next:  p   => { this.updated.emit(p); this.showConfirmModal.set(false); this.confirming.set(false); },
+      next:  p   => { this.toast.show('Consentimiento confirmado'); this.updated.emit(p); this.showConfirmModal.set(false); this.confirming.set(false); },
       error: err => { this.confirmError.set(extractErrorMessage(err, 'Error al guardar')); this.confirming.set(false); },
     });
   }

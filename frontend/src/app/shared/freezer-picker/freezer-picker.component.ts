@@ -4,6 +4,7 @@ import { catchError, map, of } from 'rxjs';
 import { CajaService } from '../../core/services/caja.service';
 import { CajaListItem, CajaCreate } from '../../core/models/caja.model';
 import { extractErrorMessage } from '../utils/error.utils';
+import { ToastService } from '../../core/services/toast.service';
 import { IconComponent } from '../icon/icon.component';
 
 @Component({
@@ -15,6 +16,7 @@ import { IconComponent } from '../icon/icon.component';
 export class FreezerPickerComponent {
   private readonly cajaService = inject(CajaService);
   private readonly fb          = inject(FormBuilder);
+  private readonly toast       = inject(ToastService);
 
   defaultCajaId = input<number | null>(null);
   cajaIdChange  = output<number | null>();
@@ -110,6 +112,7 @@ export class FreezerPickerComponent {
     };
     this.cajaService.create(dto).subscribe({
       next: caja => {
+        this.toast.show('Caja creada');
         this.loadCajas();
         this.freezerSel.set(dto.freezer);
         this.cajonSel.set(dto.cajon);

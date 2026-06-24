@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { PacienteService } from '../../../../core/services/paciente.service';
 import { extractErrorMessage } from '../../../../shared/utils/error.utils';
+import { ToastService } from '../../../../core/services/toast.service';
 import { PacienteResponse, PacienteMchatSeguimiento } from '../../../../core/models/paciente.model';
 import { StatusBadgeComponent } from '../../../../shared/status-badge/status-badge.component';
 import { MchatPreguntasComponent } from '../../../../shared/mchat-preguntas/mchat-preguntas.component';
@@ -14,6 +15,7 @@ import { ModalContainerComponent } from '../../../../shared/modal-container/moda
 })
 export class ResultadoMchatSectionComponent {
   private readonly service = inject(PacienteService);
+  private readonly toast   = inject(ToastService);
 
   paciente = input.required<PacienteResponse>();
   updated  = output<PacienteResponse>();
@@ -51,7 +53,7 @@ export class ResultadoMchatSectionComponent {
     this.saving.set(true);
     this.saveError.set(null);
     this.service.patchMchatSeguimiento(this.paciente().codigoNumerico, dto).subscribe({
-      next: p  => { this.updated.emit(p); this.showModal.set(false); this.saving.set(false); },
+      next: p  => { this.toast.show('Seguimiento M-CHAT guardado'); this.updated.emit(p); this.showModal.set(false); this.saving.set(false); },
       error: err => { this.saveError.set(extractErrorMessage(err, 'Error al guardar')); this.saving.set(false); },
     });
   }

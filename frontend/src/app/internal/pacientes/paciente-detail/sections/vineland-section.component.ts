@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, input, output, signal } fro
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { PacienteService } from '../../../../core/services/paciente.service';
 import { extractErrorMessage } from '../../../../shared/utils/error.utils';
+import { ToastService } from '../../../../core/services/toast.service';
 import { PacienteResponse, PacienteVineland } from '../../../../core/models/paciente.model';
 import { ModalContainerComponent } from '../../../../shared/modal-container/modal-container.component';
 
@@ -14,6 +15,7 @@ import { ModalContainerComponent } from '../../../../shared/modal-container/moda
 export class VinelandSectionComponent {
   private readonly service = inject(PacienteService);
   private readonly fb      = inject(FormBuilder);
+  private readonly toast   = inject(ToastService);
 
   paciente = input.required<PacienteResponse>();
   updated  = output<PacienteResponse>();
@@ -54,7 +56,7 @@ export class VinelandSectionComponent {
     this.saving.set(true);
     this.saveError.set(null);
     this.service.patchVineland(this.paciente().codigoNumerico, this.form.getRawValue() as PacienteVineland).subscribe({
-      next: p  => { this.updated.emit(p); this.showModal.set(false); this.saving.set(false); },
+      next: p  => { this.toast.show('Vineland guardado'); this.updated.emit(p); this.showModal.set(false); this.saving.set(false); },
       error: err => { this.saveError.set(extractErrorMessage(err, 'Error al guardar')); this.saving.set(false); },
     });
   }

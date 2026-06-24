@@ -8,6 +8,7 @@ import { PoolService } from '../../../../core/services/pool.service';
 import { ModeloAnimalResponse } from '../../../../core/models/modelo-animal.model';
 import { PoolTuboItem } from '../../../../core/models/pool.model';
 import { extractErrorMessage } from '../../../../shared/utils/error.utils';
+import { ToastService } from '../../../../core/services/toast.service';
 
 interface DiaRow {
   dia: number;
@@ -27,6 +28,7 @@ export class InoculacionSectionComponent implements OnInit {
   private readonly service     = inject(ModeloAnimalService);
   private readonly poolService = inject(PoolService);
   private readonly fb          = inject(FormBuilder);
+  private readonly toast       = inject(ToastService);
 
   modeloAnimal = input.required<ModeloAnimalResponse>();
   updated      = output<ModeloAnimalResponse>();
@@ -124,6 +126,7 @@ export class InoculacionSectionComponent implements OnInit {
       }],
     }).subscribe({
       next: ma => {
+        this.toast.show('Inoculación guardada');
         this.updated.emit(ma);
         this.savingDia.set(null);
         // Limpiar estado local del día guardado

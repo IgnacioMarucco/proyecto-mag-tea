@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ModeloAnimalService } from '../../../../core/services/modelo-animal.service';
 import { ModeloAnimalResponse } from '../../../../core/models/modelo-animal.model';
 import { extractErrorMessage } from '../../../../shared/utils/error.utils';
+import { ToastService } from '../../../../core/services/toast.service';
 
 @Component({
   selector: 'app-microscopia-section',
@@ -13,6 +14,7 @@ import { extractErrorMessage } from '../../../../shared/utils/error.utils';
 export class MicroscopiaSectionComponent {
   private readonly service = inject(ModeloAnimalService);
   private readonly fb      = inject(FormBuilder);
+  private readonly toast   = inject(ToastService);
 
   modeloAnimal = input.required<ModeloAnimalResponse>();
   updated      = output<ModeloAnimalResponse>();
@@ -35,7 +37,7 @@ export class MicroscopiaSectionComponent {
       numCelulasGanglionares: Number(v.numCelulasGanglionares),
       numCelulasPurkinje:     Number(v.numCelulasPurkinje),
     }).subscribe({
-      next:  ma  => { this.updated.emit(ma); this.saving.set(false); },
+      next:  ma  => { this.toast.show('Microscopía guardada'); this.updated.emit(ma); this.saving.set(false); },
       error: err => { this.saveError.set(extractErrorMessage(err, 'Error al guardar')); this.saving.set(false); },
     });
   }

@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, ElementRef, input, output, signal, viewChild } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Subject, debounceTime, distinctUntilChanged, map } from 'rxjs';
 
 export interface FilterOption {
   key: string;
@@ -34,6 +36,17 @@ export class ListToolbarComponent {
   panelOpen    = signal(false);
   panelStyle   = signal<Record<string, string>>({});
 
+  private readonly searchInput$ = new Subject<string>();
+
+  constructor() {
+    this.searchInput$.pipe(
+      map(v => v.length >= 3 ? v : ''),
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntilDestroyed()
+    ).subscribe(v => this.searchChange.emit(v));
+  }
+
   activeCount = computed(() => {
     const filters = this.activeFilters();
     return this.filterGroups().filter(group => {
@@ -57,7 +70,7 @@ export class ListToolbarComponent {
 
   onInput(value: string): void {
     this.searchValue.set(value);
-    this.searchChange.emit(value);
+    this.searchInput$.next(value);
   }
 
   clearSearch(): void {

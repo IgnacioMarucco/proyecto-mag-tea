@@ -3,6 +3,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ModeloAnimalService } from '../../../../core/services/modelo-animal.service';
 import { ModeloAnimalResponse } from '../../../../core/models/modelo-animal.model';
 import { extractErrorMessage } from '../../../../shared/utils/error.utils';
+import { ToastService } from '../../../../core/services/toast.service';
 import { StatusBadgeComponent } from '../../../../shared/status-badge/status-badge.component';
 
 @Component({
@@ -14,6 +15,7 @@ import { StatusBadgeComponent } from '../../../../shared/status-badge/status-bad
 export class TresCamarasSectionComponent {
   private readonly service = inject(ModeloAnimalService);
   private readonly fb      = inject(FormBuilder);
+  private readonly toast   = inject(ToastService);
 
   modeloAnimal = input.required<ModeloAnimalResponse>();
   updated      = output<ModeloAnimalResponse>();
@@ -52,7 +54,7 @@ export class TresCamarasSectionComponent {
       m1TiempoRatonNovedad:   Number(v.m1TiempoRatonNovedad),
       m1TiempoObjetoNovedoso: Number(v.m1TiempoObjetoNovedoso),
     }).subscribe({
-      next:  ma  => { this.updated.emit(ma); this.savingM1.set(false); },
+      next:  ma  => { this.toast.show('Tres cámaras guardado'); this.updated.emit(ma); this.savingM1.set(false); },
       error: err => { this.saveErrorM1.set(extractErrorMessage(err, 'Error al guardar')); this.savingM1.set(false); },
     });
   }
@@ -67,7 +69,7 @@ export class TresCamarasSectionComponent {
       m2TiempoRatonDesconocido: Number(v.m2TiempoRatonDesconocido),
       m2TiempoRatonFamiliar:    Number(v.m2TiempoRatonFamiliar),
     }).subscribe({
-      next:  ma  => { this.updated.emit(ma); this.savingM2.set(false); },
+      next:  ma  => { this.toast.show('Tres cámaras guardado'); this.updated.emit(ma); this.savingM2.set(false); },
       error: err => { this.saveErrorM2.set(extractErrorMessage(err, 'Error al guardar')); this.savingM2.set(false); },
     });
   }

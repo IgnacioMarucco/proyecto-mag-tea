@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, output, si
 import { switchMap, tap } from 'rxjs';
 import { PacienteService } from '../../../../core/services/paciente.service';
 import { extractErrorMessage } from '../../../../shared/utils/error.utils';
+import { ToastService } from '../../../../core/services/toast.service';
 import {
   MchatService,
   MchatRespuestasResponse,
@@ -21,6 +22,7 @@ import { ModalContainerComponent } from '../../../../shared/modal-container/moda
 export class MchatSectionComponent {
   private readonly pacienteService = inject(PacienteService);
   private readonly mchatService    = inject(MchatService);
+  private readonly toast           = inject(ToastService);
 
   paciente = input.required<PacienteResponse>();
   updated  = output<PacienteResponse>();
@@ -88,7 +90,7 @@ export class MchatSectionComponent {
       tap(r => this.mchatRespuestas.set(r)),
       switchMap(() => this.pacienteService.findDetail(this.paciente().codigoNumerico)),
     ).subscribe({
-      next:  p   => { this.updated.emit(p); this.editMode.set(false); this.saving.set(false); },
+      next:  p   => { this.toast.show('Respuestas M-CHAT guardadas'); this.updated.emit(p); this.editMode.set(false); this.saving.set(false); },
       error: err => { this.saveError.set(extractErrorMessage(err, 'Error al guardar')); this.saving.set(false); },
     });
   }
@@ -96,7 +98,7 @@ export class MchatSectionComponent {
   reenviar(): void {
     this.reenviarError.set(null);
     this.pacienteService.reenviarMchat(this.paciente().codigoNumerico).subscribe({
-      next:  p => this.updated.emit(p),
+      next:  p => { this.toast.show('Enlace reenviado'); this.updated.emit(p); },
       error: () => this.reenviarError.set('No se pudo reenviar el enlace. Intentá de nuevo.'),
     });
   }
