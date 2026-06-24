@@ -1,21 +1,22 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { NgxEchartsDirective } from 'ngx-echarts';
-import { FormsModule } from '@angular/forms';
 import { catchError, combineLatest, of, switchMap } from 'rxjs';
-import { ReportesService } from '../reportes.service';
+import { ReportesService } from '../../../core/services/reporte.service';
 import {
+  CorrelacionResponse,
   EJE_LABELS,
   EjeCorrelacion,
   FiltroReportes,
   PARES_CORRELACION,
-} from '../reportes.models';
+} from '../../../core/models/reporte.model';
 import type { EChartsOption } from 'echarts';
 
 @Component({
   selector: 'app-correlaciones',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgxEchartsDirective, FormsModule],
+  imports: [NgxEchartsDirective, DecimalPipe],
   templateUrl: './correlaciones.component.html',
 })
 export class CorrelacionesComponent {
@@ -30,7 +31,7 @@ export class CorrelacionesComponent {
   readonly ejeX = computed(() => this.pares[this.parSeleccionado()].x);
   readonly ejeY = computed(() => this.pares[this.parSeleccionado()].y);
 
-  private readonly puntos = toSignal(
+  private readonly resp = toSignal(
     combineLatest([
       toObservable(this.parSeleccionado),
       toObservable(this.filtros),
@@ -43,12 +44,32 @@ export class CorrelacionesComponent {
     { initialValue: undefined }
   );
 
+  readonly isLoading = computed(() => this.resp() === undefined);
+  readonly hasError  = computed(() => this.resp() === null);
+  readonly isEmpty   = computed(() => {
+    const r = this.resp();
+    return r !== null && r !== undefined && r.puntos.length === 0;
+  });
+
+  readonly coefR   = computed(() => this.resp()?.r    ?? null);
+  readonly pValue  = computed(() => this.resp()?.pValue ?? null);
+  readonly nPuntos = computed(() => this.resp()?.n ?? null);
+
   readonly chartOptions = computed<EChartsOption | null>(() => {
-    const data = this.puntos();
-    if (!data) return null;
+    const resp = this.resp();
+    if (!resp) return null;
+
+    const reg = this.calcRegression(resp.puntos.map(p => p.x), resp.puntos.map(p => p.y));
 
     return {
-      tooltip: { trigger: 'item', formatter: 'Código: {b}' },
+      tooltip: {
+        trigger: 'item',
+        formatter: (params: any) => {
+          if (params.seriesIndex !== 0) return '';
+          const [x, y] = params.value as [number, number];
+          return `<strong>${params.name}</strong><br/>${this.ejeLabels[this.ejeX()]}: ${x}<br/>${this.ejeLabels[this.ejeY()]}: ${y}`;
+        },
+      },
       grid: { left: '3%', right: '6%', top: '8%', bottom: '16%', containLabel: true },
       xAxis: {
         type: 'value',
@@ -64,18 +85,45 @@ export class CorrelacionesComponent {
         nameGap: 40,
         axisLabel: { fontSize: 10 },
       },
-      series: [{
-        type: 'scatter',
-        symbolSize: 8,
-        data: data.map(p => ({ value: [p.x, p.y], name: p.codigoNumerico })),
-        itemStyle: { color: '#6366f1', opacity: 0.75 },
-      }],
+      series: [
+        {
+          type: 'scatter',
+          symbolSize: 8,
+          data: resp.puntos.map(p => ({
+            value: [p.x, p.y],
+            name: p.codigoNumerico,
+            itemStyle: { color: p.tipoPaciente === 'PROBLEMA' ? '#f97316' : '#6366f1', opacity: 0.8 },
+          })),
+        },
+        {
+          type: 'line',
+          data: reg ?? [],
+          symbol: 'none',
+          silent: true,
+          tooltip: { show: false },
+          lineStyle: { color: '#94a3b8', type: 'dashed', width: 1.5 },
+        },
+      ],
     };
   });
 
-  readonly isLoading = computed(() => this.puntos() === undefined);
-  readonly hasError  = computed(() => this.puntos() === null);
-  readonly isEmpty   = computed(() => Array.isArray(this.puntos()) && (this.puntos() as unknown[]).length === 0);
+  private calcRegression(xs: number[], ys: number[]): [number, number][] | null {
+    const n = xs.length;
+    if (n < 2) return null;
+    const mx = xs.reduce((a, b) => a + b, 0) / n;
+    const my = ys.reduce((a, b) => a + b, 0) / n;
+    let num = 0, den = 0;
+    for (let i = 0; i < n; i++) {
+      num += (xs[i] - mx) * (ys[i] - my);
+      den += (xs[i] - mx) ** 2;
+    }
+    if (den === 0) return null;
+    const m = num / den;
+    const b = my - m * mx;
+    const xMin = Math.min(...xs);
+    const xMax = Math.max(...xs);
+    return [[xMin, m * xMin + b], [xMax, m * xMax + b]];
+  }
 
   parLabel(i: number): string {
     const p = this.pares[i];

@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { NgxEchartsDirective } from 'ngx-echarts';
-import { EmbudoData } from '../reportes.models';
+import { EmbudoData } from '../../../core/models/reporte.model';
 import type { EChartsOption } from 'echarts';
 
 @Component({

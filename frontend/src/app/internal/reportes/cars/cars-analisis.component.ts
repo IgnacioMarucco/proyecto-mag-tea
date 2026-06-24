@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { NgxEchartsDirective } from 'ngx-echarts';
-import { CarsData } from '../reportes.models';
+import { CarsData } from '../../../core/models/reporte.model';
 import type { EChartsOption } from 'echarts';
 
 @Component({
@@ -43,6 +43,16 @@ export class CarsAnalisisComponent {
           value: s.n,
           itemStyle: { color: this.getColorPorBin(s.label), borderRadius: [3, 3, 0, 0] },
         })),
+        markLine: {
+          silent: true,
+          symbol: ['none', 'none'],
+          label: { show: true, position: 'insideEndTop', fontSize: 9, color: '#64748b', fontWeight: 'bold' },
+          lineStyle: { type: 'dashed', color: '#94a3b8', width: 1.5 },
+          data: [
+            { name: 'Leve-Mod.', xAxis: '27-30' },
+            { name: 'Severo',    xAxis: '33-36.5' },
+          ],
+        },
       }],
     } as EChartsOption;
   });
@@ -52,11 +62,11 @@ export class CarsAnalisisComponent {
     if (!d || d.totalConCars === 0) return null;
     return {
       tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)' },
-      legend: { bottom: 0, textStyle: { fontSize: 10 } },
+      legend: { show: false },
       series: [{
         type: 'pie',
-        radius: ['40%', '65%'],
-        center: ['50%', '42%'],
+        radius: ['40%', '70%'],
+        center: ['50%', '50%'],
         label: { show: false },
         data: [
           { name: 'Mínimo / No TEA', value: d.minimoNoTea,  itemStyle: { color: '#22c55e' } },

@@ -1,86 +1,102 @@
-<div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-  <h3 class="mb-5 text-sm font-semibold text-slate-700">M-CHAT-R / Familia</h3>
+<!-- Card Única: M-CHAT-R -->
+<div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+  <h3 class="mb-6 text-sm font-semibold text-slate-700">M-CHAT-R</h3>
 
   @if (data() === undefined) {
     <div class="h-96 animate-pulse rounded bg-slate-50"></div>
   } @else if (data() === null) {
     <p class="text-sm text-slate-400">Sin datos disponibles</p>
   } @else {
-    <!-- Fila superior: histograma + donut + tarjeta seguimiento -->
-    <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
-
-      <!-- Histograma de scores -->
-      <div class="md:col-span-1">
-        <p class="mb-1 text-xs font-medium text-slate-500">
-          Scores iniciales (N = {{ data()!.totalConMchat }})
-        </p>
-        <div echarts [options]="histogramaOptions()!" [autoResize]="true" class="h-48 w-full"></div>
-        <div class="mt-1 flex gap-3 text-xs text-slate-400">
-          <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-full bg-green-500"></span> 0-2 bajo</span>
-          <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-full bg-amber-400"></span> 3-7 medio</span>
-          <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-full bg-red-500"></span> 8-20 alto</span>
+    <!-- Sección 1: Familia -->
+    <div>
+      <h4 class="mb-4 text-xs font-bold uppercase tracking-wider text-slate-400">Familia</h4>
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <!-- Izquierda: Histograma de scores -->
+        <div>
+          <p class="mb-1 text-xs font-medium text-slate-500">
+            Scores iniciales (N = {{ data()!.totalConMchat }})
+          </p>
+          <div echarts [options]="histogramaOptions()!" [autoResize]="true" class="h-48 w-full"></div>
+          <div class="mt-1 flex gap-3 text-xs text-slate-400">
+            <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-full bg-green-500"></span> 0-2 bajo</span>
+            <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-full bg-amber-400"></span> 3-7 medio</span>
+            <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-full bg-red-500"></span> 8-20 alto</span>
+          </div>
+          <p class="mt-2 text-xs font-mono text-slate-500">
+            Media: {{ data()!.mediaScore | number:'1.1-1' }} ± {{ data()!.sdScore | number:'1.1-1' }}
+          </p>
         </div>
-      </div>
 
-      <!-- Resultado final -->
-      <div>
-        <p class="mb-1 text-xs font-medium text-slate-500">Resultado final</p>
-        <div echarts [options]="resultadoOptions()!" [autoResize]="true" class="h-48 w-full"></div>
-      </div>
-
-      <!-- Tarjeta seguimiento -->
-      <div class="rounded-lg bg-slate-50 p-4">
-        <p class="mb-3 text-xs font-medium text-slate-500">Seguimiento (riesgo medio)</p>
-        <div class="space-y-2">
-          <div class="flex justify-between text-sm">
-            <span class="text-slate-600">Score 3-7 (riesgo medio)</span>
-            <span class="font-semibold text-slate-800">{{ data()!.riesgoMedio }}</span>
-          </div>
-          <div class="flex justify-between text-sm">
-            <span class="text-slate-600">Completaron seguimiento</span>
-            <span class="font-semibold text-slate-800">{{ data()!.riesgoMedioConSeguimiento }}</span>
-          </div>
-          <div class="ml-3 space-y-1 border-l-2 border-slate-200 pl-3">
-            <div class="flex justify-between text-xs">
-              <span class="text-red-600">Confirmados POSITIVA</span>
-              <span class="font-medium text-red-600">{{ data()!.riesgoMedioPositiva }}</span>
-            </div>
-            <div class="flex justify-between text-xs">
-              <span class="text-green-600">Descartados NEGATIVA</span>
-              <span class="font-medium text-green-600">{{ data()!.riesgoMedioNegativa }}</span>
-            </div>
+        <!-- Derecha: Ítems más fallados - Tamizaje inicial -->
+        <div>
+          <p class="mb-1 text-xs font-medium text-slate-500">
+            Ítems más fallados — Tamizaje inicial (N = {{ data()!.totalConMchat }}, todos)
+          </p>
+          <div echarts [options]="itemsTamizajeOptions()!" [autoResize]="true" class="h-48 w-full"></div>
+          <div class="mt-1 flex gap-3 text-xs text-slate-400">
+            <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-sm bg-indigo-500"></span> normal</span>
+            <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-sm bg-amber-400"></span> invertido (2, 5, 12)</span>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Fila inferior: ítems fallados -->
-    <div class="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
-
-      <div>
-        <p class="mb-1 text-xs font-medium text-slate-500">
-          Ítems más fallados — Tamizaje inicial (N = {{ data()!.totalConMchat }}, todos)
-        </p>
-        <div class="mb-1 flex gap-3 text-xs text-slate-400">
-          <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-sm bg-indigo-500"></span> normal</span>
-          <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-sm bg-amber-400"></span> invertido (2, 5, 12)</span>
+    <!-- Sección 2: Seguimiento -->
+    <div class="border-t border-slate-100 pt-6 mt-6">
+      <h4 class="mb-4 text-xs font-bold uppercase tracking-wider text-slate-400">Seguimiento (riesgo medio)</h4>
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <!-- Izquierda: Tarjeta seguimiento -->
+        <div class="rounded-lg bg-slate-50 p-5 h-full flex flex-col justify-center">
+          <div class="space-y-3">
+            <div class="flex justify-between text-sm">
+              <span class="text-slate-600">Score 3-7 (riesgo medio)</span>
+              <span class="font-semibold text-slate-800">{{ data()!.riesgoMedio }}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-slate-600">Completaron seguimiento</span>
+              <span class="font-semibold text-slate-800">{{ data()!.riesgoMedioConSeguimiento }}</span>
+            </div>
+            <div class="ml-3 space-y-1.5 border-l-2 border-slate-200 pl-3">
+              <div class="flex justify-between text-xs">
+                <span class="text-red-600">Confirmados POSITIVA</span>
+                <span class="font-medium text-red-600">{{ data()!.riesgoMedioPositiva }}</span>
+              </div>
+              <div class="flex justify-between text-xs">
+                <span class="text-green-600">Descartados NEGATIVA</span>
+                <span class="font-medium text-green-600">{{ data()!.riesgoMedioNegativa }}</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <div echarts [options]="itemsTamizajeOptions()!" [autoResize]="true" class="h-64 w-full"></div>
+
+        <!-- Derecha: Ítems más fallados - Seguimiento -->
+        <div>
+          <p class="mb-1 text-xs font-medium text-slate-500">
+            Ítems más fallados — Seguimiento (N = {{ data()!.totalConSeguimiento }}, submuestra riesgo medio)
+          </p>
+          @if (data()!.totalConSeguimiento > 0) {
+            <div echarts [options]="itemsSeguimientoOptions()!" [autoResize]="true" class="h-48 w-full"></div>
+            <div class="mt-1 flex gap-3 text-xs text-slate-400">
+              <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-sm bg-indigo-500"></span> normal</span>
+              <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-sm bg-amber-400"></span> invertido (2, 5, 12)</span>
+            </div>
+          } @else {
+            <div class="flex h-48 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4">
+              <p class="text-sm text-slate-400">Sin entrevistas de seguimiento registradas</p>
+            </div>
+          }
+        </div>
       </div>
+    </div>
 
-      <div>
-        <p class="mb-1 text-xs font-medium text-slate-500">
-          Ítems más fallados — Seguimiento (N = {{ data()!.totalConSeguimiento }}, submuestra riesgo medio)
+    <!-- Sección 3: Resultado final -->
+    <div class="border-t border-slate-100 pt-6 mt-6">
+      <h4 class="mb-4 text-xs font-bold uppercase tracking-wider text-slate-400">Resultado Final</h4>
+      <div class="flex flex-col items-center">
+        <p class="mb-1 text-xs font-medium text-slate-500 self-start">
+          Diagnóstico clínico final (Tamizaje + Seguimiento)
         </p>
-        <div class="mb-1 flex gap-3 text-xs text-slate-400">
-          <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-sm bg-indigo-500"></span> normal</span>
-          <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-sm bg-amber-400"></span> invertido (2, 5, 12)</span>
-        </div>
-        @if (data()!.totalConSeguimiento > 0) {
-          <div echarts [options]="itemsSeguimientoOptions()!" [autoResize]="true" class="h-64 w-full"></div>
-        } @else {
-          <p class="mt-4 text-sm text-slate-400">Sin entrevistas de seguimiento registradas</p>
-        }
+        <div echarts [options]="resultadoOptions()!" [autoResize]="true" class="h-56 w-full max-w-lg"></div>
       </div>
     </div>
   }

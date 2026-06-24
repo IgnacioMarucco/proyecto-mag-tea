@@ -1,0 +1,133 @@
+<div class="flex flex-col gap-6">
+
+  @if (isLoading()) {
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div class="h-24 rounded-xl border border-slate-200 bg-slate-50 animate-pulse"></div>
+      <div class="h-24 rounded-xl border border-slate-200 bg-slate-50 animate-pulse"></div>
+      <div class="h-24 rounded-xl border border-slate-200 bg-slate-50 animate-pulse"></div>
+    </div>
+    <div class="h-64 rounded-xl border border-slate-200 bg-slate-50 animate-pulse"></div>
+  } @else if (hasError()) {
+    <p class="text-sm text-red-500">No se pudieron cargar los datos de anticuerpos.</p>
+  } @else {
+
+    <!-- Cards de resumen -->
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Con suero extraído</p>
+        <p class="mt-2 text-3xl font-bold text-slate-800 leading-none">
+          {{ totalConSuero() ?? '—' }}
+          @if (pctConSuero()) {
+            <span class="ml-1 text-base font-normal text-slate-400">({{ pctConSuero() }})</span>
+          }
+        </p>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Media BTU</p>
+        <p class="mt-2 text-3xl font-bold text-slate-800 leading-none">
+          {{ data()?.mediaBtu ?? '—' }}
+          @if (data()?.sdBtu) {
+            <span class="ml-1 text-base font-normal text-slate-400">± {{ data()!.sdBtu }}</span>
+          }
+        </p>
+      </div>
+
+      <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <p class="text-xs font-medium uppercase tracking-wide text-slate-500">Mediana BTU</p>
+        <p class="mt-2 text-3xl font-bold text-slate-800 leading-none">{{ data()?.medianaBtu ?? '—' }}</p>
+      </div>
+    </div>
+
+    <!-- Comparación PROBLEMA vs CONTROL -->
+    @if (comparacion()?.problema && comparacion()?.control) {
+      <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h3 class="mb-4 text-sm font-semibold text-slate-700">Comparación PROBLEMA vs CONTROL</h3>
+
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+
+          <!-- Tabla de stats por grupo -->
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b border-slate-100">
+                  <th class="pb-2 text-left text-xs font-semibold text-slate-500"></th>
+                  <th class="pb-2 text-right text-xs font-semibold text-orange-500">Caso Problema</th>
+                  <th class="pb-2 text-right text-xs font-semibold text-indigo-500">Control</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-50 text-slate-700">
+                <tr class="py-1">
+                  <td class="py-1.5 text-xs text-slate-500">N total</td>
+                  <td class="py-1.5 text-right font-mono text-xs">{{ comparacion()!.problema.nTotal }}</td>
+                  <td class="py-1.5 text-right font-mono text-xs">{{ comparacion()!.control.nTotal }}</td>
+                </tr>
+                <tr>
+                  <td class="py-1.5 text-xs text-slate-500">Con suero</td>
+                  <td class="py-1.5 text-right font-mono text-xs">
+                    {{ comparacion()!.problema.nConSuero }}
+                    <span class="text-slate-400">({{ comparacion()!.problema.pctConSuero }}%)</span>
+                  </td>
+                  <td class="py-1.5 text-right font-mono text-xs">
+                    {{ comparacion()!.control.nConSuero }}
+                    <span class="text-slate-400">({{ comparacion()!.control.pctConSuero }}%)</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="py-1.5 text-xs text-slate-500">Media BTU</td>
+                  <td class="py-1.5 text-right font-mono text-xs">{{ comparacion()!.problema.mediaBtu }}</td>
+                  <td class="py-1.5 text-right font-mono text-xs">{{ comparacion()!.control.mediaBtu }}</td>
+                </tr>
+                <tr>
+                  <td class="py-1.5 text-xs text-slate-500">SD</td>
+                  <td class="py-1.5 text-right font-mono text-xs">{{ comparacion()!.problema.sdBtu }}</td>
+                  <td class="py-1.5 text-right font-mono text-xs">{{ comparacion()!.control.sdBtu }}</td>
+                </tr>
+                <tr>
+                  <td class="py-1.5 text-xs text-slate-500">Mediana BTU</td>
+                  <td class="py-1.5 text-right font-mono text-xs">{{ comparacion()!.problema.medianaBtu }}</td>
+                  <td class="py-1.5 text-right font-mono text-xs">{{ comparacion()!.control.medianaBtu }}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- Resultado del test estadístico -->
+            <div class="mt-4 rounded-lg bg-slate-50 px-4 py-3 text-xs font-mono">
+              <span class="text-slate-500">Welch's t-test: </span>
+              @if (comparacion()!.pValue !== null) {
+                <span class="font-semibold text-slate-700">
+                  p = {{ comparacion()!.pValue! < 0.0001 ? '<0.0001' : (comparacion()!.pValue! | number:'1.4-4') }}
+                </span>
+                @if (comparacion()!.cohenD !== null) {
+                  <span class="ml-3 text-slate-500">
+                    d = {{ comparacion()!.cohenD! | number:'1.2-2' }}
+                    <span class="ml-1 text-slate-400">({{ cohenDLabel() }})</span>
+                  </span>
+                }
+              } @else {
+                <span class="text-slate-400">n insuficiente para test</span>
+              }
+            </div>
+          </div>
+
+          <!-- Gráfico de barras agrupadas -->
+          @if (comparacionOptions()) {
+            <div echarts [options]="comparacionOptions()!" [autoResize]="true" class="h-52 w-full"></div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Distribución por rango -->
+    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h3 class="mb-4 text-sm font-semibold text-slate-700">Distribución por rango BTU</h3>
+      @if (barOptions()) {
+        <div echarts [options]="barOptions()!" [autoResize]="true" class="h-52 w-full"></div>
+      } @else {
+        <p class="text-sm text-slate-400">Sin pacientes con suero en la selección actual.</p>
+      }
+    </div>
+
+  }
+
+</div>

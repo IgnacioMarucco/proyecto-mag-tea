@@ -7,9 +7,17 @@
         <div echarts [options]="sexoOptions()!" [autoResize]="true" class="h-44 w-full"></div>
       </div>
       <div>
-        <p class="mb-2 text-xs font-medium text-slate-500">Fuente de Derivación</p>
+        <p class="mb-2 text-xs font-medium text-slate-500">Fuente de Derivación
+          <span class="font-normal text-slate-400">(todos los formularios)</span>
+        </p>
         <div echarts [options]="derivacionOptions()!" [autoResize]="true" class="h-44 w-full"></div>
       </div>
+    </div>
+    <div class="mt-4">
+      <p class="mb-2 text-xs font-medium text-slate-500">Distribución Etaria</p>
+      @if (etariaOptions()) {
+        <div echarts [options]="etariaOptions()!" [autoResize]="true" class="h-28 w-full"></div>
+      }
     </div>
   } @else if (data() === null) {
     <p class="text-sm text-slate-400">Sin datos disponibles</p>

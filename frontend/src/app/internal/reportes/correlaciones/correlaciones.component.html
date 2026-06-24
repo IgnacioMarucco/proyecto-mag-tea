@@ -7,8 +7,8 @@
       <label class="text-xs text-slate-500">Cruce:</label>
       <select
         class="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-300"
-        [ngModel]="parSeleccionado()"
-        (ngModelChange)="parSeleccionado.set($event)">
+        [value]="parSeleccionado()"
+        (change)="parSeleccionado.set(+$any($event.target).value)">
         @for (par of pares; track $index) {
           <option [value]="$index">{{ parLabel($index) }}</option>
         }
@@ -24,8 +24,24 @@
     <p class="text-sm text-slate-400">Sin pacientes con datos en ambas escalas seleccionadas</p>
   } @else {
     <div echarts [options]="chartOptions()!" [autoResize]="true" class="h-80 w-full"></div>
-    <p class="mt-2 text-xs text-slate-400">
-      Hover sobre un punto para ver el código del paciente. Los nombres reales no se muestran.
-    </p>
+
+    <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
+      <p class="text-xs text-slate-400">
+        Hover sobre un punto para ver el código del paciente.
+        <span class="ml-2 inline-flex items-center gap-1">
+          <span class="inline-block h-2.5 w-2.5 rounded-full bg-orange-500"></span> Caso problema
+          <span class="ml-2 inline-block h-2.5 w-2.5 rounded-full bg-indigo-500"></span> Control
+        </span>
+      </p>
+      @if (coefR() !== null) {
+        <p class="text-xs font-mono text-slate-600">
+          r = {{ coefR() | number:'1.2-2' }}
+          @if (pValue() !== null) {
+            <span class="ml-2">p = {{ pValue()! < 0.0001 ? '<0.0001' : (pValue() | number:'1.4-4') }}</span>
+          }
+          <span class="ml-2 text-slate-400">(n = {{ nPuntos() }})</span>
+        </p>
+      }
+    </div>
   }
 </div>

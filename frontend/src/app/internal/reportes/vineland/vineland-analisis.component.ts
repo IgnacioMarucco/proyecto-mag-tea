@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { NgxEchartsDirective } from 'ngx-echarts';
-import { VinelandData } from '../reportes.models';
+import { VinelandData } from '../../../core/models/reporte.model';
 import type { EChartsOption } from 'echarts';
 
 @Component({
@@ -28,16 +28,29 @@ export class VinelandAnalisisComponent {
         ],
         splitNumber: 4,
         axisName: { color: '#475569', fontSize: 11 },
+        center: ['50%', '50%'],
+        radius: '62%',
       },
+      legend: { show: false },
       series: [{
         type: 'radar',
-        data: [{
-          value: [d.mediaComunicacion, d.mediaAutovalimiento, d.mediaSocial, d.mediaMotor],
-          name: 'Media de la muestra',
-          areaStyle: { color: 'rgba(99, 102, 241, 0.15)' },
-          lineStyle: { color: '#6366f1' },
-          itemStyle: { color: '#6366f1' },
-        }],
+        data: [
+          {
+            value: [d.mediaComunicacion, d.mediaAutovalimiento, d.mediaSocial, d.mediaMotor],
+            name: 'Media de la muestra',
+            areaStyle: { color: 'rgba(99, 102, 241, 0.15)' },
+            lineStyle: { color: '#6366f1' },
+            itemStyle: { color: '#6366f1' },
+          },
+          {
+            value: [100, 100, 100, 100],
+            name: 'Media normativa (100)',
+            symbol: 'none',
+            areaStyle: { color: 'transparent' },
+            lineStyle: { color: '#94a3b8', type: 'dashed', width: 1.5 },
+            itemStyle: { color: '#94a3b8' },
+          },
+        ],
       }],
     } as EChartsOption;
   });

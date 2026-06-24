@@ -1,15 +1,18 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
-import { catchError, of, switchMap } from 'rxjs';
-import { ReportesService } from '../reportes.service';
-import { FILTRO_DEFAULT, FiltroReportes } from '../reportes.models';
+import { ActivatedRoute } from '@angular/router';
+import { catchError, map, of, switchMap, tap } from 'rxjs';
+import { ReportesService } from '../../../core/services/reporte.service';
+import { FILTRO_DEFAULT, FiltroReportes } from '../../../core/models/reporte.model';
 import { EmbudoReclutamientoComponent } from '../embudo/embudo-reclutamiento.component';
 import { CaracterizacionComponent } from '../caracterizacion/caracterizacion.component';
 import { MchatAnalisisComponent } from '../mchat/mchat-analisis.component';
 import { CarsAnalisisComponent } from '../cars/cars-analisis.component';
 import { VinelandAnalisisComponent } from '../vineland/vineland-analisis.component';
 import { CorrelacionesComponent } from '../correlaciones/correlaciones.component';
+import { AnticuerposAnalisisComponent } from '../anticuerpos/anticuerpos-analisis.component';
 import { ListToolbarComponent, FilterGroup } from '../../../shared/list-toolbar/list-toolbar.component';
+import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 
 @Component({
   selector: 'app-reportes-dashboard',
@@ -21,29 +24,45 @@ import { ListToolbarComponent, FilterGroup } from '../../../shared/list-toolbar/
     CarsAnalisisComponent,
     VinelandAnalisisComponent,
     CorrelacionesComponent,
+    AnticuerposAnalisisComponent,
     ListToolbarComponent,
+    PageHeaderComponent,
   ],
   templateUrl: './reportes-dashboard.component.html',
 })
 export class ReportesDashboardComponent {
   private readonly service = inject(ReportesService);
+  private readonly route   = inject(ActivatedRoute);
 
-  readonly tabActivo = signal<0 | 1 | 2>(0);
+  readonly crumbs = toSignal(
+    this.route.data.pipe(map(d => d['crumbs'] as Crumb[] ?? [])),
+    { initialValue: [] as Crumb[] }
+  );
+
+  readonly tabActivo = signal<0 | 1 | 2 | 3>(0);
   readonly filtros   = signal<FiltroReportes>(FILTRO_DEFAULT);
+  loading = signal(false);
+  error   = signal(false);
 
   private readonly _dashboard = toSignal(
     toObservable(this.filtros).pipe(
-      switchMap(f => this.service.getDashboard(f).pipe(catchError(() => of(null))))
+      tap(() => { this.loading.set(true); this.error.set(false); }),
+      switchMap(f => this.service.getDashboard(f).pipe(
+        tap(() => this.loading.set(false)),
+        catchError(() => { this.error.set(true); this.loading.set(false); return of(null); })
+      ))
     ),
     { initialValue: undefined }
   );
 
-  readonly resumen    = computed(() => this._dashboard()?.resumen    ?? null);
-  readonly embudo     = computed(() => this._dashboard()?.embudo     ?? (this._dashboard() === null ? null : undefined));
-  readonly demografico = computed(() => this._dashboard()?.demografico ?? (this._dashboard() === null ? null : undefined));
-  readonly mchat      = computed(() => this._dashboard()?.mchat      ?? (this._dashboard() === null ? null : undefined));
-  readonly cars       = computed(() => this._dashboard()?.cars       ?? (this._dashboard() === null ? null : undefined));
-  readonly vineland   = computed(() => this._dashboard()?.vineland   ?? (this._dashboard() === null ? null : undefined));
+  readonly resumen     = computed(() => { const d = this._dashboard(); return d === undefined ? undefined : d?.resumen     ?? null; });
+  readonly embudo      = computed(() => { const d = this._dashboard(); return d === undefined ? undefined : d?.embudo      ?? null; });
+  readonly demografico = computed(() => { const d = this._dashboard(); return d === undefined ? undefined : d?.demografico ?? null; });
+  readonly mchat       = computed(() => { const d = this._dashboard(); return d === undefined ? undefined : d?.mchat       ?? null; });
+  readonly cars        = computed(() => { const d = this._dashboard(); return d === undefined ? undefined : d?.cars        ?? null; });
+  readonly vineland    = computed(() => { const d = this._dashboard(); return d === undefined ? undefined : d?.vineland    ?? null; });
+  readonly anticuerpos = computed(() => { const d = this._dashboard(); return d === undefined ? undefined : d?.anticuerpos ?? null; });
+  readonly comparacion = computed(() => { const d = this._dashboard(); return d === undefined ? undefined : d?.comparacion ?? null; });
 
   readonly tasaAdmision = computed(() => {
     const r = this.resumen();

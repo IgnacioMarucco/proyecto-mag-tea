@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import { NgxEchartsDirective } from 'ngx-echarts';
-import { DemograficoData } from '../reportes.models';
-import type { Distribucion } from '../reportes.models';
+import { DemograficoData } from '../../../core/models/reporte.model';
+import type { Distribucion } from '../../../core/models/reporte.model';
 import type { EChartsOption } from 'echarts';
 
 const SEXO_LABELS: Record<string, string> = {
@@ -41,6 +41,12 @@ export class CaracterizacionComponent {
       label: DERIVACION_LABELS[k],
       n: existing.get(k) ?? 0,
     })));
+  });
+
+  readonly etariaOptions = computed(() => {
+    const d = this.data();
+    if (!d || d.distribucionEtaria.length === 0) return null;
+    return this.buildBar(d.distribucionEtaria.map(e => ({ label: e.label, n: e.n })));
   });
 
   private buildDonut(data: { name: string; value: number }[]): EChartsOption {

@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { NgxEchartsDirective } from 'ngx-echarts';
-import { MchatData } from '../reportes.models';
-import type { Distribucion } from '../reportes.models';
+import { MchatData } from '../../../core/models/reporte.model';
+import type { Distribucion } from '../../../core/models/reporte.model';
 import type { EChartsOption } from 'echarts';
 import { MCHAT_PREGUNTAS } from '../../../shared/constants/mchat.constants';
 
@@ -14,7 +15,7 @@ function colorPorScore(score: number): string {
 @Component({
   selector: 'app-mchat-analisis',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgxEchartsDirective],
+  imports: [NgxEchartsDirective, DecimalPipe],
   templateUrl: './mchat-analisis.component.html',
 })
 export class MchatAnalisisComponent {
@@ -27,23 +28,70 @@ export class MchatAnalisisComponent {
     const values = d.distribucionScores.map(s => s.n);
     return {
       tooltip: { trigger: 'axis' },
-      grid: { left: '3%', right: '4%', top: '8%', bottom: '12%', containLabel: true },
-      xAxis: {
-        type: 'category',
-        data: labels,
-        axisLabel: { fontSize: 10 },
-        name: 'Score',
+      grid: { left: '3%', right: '4%', top: 20, bottom: 32, containLabel: true },
+      xAxis: [
+        {
+          type: 'category',
+          data: labels,
+          axisLabel: { fontSize: 10 },
+          name: 'Score',
+          nameLocation: 'middle',
+          nameGap: 20,
+          nameTextStyle: { fontSize: 10, color: '#64748b', fontWeight: 500 },
+        },
+        {
+          type: 'value',
+          min: -0.5,
+          max: 20.5,
+          show: false,
+        }
+      ],
+      yAxis: {
+        type: 'value',
+        name: 'N',
         nameLocation: 'end',
+        nameGap: 8,
+        nameTextStyle: { fontSize: 10, color: '#64748b', fontWeight: 500, align: 'right' },
+        axisLabel: { fontSize: 10 },
+        axisLine: { onZero: false },
       },
-      yAxis: { type: 'value', name: 'N', axisLabel: { fontSize: 10 } },
-      series: [{
-        type: 'bar',
-        data: labels.map((l, i) => ({
-          value: values[i],
-          itemStyle: { color: colorPorScore(Number(l)) },
-        })),
-        barMaxWidth: 30,
-      }],
+      series: [
+        {
+          type: 'bar',
+          xAxisIndex: 0,
+          data: labels.map((l, i) => ({
+            value: values[i],
+            itemStyle: { color: colorPorScore(Number(l)) },
+          })),
+          barMaxWidth: 30,
+        },
+        {
+          type: 'line',
+          xAxisIndex: 1,
+          data: [],
+          markLine: {
+            symbol: ['none', 'none'],
+            silent: true,
+            label: {
+              show: true,
+              position: 'end',
+              formatter: '{b}',
+              fontSize: 9,
+              color: '#64748b',
+              fontWeight: 'bold',
+            },
+            lineStyle: {
+              type: 'dashed',
+              color: '#94a3b8',
+              width: 1,
+            },
+            data: [
+              { name: 'Medio', xAxis: 2.5 },
+              { name: 'Alto', xAxis: 7.5 },
+            ],
+          },
+        }
+      ],
     } as EChartsOption;
   });
 
@@ -72,38 +120,49 @@ export class MchatAnalisisComponent {
 
   private buildItemsChart(items: Distribucion[] | undefined): EChartsOption | null {
     if (!items) return null;
-    const top10 = items.slice(0, 10);
+    const top20 = items.slice(0, 20);
     const INVERTIDOS = new Set(MCHAT_PREGUNTAS.filter(p => p.invertida).map(p => p.numero));
     return {
       tooltip: {
         trigger: 'axis',
         formatter: (params: any) => {
           const p = Array.isArray(params) ? params[0] : params;
-          const num = Number(p.name.replace('Ítem ', ''));
+          const num = Number(p.name);
           const pregunta = MCHAT_PREGUNTAS[num - 1];
           const texto = pregunta
             ? `<div style="max-width:320px;white-space:normal;font-size:11px;margin-top:4px;color:#6b7280">${pregunta.texto}</div>`
             : '';
-          return `<strong>${p.name}</strong>: ${p.value} fallas${texto}`;
+          return `<strong>Ítem ${num}</strong>: ${p.value} fallas${texto}`;
         },
       },
-      grid: { left: '3%', right: '8%', top: '4%', bottom: '4%', containLabel: true },
-      xAxis: { type: 'value', axisLabel: { fontSize: 10 } },
-      yAxis: {
+      grid: { left: '3%', right: '4%', top: 20, bottom: 32, containLabel: true },
+      xAxis: {
         type: 'category',
-        data: top10.map(i => i.label),
+        data: top20.map(i => i.label.replace('Ítem ', '')),
+        axisLabel: { fontSize: 10, rotate: 0 },
+        name: 'Ítem',
+        nameLocation: 'middle',
+        nameGap: 20,
+        nameTextStyle: { fontSize: 10, color: '#64748b', fontWeight: 500 },
+      },
+      yAxis: {
+        type: 'value',
+        name: 'Fallas',
+        nameLocation: 'end',
+        nameGap: 8,
+        nameTextStyle: { fontSize: 10, color: '#64748b', fontWeight: 500, align: 'right' },
         axisLabel: { fontSize: 10 },
       },
       series: [{
         type: 'bar',
-        data: top10.map(i => ({
+        data: top20.map(i => ({
           value: i.n,
           itemStyle: {
             color: INVERTIDOS.has(Number(i.label.replace('Ítem ', ''))) ? '#f59e0b' : '#6366f1',
-            borderRadius: [0, 4, 4, 0],
+            borderRadius: [3, 3, 0, 0],
           },
         })),
-        label: { show: true, position: 'right', formatter: '{c}', fontSize: 10 },
+        label: { show: true, position: 'top', formatter: '{c}', fontSize: 10 },
       }],
     };
   }
