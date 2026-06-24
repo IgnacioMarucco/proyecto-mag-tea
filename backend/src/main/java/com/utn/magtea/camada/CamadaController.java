@@ -16,13 +16,12 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 @RequestMapping(ApiConstants.V1 + "/camadas")
 @Tag(name = "Camadas")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL')")
 public class CamadaController {
 
     private final CamadaService service;
 
-    @GetMapping
-    @PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Listar camadas activas (paginado)")
+    @GetMapping    @Operation(summary = "Listar camadas activas (paginado)")
     public PageResponse<CamadaListDTO> findAll(
             @RequestParam(defaultValue = "0")     int page,
             @RequestParam(defaultValue = "20")    int size,
@@ -32,16 +31,12 @@ public class CamadaController {
         return service.findAll(page, size, q, sortBy, sortDir);
     }
 
-    @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Obtener camada por id")
+    @GetMapping("/{id}")    @Operation(summary = "Obtener camada por id")
     public CamadaResponseDTO findById(@PathVariable Long id) {
         return service.findById(id);
     }
 
-    @PostMapping
-    @PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Crear camada")
+    @PostMapping    @Operation(summary = "Crear camada")
     public ResponseEntity<CamadaResponseDTO> create(@RequestBody @Valid CamadaCreateDTO dto) {
         CamadaResponseDTO created = service.create(dto);
         var location = ServletUriComponentsBuilder.fromCurrentRequest()
@@ -49,18 +44,14 @@ public class CamadaController {
         return ResponseEntity.created(location).body(created);
     }
 
-    @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Actualizar camada")
+    @PutMapping("/{id}")    @Operation(summary = "Actualizar camada")
     public CamadaResponseDTO update(@PathVariable Long id,
                                     @RequestBody @Valid CamadaCreateDTO dto) {
         return service.update(id, dto);
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Dar de baja camada (baja lógica)")
+    @ResponseStatus(HttpStatus.NO_CONTENT)    @Operation(summary = "Dar de baja camada (baja lógica)")
     public void delete(@PathVariable Long id) {
         service.delete(id);
     }

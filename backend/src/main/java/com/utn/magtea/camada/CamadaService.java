@@ -1,8 +1,10 @@
 package com.utn.magtea.camada;
 
 import com.utn.magtea.common.PageResponse;
+import com.utn.magtea.common.exception.BusinessRuleException;
 import com.utn.magtea.common.exception.DuplicateResourceException;
 import com.utn.magtea.common.exception.ResourceNotFoundException;
+import com.utn.magtea.modeloanimal.ModeloAnimalRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -17,10 +19,11 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class CamadaService {
 
-    private static final Set<String> SORT_FIELDS_VALIDOS = Set.of("createdAt", "nombre");
+    private static final Set<String> SORT_FIELDS_VALIDOS = Set.of("createdAt", "nombre", "fechaNacimiento");
 
     private final CamadaRepository repository;
     private final CamadaMapper mapper;
+    private final ModeloAnimalRepository modeloAnimalRepository;
 
     @Transactional(readOnly = true)
     public PageResponse<CamadaListDTO> findAll(int page, int size, String q,
@@ -55,12 +58,17 @@ public class CamadaService {
             throw new DuplicateResourceException("Ya existe una camada activa con el nombre \"" + dto.nombre() + "\"");
         }
         camada.setNombre(dto.nombre());
+        camada.setFechaNacimiento(dto.fechaNacimiento());
         return mapper.toDTO(repository.save(camada));
     }
 
     @Transactional
     public void delete(Long id) {
         Camada camada = findActiveById(id);
+        if (modeloAnimalRepository.existsByCamada_IdAndActivoTrue(id)) {
+            throw new BusinessRuleException(
+                "No se puede eliminar la camada porque tiene modelos animales activos asociados.");
+        }
         camada.setActivo(false);
         repository.save(camada);
     }

@@ -7,6 +7,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.envers.Audited;
 
+import java.time.LocalDate;
+
 @Audited
 @Entity
 @Table(name = "camadas")
@@ -21,6 +23,8 @@ public class Camada extends Auditable {
 
     @Column(nullable = false)
     private String nombre;
+
+    private LocalDate fechaNacimiento;
 
     @Column(nullable = false)
     private boolean activo = true;
