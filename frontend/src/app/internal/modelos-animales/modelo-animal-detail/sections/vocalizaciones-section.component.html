@@ -29,9 +29,9 @@
       </div>
     }
 
-    <form [formGroup]="form" (ngSubmit)="save()" novalidate class="space-y-4">
-      <div class="grid grid-cols-2 gap-4">
-        <div>
+    <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+      <div class="flex items-end gap-4">
+        <div class="flex-1">
           <label for="muestra1Khz" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
             Muestra 1 (kHz) <span class="text-danger">*</span>
           </label>
@@ -47,7 +47,7 @@
             <p role="alert" class="mt-1 text-xs text-danger">Campo obligatorio</p>
           }
         </div>
-        <div>
+        <div class="flex-1">
           <label for="muestra2Khz" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
             Muestra 2 (kHz) <span class="text-danger">*</span>
           </label>
@@ -63,20 +63,19 @@
             <p role="alert" class="mt-1 text-xs text-danger">Campo obligatorio</p>
           }
         </div>
+        <button
+          type="submit"
+          [disabled]="saving()"
+          class="px-4 py-2 bg-primary text-white text-sm font-medium rounded-md
+                 hover:bg-primary-dark transition-colors disabled:opacity-50 whitespace-nowrap"
+        >
+          {{ saving() ? 'Guardando...' : 'Guardar vocalizaciones' }}
+        </button>
       </div>
 
       @if (saveError()) {
-        <p role="alert" class="text-xs text-danger">{{ saveError() }}</p>
+        <p role="alert" class="mt-3 text-xs text-danger">{{ saveError() }}</p>
       }
-
-      <button
-        type="submit"
-        [disabled]="saving()"
-        class="px-4 py-2 bg-primary text-white text-sm font-medium rounded-md
-               hover:bg-primary-dark transition-colors disabled:opacity-50"
-      >
-        {{ saving() ? 'Guardando...' : 'Guardar vocalizaciones' }}
-      </button>
     </form>
   }
 </div>

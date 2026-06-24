@@ -2,10 +2,11 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { RouterLink } from '@angular/router';
 import { ModeloAnimalResponse } from '../../../../core/models/modelo-animal.model';
 import { StatusBadgeComponent } from '../../../../shared/status-badge/status-badge.component';
+import { FechaPipe } from '../../../../core/pipes/fecha.pipe';
 
 @Component({
   selector: 'app-datos-basicos-ma-section',
-  imports: [RouterLink, StatusBadgeComponent],
+  imports: [RouterLink, StatusBadgeComponent, FechaPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './datos-basicos-ma-section.component.html',
 })
@@ -35,9 +36,4 @@ export class DatosBasicosMaSectionComponent {
     return diff + 1;
   });
 
-  formatDate(date: string): string {
-    return new Date(date + 'T00:00:00').toLocaleDateString('es-AR', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-    });
-  }
 }

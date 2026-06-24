@@ -27,7 +27,7 @@ export class VocalizacionesSectionComponent {
   });
 
   readonly bandaColors: Record<string, string> = {
-    AVERSIVA:  'bg-error/10 text-error',
+    AVERSIVA:  'bg-warning/10 text-warning',
     APETITIVA: 'bg-accent-light text-accent',
   };
   readonly bandaLabels: Record<string, string> = {

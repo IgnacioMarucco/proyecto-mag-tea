@@ -12,7 +12,7 @@ import { StatusBadgeComponent } from '../../../shared/status-badge/status-badge.
 import { RowActionsComponent, RowAction } from '../../../shared/row-actions/row-actions.component';
 import { PaginatorComponent } from '../../../shared/paginator/paginator.component';
 import { IconComponent } from '../../../shared/icon/icon.component';
-import { SortState } from '../../../shared/sort.utils';
+import { SortState } from '../../../shared/utils/sort.utils';
 import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 
 const PAGE_SIZE = 20;
@@ -81,12 +81,10 @@ export class ModeloAnimalListComponent {
   ];
 
   readonly columns: TableColumn[] = [
-    { label: 'Identificador',  sortKey: 'identificador'   },
-    { label: 'Pool / Rango',   hidden: 'sm'               },
-    { label: 'Camada',         hidden: 'md'               },
-    { label: 'Fecha nac.',     hidden: 'sm', sortKey: 'fechaNacimiento' },
-    { label: 'Sexo',           hidden: 'sm'               },
-    { label: 'Alertas'                                    },
+    { label: 'CÓDIGO',   sortKey: 'identificador' },
+    { label: 'TIPO',     hidden: 'sm'             },
+    { label: 'RANGO',    hidden: 'sm'             },
+    { label: 'APORTES',  hidden: 'md'             },
   ];
 
   readonly rangoColors: Record<string, string> = {
@@ -98,11 +96,14 @@ export class ModeloAnimalListComponent {
     '1': 'Rango 1', '2': 'Rango 2', '3': 'Rango 3',
   };
 
-  readonly sexoColors: Record<string, string>  = {
-    MACHO:  'bg-primary-light text-primary',
-    HEMBRA: 'bg-accent-light text-accent',
+  readonly usoColors: Record<string, string> = {
+    PROBLEMA: 'bg-primary-light text-primary',
+    CONTROL:  'bg-background text-text-muted border border-border',
   };
-  readonly sexoLabels: Record<string, string>  = { MACHO: 'Macho', HEMBRA: 'Hembra' };
+  readonly usoLabels: Record<string, string> = {
+    PROBLEMA: 'Caso Problema',
+    CONTROL:  'Caso Control',
+  };
 
   readonly emptyTitle = computed(() =>
     this.totalElements() === 0 && !this.hasActiveSearch()
@@ -115,11 +116,6 @@ export class ModeloAnimalListComponent {
       : 'Probá ajustando los filtros o la búsqueda'
   );
 
-  formatDate(date: string): string {
-    return new Date(date + 'T00:00:00').toLocaleDateString('es-AR', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-    });
-  }
 
   onSearch(q: string): void {
     this.search.set(q);
@@ -153,8 +149,8 @@ export class ModeloAnimalListComponent {
 
   getActionsFor(ma: ModeloAnimalListItem): RowAction[] {
     return [
-      { label: 'Ver detalle', style: 'primary', onClick: () => this.router.navigate(['/internal/modelos-animales', ma.id]) },
-      { label: 'Editar',      style: 'primary', onClick: () => this.router.navigate(['/internal/modelos-animales', ma.id, 'editar']) },
+      { label: 'Ver detalle', onClick: () => this.router.navigate(['/internal/modelos-animales', ma.identificador]) },
+      { label: 'Editar',      style: 'primary', onClick: () => this.router.navigate(['/internal/modelos-animales', ma.identificador, 'editar']) },
       { label: 'Dar de baja', style: 'danger',  disabled: this.deleting() === ma.id, onClick: () => this.requestDelete(ma.id) },
     ];
   }

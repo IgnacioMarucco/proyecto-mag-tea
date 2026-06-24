@@ -1,0 +1,138 @@
+<div class="bg-surface border border-border rounded-lg p-6">
+  <h2 class="text-sm font-semibold text-text uppercase tracking-wider font-mono mb-4">
+    Inoculación (4 días consecutivos)
+  </h2>
+
+  @if (saveError()) {
+    <p role="alert" class="mb-3 text-xs text-danger">{{ saveError() }}</p>
+  }
+
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="border-b border-border">
+        <th class="pb-2 text-left text-xs font-mono text-text-muted uppercase tracking-wider w-16">Día</th>
+        <th class="pb-2 text-left text-xs font-mono text-text-muted uppercase tracking-wider">Fecha</th>
+        <th class="pb-2 text-left text-xs font-mono text-text-muted uppercase tracking-wider">Tubo</th>
+        <th class="pb-2 text-right text-xs font-mono text-text-muted uppercase tracking-wider">ml consumidos</th>
+        <th class="pb-2 w-36"></th>
+      </tr>
+    </thead>
+    <tbody>
+
+      @if (!modeloAnimal().fechaDia1Inoculacion) {
+        <!-- Día 1: formulario inicial -->
+        <tr class="border-b border-border last:border-0">
+          <td class="py-2.5 pr-4 font-mono text-text font-medium align-top pt-3">Día 1</td>
+          <td class="py-2.5 pr-3 align-top">
+            <input
+              type="date" [formControl]="formFechaDia1"
+              class="w-full px-2 py-1.5 text-sm bg-surface border border-border rounded text-text font-mono
+                     focus:outline-none focus:border-primary transition-colors"
+              [class.border-danger]="formFechaDia1.invalid && formFechaDia1.touched"
+            />
+            @if (formFechaDia1.invalid && formFechaDia1.touched) {
+              <p role="alert" class="mt-0.5 text-xs text-danger">Requerida</p>
+            }
+          </td>
+          <td class="py-2.5 pr-3 align-top">
+            @if (tubosPools().length > 0) {
+              <select
+                (change)="setTubo(1, $event)"
+                class="w-full px-2 py-1.5 text-sm bg-surface border border-border rounded text-text font-mono
+                       focus:outline-none focus:border-primary transition-colors"
+              >
+                <option value="">—</option>
+                @for (t of tubosPools(); track t.id) {
+                  <option [value]="t.id">{{ t.posicion }} ({{ t.cantidadRestante }} ml)</option>
+                }
+              </select>
+            } @else {
+              <span class="text-text-muted">—</span>
+            }
+          </td>
+          <td class="py-2.5 pr-3 align-top">
+            @if (tubosPools().length > 0) {
+              <input
+                type="number" min="0" step="0.01" placeholder="—"
+                (input)="setCantidad(1, $event)"
+                class="w-full px-2 py-1.5 text-sm bg-surface border border-border rounded text-right font-mono
+                       focus:outline-none focus:border-primary transition-colors"
+              />
+            } @else {
+              <span class="text-text-muted text-right block">—</span>
+            }
+          </td>
+          <td class="py-2.5 text-right align-top">
+            <button
+              type="button"
+              (click)="saveDia(1)"
+              [disabled]="savingDia() === 1"
+              class="px-3 py-1.5 bg-primary text-white text-xs font-medium rounded-md
+                     hover:bg-primary-dark transition-colors disabled:opacity-50 whitespace-nowrap"
+            >
+              {{ savingDia() === 1 ? 'Guardando...' : 'Registrar día 1' }}
+            </button>
+          </td>
+        </tr>
+      } @else {
+        <!-- Días con fechaDia1 establecida: tabla secuencial -->
+        @for (row of diaRows(); track row.dia) {
+          @if (row.dia === 1 || aporteExiste(row.dia - 1)) {
+            <tr class="border-b border-border last:border-0">
+              <td class="py-2.5 font-mono text-text font-medium align-middle">Día {{ row.dia }}</td>
+              <td class="py-2.5 text-text-muted align-middle">{{ row.fecha ?? '—' }}</td>
+
+              @if (row.tuboId !== null) {
+                <!-- Read-only -->
+                <td class="py-2.5 font-mono text-text-muted align-middle">{{ row.posicion ?? '—' }}</td>
+                <td class="py-2.5 text-right font-mono text-text-muted align-middle">
+                  {{ row.cantidadConsumida !== null ? (row.cantidadConsumida + ' ml') : '—' }}
+                </td>
+                <td class="py-2.5 align-middle"></td>
+              } @else if (tubosPools().length > 0) {
+                <!-- Formulario para este día -->
+                <td class="py-2.5 pr-3 align-top">
+                  <select
+                    (change)="setTubo(row.dia, $event)"
+                    class="w-full px-2 py-1.5 text-sm bg-surface border border-border rounded text-text font-mono
+                           focus:outline-none focus:border-primary transition-colors"
+                  >
+                    <option value="">—</option>
+                    @for (t of tubosPools(); track t.id) {
+                      <option [value]="t.id">{{ t.posicion }} ({{ t.cantidadRestante }} ml)</option>
+                    }
+                  </select>
+                </td>
+                <td class="py-2.5 pr-3 align-top">
+                  <input
+                    type="number" min="0" step="0.01" placeholder="—"
+                    (input)="setCantidad(row.dia, $event)"
+                    class="w-full px-2 py-1.5 text-sm bg-surface border border-border rounded text-right font-mono
+                           focus:outline-none focus:border-primary transition-colors"
+                  />
+                </td>
+                <td class="py-2.5 text-right align-top">
+                  <button
+                    type="button"
+                    (click)="saveDia(row.dia)"
+                    [disabled]="savingDia() === row.dia"
+                    class="px-3 py-1.5 bg-primary text-white text-xs font-medium rounded-md
+                           hover:bg-primary-dark transition-colors disabled:opacity-50 whitespace-nowrap"
+                  >
+                    {{ savingDia() === row.dia ? 'Guardando...' : 'Registrar día ' + row.dia }}
+                  </button>
+                </td>
+              } @else {
+                <!-- Sin tubos disponibles -->
+                <td class="py-2.5 text-text-muted align-middle">—</td>
+                <td class="py-2.5 text-right text-text-muted align-middle">—</td>
+                <td class="py-2.5 align-middle"></td>
+              }
+            </tr>
+          }
+        }
+      }
+
+    </tbody>
+  </table>
+</div>

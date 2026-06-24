@@ -1,234 +1,333 @@
-<div class="px-8 pb-8 max-w-2xl mx-auto">
+<div class="px-8 pb-8 max-w-3xl mx-auto">
 
   <div class="mb-6">
     <app-page-header [crumbs]="crumbs()" />
   </div>
 
-  <div class="bg-surface border border-border rounded-lg p-6">
-  <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate appFirstFocus class="space-y-5">
+  <!-- ── Modo creación: stepper ─────────────────────────────────────────────── -->
+  @if (!isEdit()) {
 
-    <!-- Identificador -->
-    <div>
-      <label for="identificador" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
-        Identificador <span class="text-danger">*</span>
-      </label>
-      <input
-        id="identificador" type="text" formControlName="identificador"
-        placeholder="Ej: P3-A"
-        class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text font-mono
-               focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
-        [class.border-danger]="form.get('identificador')?.invalid && form.get('identificador')?.touched"
-        [attr.aria-invalid]="form.get('identificador')?.invalid && form.get('identificador')?.touched"
-      />
-      @if (form.get('identificador')?.invalid && form.get('identificador')?.touched) {
-        <p role="alert" class="mt-1 text-xs text-danger">El identificador es obligatorio</p>
-      }
+    <!-- Indicador de pasos -->
+    <div class="flex items-center gap-2 mb-6">
+      <div class="flex items-center gap-2">
+        <span
+          class="w-6 h-6 rounded-full text-xs font-semibold flex items-center justify-center"
+          [class]="step() === 1 ? 'bg-primary text-white' : 'bg-accent text-white'"
+        >1</span>
+        <span class="text-sm font-medium" [class]="step() === 1 ? 'text-text' : 'text-text-muted'">Selección de pool</span>
+      </div>
+      <span class="text-border mx-2">—</span>
+      <div class="flex items-center gap-2">
+        <span
+          class="w-6 h-6 rounded-full text-xs font-semibold flex items-center justify-center"
+          [class]="step() === 2 ? 'bg-primary text-white' : 'bg-border text-text-muted'"
+        >2</span>
+        <span class="text-sm font-medium" [class]="step() === 2 ? 'text-text' : 'text-text-muted'">Camada y sexo</span>
+      </div>
     </div>
 
-    <!-- Pool -->
-    <div>
-      <label for="poolId" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
-        Pool <span class="text-danger">*</span>
-      </label>
-      <select
-        id="poolId" formControlName="poolId"
-        class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text
-               focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
-        [class.border-danger]="form.get('poolId')?.invalid && form.get('poolId')?.touched"
-        [attr.aria-invalid]="form.get('poolId')?.invalid && form.get('poolId')?.touched"
-      >
-        <option [value]="null" disabled selected>Seleccioná un pool</option>
-        @for (pool of pools(); track pool.id) {
-          <option [value]="pool.id">{{ poolLabel(pool) }}</option>
-        }
-      </select>
-      @if (form.get('poolId')?.invalid && form.get('poolId')?.touched) {
-        <p role="alert" class="mt-1 text-xs text-danger">El pool es obligatorio</p>
-      }
-    </div>
+    <!-- ── Paso 1: Selección de pool ─────────────────────────────────────────── -->
+    @if (step() === 1) {
+      <div class="bg-surface border border-border rounded-lg p-6 space-y-5">
+        <h2 class="text-sm font-semibold text-text uppercase tracking-wider font-mono">Selección de pool</h2>
 
-    <!-- Tubos del pool (opcional) -->
-    @if (loadingPool()) {
-      <div class="text-xs text-text-muted py-2">Cargando tubos del pool…</div>
-    } @else if (poolCargado() && tuboRows().length > 0) {
-      <div class="border border-border rounded-md overflow-hidden">
-        <div class="px-4 py-2.5 bg-background border-b border-border">
-          <p class="text-xs font-mono text-text-muted uppercase tracking-wider">
-            Tubos del pool — inoculación (opcional)
-          </p>
+        <!-- Filtros: Tipo y Rango -->
+        <div class="flex flex-wrap gap-4">
+          <div class="flex-1 min-w-36">
+            <label class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Tipo</label>
+            <select
+              class="w-full px-3 py-2 text-sm bg-background border border-border rounded-md text-text
+                     focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+              [value]="filterUso() ?? ''"
+              (change)="filterUso.set($any($event.target).value || null); selectedPool.set(null)"
+            >
+              <option value="">Todos los tipos</option>
+              <option value="CONTROL">Control</option>
+              <option value="PROBLEMA">Caso Problema</option>
+            </select>
+          </div>
+          <div class="flex-1 min-w-36">
+            <label class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Rango</label>
+            <select
+              class="w-full px-3 py-2 text-sm bg-background border border-border rounded-md text-text
+                     focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+              [value]="filterRango() ?? ''"
+              (change)="filterRango.set($any($event.target).value !== '' ? +$any($event.target).value : null); selectedPool.set(null)"
+            >
+              <option value="">Todos los rangos</option>
+              <option value="0">Rango 0</option>
+              <option value="1">Rango 1</option>
+              <option value="2">Rango 2</option>
+              <option value="3">Rango 3</option>
+            </select>
+          </div>
         </div>
-        <table class="w-full text-sm">
-          <thead>
-            <tr class="border-b border-border bg-background">
-              <th class="px-4 py-2 text-left text-xs font-mono text-text-muted uppercase tracking-wider">Tubo</th>
-              <th class="px-4 py-2 text-right text-xs font-mono text-text-muted uppercase tracking-wider">Disponible (ml)</th>
-              <th class="px-4 py-2 text-right text-xs font-mono text-text-muted uppercase tracking-wider">Cant. consumida</th>
-              <th class="px-4 py-2 text-center text-xs font-mono text-text-muted uppercase tracking-wider">Día (1-4)</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (row of tuboRows(); track row.tuboId) {
-              <tr class="border-b border-border last:border-0" [class.bg-primary/5]="row.selected">
-                <td class="px-4 py-2.5">
-                  <label class="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      [checked]="row.selected"
-                      (change)="toggleTubo(row.tuboId)"
-                      class="w-4 h-4 accent-primary"
-                    />
-                    <span class="font-mono text-text">{{ row.posicion }}</span>
-                  </label>
-                </td>
-                <td class="px-4 py-2.5 text-right font-mono text-text-muted">
-                  {{ row.cantidadRestante }} ml
-                </td>
-                <td class="px-4 py-2.5">
-                  <input
-                    type="number" min="0" step="0.1"
-                    placeholder="—"
-                    [disabled]="!row.selected"
-                    [value]="row.cantidadConsumida ?? ''"
-                    (input)="updateTuboCantidad(row.tuboId, $event)"
-                    class="w-full px-2 py-1 text-sm bg-surface border border-border rounded text-right font-mono
-                           focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors
-                           disabled:opacity-40 disabled:cursor-not-allowed"
-                  />
-                </td>
-                <td class="px-4 py-2.5">
-                  <input
-                    type="number" min="1" max="4" step="1"
-                    placeholder="—"
-                    [disabled]="!row.selected"
-                    [value]="row.dia ?? ''"
-                    (input)="updateTuboDia(row.tuboId, $event)"
-                    class="w-full px-2 py-1 text-sm bg-surface border border-border rounded text-center font-mono
-                           focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors
-                           disabled:opacity-40 disabled:cursor-not-allowed"
-                  />
-                </td>
+
+        <!-- Tabla de pools filtrados -->
+        <div class="border border-border rounded-md overflow-hidden">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-border bg-background">
+                <th class="px-4 py-2.5 w-10"></th>
+                <th class="px-4 py-2.5 text-left text-xs font-mono text-text-muted uppercase tracking-wider">Pool</th>
+                <th class="px-4 py-2.5 text-left text-xs font-mono text-text-muted uppercase tracking-wider">Tipo</th>
+                <th class="px-4 py-2.5 text-left text-xs font-mono text-text-muted uppercase tracking-wider">Rango</th>
+                <th class="px-4 py-2.5 text-right text-xs font-mono text-text-muted uppercase tracking-wider">Cant. rest.</th>
               </tr>
+            </thead>
+            <tbody>
+              @if (filteredPools().length === 0) {
+                <tr>
+                  <td colspan="5" class="px-4 py-8 text-center text-sm text-text-muted">
+                    @if (!filterUso() && filterRango() === null) {
+                      Seleccioná tipo y/o rango para filtrar los pools disponibles
+                    } @else {
+                      Sin pools para los filtros seleccionados
+                    }
+                  </td>
+                </tr>
+              }
+              @for (pool of filteredPools(); track pool.id) {
+                <tr
+                  class="border-b border-border last:border-0 cursor-pointer transition-opacity"
+                  [class.opacity-40]="selectedPool() && selectedPool()!.id !== pool.id"
+                  (click)="selectPool(pool)"
+                >
+                  <td class="px-4 py-3">
+                    <input
+                      type="radio"
+                      name="poolSelect"
+                      [value]="pool.id"
+                      [checked]="selectedPool()?.id === pool.id"
+                      (click)="$event.stopPropagation(); selectPool(pool)"
+                      class="accent-primary w-4 h-4 cursor-pointer"
+                    />
+                  </td>
+                  <td class="px-4 py-3 font-mono text-text font-medium">{{ pool.codigo }}</td>
+                  <td class="px-4 py-3">
+                    <app-status-badge [value]="pool.uso" [labels]="usoLabels" [colorMap]="usoColors" />
+                  </td>
+                  <td class="px-4 py-3">
+                    <app-status-badge [value]="'' + pool.rango" [labels]="rangoLabels" [colorMap]="rangoColors" />
+                  </td>
+                  <td class="px-4 py-3 text-right font-mono text-text-muted">{{ pool.cantidadRestante | ml }} ml</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Acciones paso 1 -->
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <button type="button" (click)="handleEscape()" class="btn-ghost">Cancelar</button>
+          <div class="relative group/next inline-flex">
+            <button
+              type="button"
+              [disabled]="!selectedPool()"
+              (click)="avanzarAStep2()"
+              class="btn-primary"
+              [class.opacity-50]="!selectedPool()"
+              [class.cursor-not-allowed]="!selectedPool()">
+              Siguiente
+            </button>
+            @if (!selectedPool()) {
+              <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-gray-900 text-white text-xs rounded whitespace-nowrap pointer-events-none z-50 invisible group-hover/next:visible">
+                Seleccioná un pool de la lista
+                <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+              </div>
             }
-          </tbody>
-        </table>
-        @if (aportes().length > 0) {
-          <div class="px-4 py-2 border-t border-border bg-background text-xs text-text-muted font-mono">
-            {{ aportes().length }} {{ aportes().length === 1 ? 'tubo seleccionado' : 'tubos seleccionados' }}
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- ── Paso 2: Camada y sexo ──────────────────────────────────────────────── -->
+    @if (step() === 2) {
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate class="space-y-4">
+
+        <!-- Resumen del pool seleccionado -->
+        <div class="bg-surface border border-border rounded-lg px-5 py-3.5 flex items-center gap-4">
+          <span class="text-xs font-mono text-text-muted uppercase tracking-wider">Pool</span>
+          <span class="font-mono text-text font-semibold">{{ selectedPool()?.codigo }}</span>
+          @if (selectedPool()) {
+            <app-status-badge [value]="selectedPool()!.uso" [labels]="usoLabels" [colorMap]="usoColors" />
+            <app-status-badge [value]="'' + selectedPool()!.rango" [labels]="rangoLabels" [colorMap]="rangoColors" />
+          }
+        </div>
+
+        <div class="bg-surface border border-border rounded-lg p-6 space-y-5">
+          <h2 class="text-sm font-semibold text-text uppercase tracking-wider font-mono">Camada y sexo</h2>
+
+          <!-- Camada -->
+          <div>
+            <label for="camadaId" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
+              Camada <span class="text-danger">*</span>
+            </label>
+            <div class="flex items-stretch gap-2">
+              <select
+                id="camadaId" formControlName="camadaId"
+                class="flex-1 px-3 py-2 text-sm bg-surface border border-border rounded-md text-text font-mono
+                       focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                [class.border-danger]="form.get('camadaId')?.invalid && form.get('camadaId')?.touched"
+                [attr.aria-invalid]="form.get('camadaId')?.invalid && form.get('camadaId')?.touched"
+              >
+                <option [value]="null" disabled selected>Seleccioná una camada</option>
+                @for (c of camadas(); track c.id) {
+                  <option [value]="c.id">{{ camadaLabel(c) }}</option>
+                }
+              </select>
+              <button
+                type="button"
+                (click)="openCamadaModal()"
+                title="Nueva camada"
+                class="flex items-center justify-center px-3 py-2 bg-surface border border-border rounded-md text-text-muted
+                       hover:border-primary hover:text-primary transition-colors"
+              >
+                <app-icon name="plus" class="w-4 h-4" />
+              </button>
+            </div>
+            @if (form.get('camadaId')?.invalid && form.get('camadaId')?.touched) {
+              <p role="alert" class="mt-1 text-xs text-danger">La camada es obligatoria</p>
+            }
+          </div>
+
+          <!-- Sexo -->
+          <div>
+            <label for="sexo" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
+              Sexo <span class="text-danger">*</span>
+            </label>
+            <select
+              id="sexo" formControlName="sexo"
+              class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text
+                     focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+              [class.border-danger]="form.get('sexo')?.invalid && form.get('sexo')?.touched"
+              [attr.aria-invalid]="form.get('sexo')?.invalid && form.get('sexo')?.touched"
+            >
+              <option value="" disabled selected>Seleccioná</option>
+              <option value="MACHO">Macho</option>
+              <option value="HEMBRA">Hembra</option>
+            </select>
+            @if (form.get('sexo')?.invalid && form.get('sexo')?.touched) {
+              <p role="alert" class="mt-1 text-xs text-danger">El sexo es obligatorio</p>
+            }
+          </div>
+
+          @if (error()) {
+            <div role="alert" class="px-4 py-3 bg-danger/10 border border-danger/30 rounded-md text-sm text-danger">
+              {{ error() }}
+            </div>
+          }
+
+          <div class="flex items-center justify-end gap-3 pt-2">
+            <button type="button" (click)="volverAStep1()" class="btn-ghost">Volver</button>
+            <button type="submit" [disabled]="loading()" class="btn-primary">
+              {{ loading() ? 'Guardando...' : 'Registrar' }}
+            </button>
+          </div>
+        </div>
+
+      </form>
+    }
+  }
+
+  <!-- ── Modo edición: formulario simple ───────────────────────────────────── -->
+  @if (isEdit()) {
+    <div class="bg-surface border border-border rounded-lg p-6">
+      <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate appFirstFocus class="space-y-5">
+
+        <!-- Pool -->
+        <div>
+          <label for="poolId" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
+            Pool <span class="text-danger">*</span>
+          </label>
+          <select
+            id="poolId" formControlName="poolId"
+            class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text font-mono
+                   focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+            [class.border-danger]="form.get('poolId')?.invalid && form.get('poolId')?.touched"
+            [attr.aria-invalid]="form.get('poolId')?.invalid && form.get('poolId')?.touched"
+          >
+            <option [value]="null" disabled selected>Seleccioná un pool</option>
+            @for (pool of pools(); track pool.id) {
+              <option [value]="pool.id">{{ poolLabel(pool) }}</option>
+            }
+          </select>
+          @if (form.get('poolId')?.invalid && form.get('poolId')?.touched) {
+            <p role="alert" class="mt-1 text-xs text-danger">El pool es obligatorio</p>
+          }
+        </div>
+
+        <!-- Camada -->
+        <div>
+          <label for="camadaId-edit" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
+            Camada <span class="text-danger">*</span>
+          </label>
+          <div class="flex items-stretch gap-2">
+            <select
+              id="camadaId-edit" formControlName="camadaId"
+              class="flex-1 px-3 py-2 text-sm bg-surface border border-border rounded-md text-text font-mono
+                     focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+              [class.border-danger]="form.get('camadaId')?.invalid && form.get('camadaId')?.touched"
+              [attr.aria-invalid]="form.get('camadaId')?.invalid && form.get('camadaId')?.touched"
+            >
+              <option [value]="null" disabled selected>Seleccioná una camada</option>
+              @for (c of camadas(); track c.id) {
+                <option [value]="c.id">{{ camadaLabel(c) }}</option>
+              }
+            </select>
+            <button
+              type="button"
+              (click)="openCamadaModal()"
+              title="Nueva camada"
+              class="flex items-center justify-center px-3 py-2 bg-surface border border-border rounded-md text-text-muted
+                     hover:border-primary hover:text-primary transition-colors"
+            >
+              <app-icon name="plus" class="w-4 h-4" />
+            </button>
+          </div>
+          @if (form.get('camadaId')?.invalid && form.get('camadaId')?.touched) {
+            <p role="alert" class="mt-1 text-xs text-danger">La camada es obligatoria</p>
+          }
+        </div>
+
+        <!-- Sexo -->
+        <div>
+          <label for="sexo-edit" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
+            Sexo <span class="text-danger">*</span>
+          </label>
+          <select
+            id="sexo-edit" formControlName="sexo"
+            class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text
+                   focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+            [class.border-danger]="form.get('sexo')?.invalid && form.get('sexo')?.touched"
+            [attr.aria-invalid]="form.get('sexo')?.invalid && form.get('sexo')?.touched"
+          >
+            <option value="" disabled selected>Seleccioná</option>
+            <option value="MACHO">Macho</option>
+            <option value="HEMBRA">Hembra</option>
+          </select>
+          @if (form.get('sexo')?.invalid && form.get('sexo')?.touched) {
+            <p role="alert" class="mt-1 text-xs text-danger">El sexo es obligatorio</p>
+          }
+        </div>
+
+        @if (error()) {
+          <div role="alert" class="px-4 py-3 bg-danger/10 border border-danger/30 rounded-md text-sm text-danger">
+            {{ error() }}
           </div>
         }
-      </div>
-    }
 
-    <!-- Camada -->
-    <div>
-      <label for="camadaId" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
-        Camada <span class="text-danger">*</span>
-      </label>
-      <select
-        id="camadaId" formControlName="camadaId"
-        class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text font-mono
-               focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
-        [class.border-danger]="form.get('camadaId')?.invalid && form.get('camadaId')?.touched"
-        [attr.aria-invalid]="form.get('camadaId')?.invalid && form.get('camadaId')?.touched"
-      >
-        <option [value]="null" disabled selected>Seleccioná una camada</option>
-        @for (c of camadas(); track c.id) {
-          <option [value]="c.id">{{ c.nombre }}</option>
-        }
-      </select>
-      @if (form.get('camadaId')?.invalid && form.get('camadaId')?.touched) {
-        <p role="alert" class="mt-1 text-xs text-danger">La camada es obligatoria</p>
-      }
-      @if (camadas().length === 0) {
-        <p class="mt-1.5 text-xs text-text-muted">
-          No hay camadas registradas.
-          <a routerLink="/internal/camadas/nuevo" class="text-primary hover:underline">Crear una camada</a>
-        </p>
-      }
+        <div class="flex items-center justify-end gap-3 pt-2">
+          <button type="button" (click)="handleEscape()" class="btn-ghost">Cancelar</button>
+          <button type="submit" [disabled]="loading()" class="btn-primary">
+            {{ loading() ? 'Guardando...' : 'Guardar cambios' }}
+          </button>
+        </div>
+
+      </form>
     </div>
+  }
 
-    <!-- Fecha nacimiento + Sexo -->
-    <div class="grid grid-cols-2 gap-4">
-      <div>
-        <label for="fechaNacimiento" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
-          Fecha nacimiento <span class="text-danger">*</span>
-        </label>
-        <input
-          id="fechaNacimiento" type="date" formControlName="fechaNacimiento"
-          class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text
-                 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
-          [class.border-danger]="form.get('fechaNacimiento')?.invalid && form.get('fechaNacimiento')?.touched"
-          [attr.aria-invalid]="form.get('fechaNacimiento')?.invalid && form.get('fechaNacimiento')?.touched"
-        />
-        @if (form.get('fechaNacimiento')?.invalid && form.get('fechaNacimiento')?.touched) {
-          <p role="alert" class="mt-1 text-xs text-danger">La fecha de nacimiento es obligatoria</p>
-        }
-      </div>
-
-      <div>
-        <label for="sexo" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
-          Sexo <span class="text-danger">*</span>
-        </label>
-        <select
-          id="sexo" formControlName="sexo"
-          class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text
-                 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
-          [class.border-danger]="form.get('sexo')?.invalid && form.get('sexo')?.touched"
-          [attr.aria-invalid]="form.get('sexo')?.invalid && form.get('sexo')?.touched"
-        >
-          <option value="" disabled selected>Seleccioná</option>
-          <option value="MACHO">Macho</option>
-          <option value="HEMBRA">Hembra</option>
-        </select>
-        @if (form.get('sexo')?.invalid && form.get('sexo')?.touched) {
-          <p role="alert" class="mt-1 text-xs text-danger">El sexo es obligatorio</p>
-        }
-      </div>
-    </div>
-
-    <!-- Fecha día 1 inoculación -->
-    <div>
-      <label for="fechaDia1Inoculacion" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
-        Fecha día 1 de inoculación <span class="text-danger">*</span>
-      </label>
-      <input
-        id="fechaDia1Inoculacion" type="date" formControlName="fechaDia1Inoculacion"
-        class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text
-               focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
-        [class.border-danger]="form.get('fechaDia1Inoculacion')?.invalid && form.get('fechaDia1Inoculacion')?.touched"
-        [attr.aria-invalid]="form.get('fechaDia1Inoculacion')?.invalid && form.get('fechaDia1Inoculacion')?.touched"
-      />
-      @if (form.get('fechaDia1Inoculacion')?.invalid && form.get('fechaDia1Inoculacion')?.touched) {
-        <p role="alert" class="mt-1 text-xs text-danger">La fecha de inoculación es obligatoria</p>
-      }
-    </div>
-
-    @if (error()) {
-      <div role="alert" class="px-4 py-3 bg-danger/10 border border-danger/30 rounded-md text-sm text-danger">
-        {{ error() }}
-      </div>
-    }
-
-    <div class="flex items-center gap-3 pt-2">
-      <button
-        type="submit"
-        [disabled]="loading()"
-        class="px-5 py-2 bg-primary text-white text-sm font-medium rounded-md
-               hover:bg-primary-dark transition-colors disabled:opacity-50"
-      >
-        {{ loading() ? 'Guardando...' : (isEdit ? 'Guardar cambios' : 'Registrar ratón') }}
-      </button>
-      <button
-        type="button"
-        (click)="handleEscape()"
-        class="px-5 py-2 text-sm font-medium text-white bg-danger rounded-md hover:opacity-90 transition-opacity"
-      >
-        Cancelar
-      </button>
-    </div>
-
-  </form>
-  </div>
 </div>
 
 @if (showExitConfirm()) {
@@ -240,4 +339,65 @@
     (confirmed)="confirmExit()"
     (cancelled)="showExitConfirm.set(false)"
   />
+}
+
+<!-- ── Modal nueva camada ─────────────────────────────────────────────────── -->
+@if (showCamadaModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
+       role="dialog" aria-modal="true" aria-labelledby="camada-modal-title">
+
+    <div class="absolute inset-0 bg-black/40" (click)="closeCamadaModal()"></div>
+
+    <div class="relative bg-surface border border-border rounded-lg shadow-xl w-full max-w-sm p-6">
+      <h2 id="camada-modal-title" class="text-sm font-semibold text-text mb-4">Nueva camada</h2>
+
+      <form [formGroup]="camadaForm" (ngSubmit)="guardarCamada()" novalidate class="space-y-4">
+
+        <div>
+          <label for="camada-nombre" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
+            Nombre <span class="text-danger">*</span>
+          </label>
+          <input
+            id="camada-nombre" type="text" formControlName="nombre"
+            placeholder="Ej: 2F0601"
+            class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text font-mono
+                   focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+            [class.border-danger]="camadaForm.get('nombre')?.invalid && camadaForm.get('nombre')?.touched"
+          />
+          @if (camadaForm.get('nombre')?.invalid && camadaForm.get('nombre')?.touched) {
+            <p role="alert" class="mt-1 text-xs text-danger">El nombre es obligatorio</p>
+          }
+        </div>
+
+        <div>
+          <label for="camada-fecha" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
+            Fecha de nacimiento <span class="text-danger">*</span>
+          </label>
+          <input
+            id="camada-fecha" type="date" formControlName="fechaNacimiento"
+            class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text
+                   focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+            [class.border-danger]="camadaForm.get('fechaNacimiento')?.invalid && camadaForm.get('fechaNacimiento')?.touched"
+          />
+          @if (camadaForm.get('fechaNacimiento')?.invalid && camadaForm.get('fechaNacimiento')?.touched) {
+            <p role="alert" class="mt-1 text-xs text-danger">La fecha de nacimiento es obligatoria</p>
+          }
+        </div>
+
+        @if (camadaModalError()) {
+          <div role="alert" class="px-3 py-2 bg-danger/10 border border-danger/30 rounded text-xs text-danger">
+            {{ camadaModalError() }}
+          </div>
+        }
+
+        <div class="flex justify-end gap-2 pt-1">
+          <button type="button" (click)="closeCamadaModal()" class="btn-ghost">Cancelar</button>
+          <button type="submit" [disabled]="camadaModalLoading()" class="btn-primary">
+            {{ camadaModalLoading() ? 'Guardando…' : 'Guardar' }}
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
 }

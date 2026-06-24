@@ -9,7 +9,7 @@
   </div>
 
   <app-list-toolbar
-    placeholder="Buscar por identificador…"
+    placeholder="Buscar por código…"
     [filterGroups]="filterGroups"
     [activeFilters]="activeFilters()"
     (searchChange)="onSearch($event)"
@@ -33,10 +33,18 @@
       <tr class="border-b border-border last:border-0 hover:bg-background transition-colors">
 
         <td class="px-5 py-3.5">
-          <a [routerLink]="['/internal/modelos-animales', ma.id]"
-             class="text-primary font-medium font-mono hover:underline">
+          <a [routerLink]="['/internal/modelos-animales', ma.identificador]"
+             class="font-mono font-medium text-text hover:underline">
             {{ ma.identificador }}
           </a>
+        </td>
+
+        <td class="px-5 py-3.5 hidden sm:table-cell">
+          <app-status-badge
+            [value]="ma.poolUso"
+            [labels]="usoLabels"
+            [colorMap]="usoColors"
+          />
         </td>
 
         <td class="px-5 py-3.5 hidden sm:table-cell">
@@ -48,34 +56,7 @@
         </td>
 
         <td class="px-5 py-3.5 hidden md:table-cell text-text-muted text-sm font-mono">
-          {{ ma.camadaNombre }}
-        </td>
-
-        <td class="px-5 py-3.5 hidden sm:table-cell text-text-muted text-sm font-mono">
-          {{ formatDate(ma.fechaNacimiento) }}
-        </td>
-
-        <td class="px-5 py-3.5 hidden sm:table-cell">
-          <app-status-badge
-            [value]="ma.sexo"
-            [labels]="sexoLabels"
-            [colorMap]="sexoColors"
-          />
-        </td>
-
-        <td class="px-5 py-3.5">
-          <div class="flex flex-wrap gap-1">
-            @if (ma.necesitaVocalizaciones) {
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning/10 text-warning">
-                VUS hoy
-              </span>
-            }
-            @if (ma.necesitaTresCamaras) {
-              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning/10 text-warning">
-                3C hoy
-              </span>
-            }
-          </div>
+          {{ ma.aportesCount > 0 ? ma.aportesCount : '—' }}
         </td>
 
         <td class="px-5 py-3.5">

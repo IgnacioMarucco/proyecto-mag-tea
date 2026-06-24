@@ -1,38 +1,33 @@
 import {
   ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed,
-  effect, inject, input, signal,
+  inject, input, signal,
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { catchError, filter, map, of, switchMap } from 'rxjs';
-import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { ActivatedRoute, Router } from '@angular/router';
+import { EMPTY, catchError, filter, map, of, switchMap } from 'rxjs';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ModeloAnimalService } from '../../../core/services/modelo-animal.service';
-import { PoolService } from '../../../core/services/pool.service';
 import { CamadaService } from '../../../core/services/camada.service';
+import { PoolService } from '../../../core/services/pool.service';
 import {
   ModeloAnimalCreate, ModeloAnimalUpdate,
-  ModeloAnimalPoolAporteInput,
 } from '../../../core/models/modelo-animal.model';
-import { PoolListItem, PoolResponse } from '../../../core/models/pool.model';
-import { CamadaListItem } from '../../../core/models/camada.model';
+import { PoolListItem } from '../../../core/models/pool.model';
+import { CamadaListItem, CamadaCreate } from '../../../core/models/camada.model';
 import { extractErrorMessage } from '../../../shared/utils/error.utils';
 import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 import { FirstFocusDirective } from '../../../shared/directives/first-focus.directive';
 import { ConfirmModalComponent } from '../../../shared/confirm-modal/confirm-modal.component';
 import { ToastService } from '../../../core/services/toast.service';
-
-interface TuboRow {
-  tuboId: number;
-  posicion: string;
-  cantidadRestante: number;
-  selected: boolean;
-  cantidadConsumida: number | null;
-  dia: number | null;
-}
+import { IconComponent } from '../../../shared/icon/icon.component';
+import { StatusBadgeComponent } from '../../../shared/status-badge/status-badge.component';
+import { MlPipe } from '../../../core/pipes/ml.pipe';
+import { SueroUso } from '../../../core/models/suero.model';
 
 @Component({
   selector: 'app-modelo-animal-form',
-  imports: [ReactiveFormsModule, RouterLink, PageHeaderComponent, FirstFocusDirective, ConfirmModalComponent],
+  imports: [ReactiveFormsModule, PageHeaderComponent, FirstFocusDirective,
+            ConfirmModalComponent, IconComponent, StatusBadgeComponent, MlPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './modelo-animal-form.component.html',
   host: { '(keydown)': 'onKeydown($event)' },
@@ -53,22 +48,55 @@ export class ModeloAnimalFormComponent {
     { initialValue: [] as Crumb[] }
   );
 
-  id              = input<string>();
+  identificador   = input<string>();
   loading         = signal(false);
   error           = signal<string | null>(null);
   showExitConfirm = signal(false);
 
-  poolCargado  = signal<PoolResponse | null>(null);
-  loadingPool  = signal(false);
-  tuboRows     = signal<TuboRow[]>([]);
+  step          = signal<1 | 2>(1);
+  filterUso     = signal<SueroUso | null>(null);
+  filterRango   = signal<number | null>(null);
+  selectedPool  = signal<PoolListItem | null>(null);
+
+  readonly filteredPools = computed(() => {
+    const uso   = this.filterUso();
+    const rango = this.filterRango();
+    return this.pools().filter(p =>
+      (!uso   || p.uso   === uso) &&
+      (rango === null || p.rango === rango)
+    );
+  });
+
+  readonly rangoColors: Record<string, string> = {
+    '0': 'badge-rango0', '1': 'badge-rango1', '2': 'badge-rango2', '3': 'badge-rango3',
+  };
+  readonly rangoLabels: Record<string, string> = {
+    '0': 'Rango 0', '1': 'Rango 1', '2': 'Rango 2', '3': 'Rango 3',
+  };
+  readonly usoColors: Record<string, string> = {
+    'CONTROL':  'bg-background text-text-muted border border-border',
+    'PROBLEMA': 'bg-primary-light text-primary',
+  };
+  readonly usoLabels: Record<string, string> = {
+    'CONTROL': 'Caso Control', 'PROBLEMA': 'Caso Problema',
+  };
+
+  showCamadaModal    = signal(false);
+  camadaModalLoading = signal(false);
+  camadaModalError   = signal<string | null>(null);
+  camadas            = signal<CamadaListItem[]>([]);
+
+  private editId: number | null = null;
 
   form = this.fb.group({
-    identificador:        ['',                    Validators.required],
-    poolId:               [null as number | null,  Validators.required],
-    camadaId:             [null as number | null,  Validators.required],
-    fechaNacimiento:      ['',                    Validators.required],
-    sexo:                 ['',                    Validators.required],
-    fechaDia1Inoculacion: ['',                  Validators.required],
+    poolId:   [null as number | null, Validators.required],
+    camadaId: [null as number | null, Validators.required],
+    sexo:     ['',                    Validators.required],
+  });
+
+  camadaForm = this.fb.group({
+    nombre:          ['', [Validators.required, Validators.maxLength(50)]],
+    fechaNacimiento: ['',  Validators.required],
   });
 
   readonly pools = toSignal(
@@ -77,112 +105,88 @@ export class ModeloAnimalFormComponent {
     { initialValue: [] as PoolListItem[] }
   );
 
-  readonly camadas = toSignal(
-    this.camadaService.findAll({ size: 100, sortBy: 'nombre', sortDir: 'asc' })
-      .pipe(map(r => r.content), catchError(() => of([] as CamadaListItem[]))),
-    { initialValue: [] as CamadaListItem[] }
-  );
-
-  readonly aportes = computed<ModeloAnimalPoolAporteInput[]>(() =>
-    this.tuboRows()
-      .filter(r => r.selected)
-      .map(r => ({
-        poolTuboId:        r.tuboId,
-        cantidadConsumida: r.cantidadConsumida ?? undefined,
-        dia:               r.dia ?? undefined,
-      }))
-  );
-
-  get isEdit(): boolean { return !!this.id(); }
+  readonly isEdit = computed(() => !!this.identificador());
 
   constructor() {
-    const poolIdParam = this.route.snapshot.queryParamMap.get('poolId');
-    if (poolIdParam) {
-      this.form.patchValue({ poolId: Number(poolIdParam) });
-    }
+    this.loadCamadas();
 
-    // Edit mode: load existing data and pre-populate tube rows
-    effect(() => {
-      const id = this.id();
-      if (!id) return;
-      this.service.findById(+id).subscribe({
-        next: ma => {
-          this.form.patchValue({
-            identificador:        ma.identificador,
-            poolId:               ma.poolId,
-            camadaId:             ma.camadaId,
-            fechaNacimiento:      ma.fechaNacimiento,
-            sexo:                 ma.sexo,
-            fechaDia1Inoculacion: ma.fechaDia1Inoculacion,
-          }, { emitEvent: false });
-          this.loadingPool.set(true);
-          this.poolService.findById(ma.poolId).subscribe({
-            next: pool => {
-              this.loadingPool.set(false);
-              this.initTuboRows(pool, (ma.aportes ?? []).map(a => ({
-                poolTuboId:        a.poolTuboId,
-                cantidadConsumida: a.cantidadConsumida ?? undefined,
-                dia:               a.dia ?? undefined,
-              })));
-            },
-            error: () => this.loadingPool.set(false),
-          });
-        },
-        error: () => this.error.set('No se pudo cargar el modelo animal'),
-      });
-    });
+    const uso   = this.route.snapshot.queryParamMap.get('uso');
+    const rango = this.route.snapshot.queryParamMap.get('rango');
+    if (uso)                       this.filterUso.set(uso as SueroUso);
+    if (rango != null && rango !== '') this.filterRango.set(Number(rango));
 
-    // New mode: react to pool selector changes
-    this.form.get('poolId')!.valueChanges.pipe(
-      filter(v => !!v),
-      switchMap(v => {
-        this.loadingPool.set(true);
-        return this.poolService.findById(Number(v)).pipe(catchError(() => of(null)));
-      }),
+    toObservable(this.identificador).pipe(
+      filter((id): id is string => !!id),
+      switchMap(id => this.service.findByCode(id).pipe(
+        catchError(() => { this.error.set('No se pudo cargar el modelo animal'); return EMPTY; })
+      )),
       takeUntilDestroyed(this.destroyRef),
-    ).subscribe(pool => {
-      this.loadingPool.set(false);
-      if (pool) this.initTuboRows(pool);
-      else { this.poolCargado.set(null); this.tuboRows.set([]); }
+    ).subscribe(ma => {
+      this.editId = ma.id;
+      this.form.patchValue({ poolId: ma.poolId, camadaId: ma.camadaId, sexo: ma.sexo }, { emitEvent: false });
     });
   }
 
-  private initTuboRows(pool: PoolResponse, preSelected: ModeloAnimalPoolAporteInput[] = []): void {
-    this.poolCargado.set(pool);
-    this.tuboRows.set(pool.tubos.map(t => ({
-      tuboId:            t.id,
-      posicion:          t.posicion,
-      cantidadRestante:  t.cantidadRestante,
-      selected:          preSelected.some(a => a.poolTuboId === t.id),
-      cantidadConsumida: preSelected.find(a => a.poolTuboId === t.id)?.cantidadConsumida ?? null,
-      dia:               preSelected.find(a => a.poolTuboId === t.id)?.dia ?? null,
-    })));
-  }
-
-  toggleTubo(tuboId: number): void {
-    this.tuboRows.update(rows =>
-      rows.map(r => r.tuboId === tuboId ? { ...r, selected: !r.selected } : r)
-    );
-  }
-
-  updateTuboCantidad(tuboId: number, event: Event): void {
-    const val = (event.target as HTMLInputElement).value;
-    const n = val ? Number(val) : null;
-    this.tuboRows.update(rows =>
-      rows.map(r => r.tuboId === tuboId ? { ...r, cantidadConsumida: n } : r)
-    );
-  }
-
-  updateTuboDia(tuboId: number, event: Event): void {
-    const val = (event.target as HTMLInputElement).value;
-    const n = val ? Number(val) : null;
-    this.tuboRows.update(rows =>
-      rows.map(r => r.tuboId === tuboId ? { ...r, dia: n } : r)
-    );
+  private loadCamadas(): void {
+    this.camadaService.findAll({ size: 100, sortBy: 'fechaNacimiento', sortDir: 'desc' })
+      .pipe(map(r => r.content), catchError(() => of([] as CamadaListItem[])))
+      .subscribe(list => this.camadas.set(list));
   }
 
   poolLabel(pool: PoolListItem): string {
-    return `Pool #${pool.codigo} — Rango ${pool.rango}`;
+    return pool.codigo;
+  }
+
+  camadaLabel(camada: CamadaListItem): string {
+    if (!camada.fechaNacimiento) return camada.nombre;
+    const d = new Date(camada.fechaNacimiento + 'T00:00:00');
+    return `${camada.nombre} — ${d.toLocaleDateString('es-AR')}`;
+  }
+
+  openCamadaModal(): void {
+    this.camadaForm.reset();
+    this.camadaModalError.set(null);
+    this.showCamadaModal.set(true);
+  }
+
+  closeCamadaModal(): void { this.showCamadaModal.set(false); }
+
+  guardarCamada(): void {
+    if (this.camadaForm.invalid) { this.camadaForm.markAllAsTouched(); return; }
+    this.camadaModalLoading.set(true);
+    this.camadaModalError.set(null);
+    const v = this.camadaForm.value;
+    const dto: CamadaCreate = {
+      nombre:          v.nombre!,
+      fechaNacimiento: v.fechaNacimiento!,
+    };
+    this.camadaService.create(dto).subscribe({
+      next: camada => {
+        this.loadCamadas();
+        this.form.patchValue({ camadaId: camada.id });
+        this.camadaModalLoading.set(false);
+        this.showCamadaModal.set(false);
+      },
+      error: err => {
+        this.camadaModalError.set(extractErrorMessage(err, 'Error al crear la camada'));
+        this.camadaModalLoading.set(false);
+      },
+    });
+  }
+
+  selectPool(pool: PoolListItem): void {
+    this.selectedPool.set(pool);
+  }
+
+  avanzarAStep2(): void {
+    const pool = this.selectedPool();
+    if (!pool) return;
+    this.form.patchValue({ poolId: pool.id });
+    this.step.set(2);
+  }
+
+  volverAStep1(): void {
+    this.step.set(1);
   }
 
   onKeydown(event: KeyboardEvent): void {
@@ -214,26 +218,24 @@ export class ModeloAnimalFormComponent {
     this.loading.set(true);
     this.error.set(null);
 
-    const v       = this.form.value;
-    const aportes = this.aportes();
+    const v = this.form.value;
     const dto: ModeloAnimalCreate = {
-      identificador:        v.identificador!,
-      poolId:               Number(v.poolId),
-      camadaId:             Number(v.camadaId),
-      fechaNacimiento:      v.fechaNacimiento!,
-      sexo:                 v.sexo as 'MACHO' | 'HEMBRA',
-      fechaDia1Inoculacion: v.fechaDia1Inoculacion!,
-      aportes:              aportes.length ? aportes : undefined,
+      poolId:   Number(v.poolId),
+      camadaId: Number(v.camadaId),
+      sexo:     v.sexo as 'MACHO' | 'HEMBRA',
     };
 
-    const id = this.id();
-    const req$ = id
-      ? this.service.update(+id, dto as ModeloAnimalUpdate)
+    const editId = this.editId;
+    const req$ = editId
+      ? this.service.update(editId, dto as ModeloAnimalUpdate)
       : this.service.create(dto);
 
     req$.subscribe({
-      next:  result => { this.toast.show(this.isEdit ? 'Modelo animal actualizado' : 'Modelo animal registrado'); this.router.navigate(['/internal/modelos-animales', result.id]); },
-      error: err    => { this.error.set(extractErrorMessage(err, 'Error al guardar')); this.loading.set(false); },
+      next:  result => {
+        this.toast.show(this.isEdit() ? 'Modelo animal actualizado' : 'Modelo animal registrado');
+        this.router.navigate(['/internal/modelos-animales', result.identificador]);
+      },
+      error: err => { this.error.set(extractErrorMessage(err, 'Error al guardar')); this.loading.set(false); },
     });
   }
 

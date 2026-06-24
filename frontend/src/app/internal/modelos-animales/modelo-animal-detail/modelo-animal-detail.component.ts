@@ -12,6 +12,7 @@ import { DatosBasicosMaSectionComponent } from './sections/datos-basicos-ma-sect
 import { VocalizacionesSectionComponent } from './sections/vocalizaciones-section.component';
 import { TresCamarasSectionComponent } from './sections/tres-camaras-section.component';
 import { MicroscopiaSectionComponent } from './sections/microscopia-section.component';
+import { InoculacionSectionComponent } from './sections/inoculacion-section.component';
 
 @Component({
   selector: 'app-modelo-animal-detail',
@@ -20,6 +21,7 @@ import { MicroscopiaSectionComponent } from './sections/microscopia-section.comp
     StatusBadgeComponent,
     PageHeaderComponent,
     DatosBasicosMaSectionComponent,
+    InoculacionSectionComponent,
     VocalizacionesSectionComponent,
     TresCamarasSectionComponent,
     MicroscopiaSectionComponent,
@@ -28,7 +30,7 @@ import { MicroscopiaSectionComponent } from './sections/microscopia-section.comp
   templateUrl: './modelo-animal-detail.component.html',
 })
 export class ModeloAnimalDetailComponent {
-  readonly id = input.required<string>();
+  readonly identificador = input.required<string>();
 
   private readonly service    = inject(ModeloAnimalService);
   private readonly route      = inject(ActivatedRoute);
@@ -54,11 +56,20 @@ export class ModeloAnimalDetailComponent {
     '1': 'Rango 1', '2': 'Rango 2', '3': 'Rango 3',
   };
 
+  readonly usoColors: Record<string, string> = {
+    PROBLEMA: 'bg-primary-light text-primary',
+    CONTROL:  'bg-background text-text-muted border border-border',
+  };
+  readonly usoLabels: Record<string, string> = {
+    PROBLEMA: 'Caso Problema',
+    CONTROL:  'Caso Control',
+  };
+
   constructor() {
-    toObservable(computed(() => Number(this.id()))).pipe(
+    toObservable(this.identificador).pipe(
       filter(id => !!id),
       tap(() => { this.loading.set(true); this.loadError.set(null); }),
-      switchMap(id => this.service.findById(id).pipe(catchError(() => of(null)))),
+      switchMap(id => this.service.findByCode(id).pipe(catchError(() => of(null)))),
       takeUntilDestroyed(this.destroyRef),
     ).subscribe(ma => {
       this.modeloAnimal.set(ma);

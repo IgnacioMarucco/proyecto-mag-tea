@@ -1,27 +1,25 @@
 <div class="bg-surface border border-border rounded-lg p-6">
-  <h2 class="text-sm font-semibold text-text uppercase tracking-wider font-mono mb-4">
-    Microscopía
-  </h2>
+  <h2 class="text-sm font-semibold text-text uppercase tracking-wider font-mono mb-4">Microscopía</h2>
 
   @if (modeloAnimal().numCelulasGanglionares !== null) {
     <!-- Estado con datos: solo lectura -->
     <dl class="grid grid-cols-2 gap-x-6 gap-y-4 text-sm">
       <div>
-        <dt class="text-xs font-mono text-text-muted uppercase tracking-wider mb-0.5">Células ganglionares (retina)</dt>
+        <dt class="text-xs font-mono text-text-muted uppercase tracking-wider mb-0.5">Células ganglionares</dt>
         <dd class="text-text font-mono font-semibold">{{ modeloAnimal().numCelulasGanglionares }}</dd>
       </div>
       <div>
-        <dt class="text-xs font-mono text-text-muted uppercase tracking-wider mb-0.5">Células de Purkinje (cerebelo)</dt>
+        <dt class="text-xs font-mono text-text-muted uppercase tracking-wider mb-0.5">Células de Purkinje</dt>
         <dd class="text-text font-mono font-semibold">{{ modeloAnimal().numCelulasPurkinje }}</dd>
       </div>
     </dl>
   } @else {
     <!-- Estado sin datos -->
-    <form [formGroup]="form" (ngSubmit)="save()" novalidate class="space-y-4">
-      <div class="grid grid-cols-2 gap-4">
-        <div>
+    <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+      <div class="flex items-end gap-4">
+        <div class="flex-1">
           <label for="numCelulasGanglionares" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
-            Células ganglionares (retina) <span class="text-danger">*</span>
+            Células ganglionares <span class="text-danger">*</span>
           </label>
           <input
             id="numCelulasGanglionares" type="number" formControlName="numCelulasGanglionares"
@@ -35,9 +33,9 @@
             <p role="alert" class="mt-1 text-xs text-danger">Campo obligatorio</p>
           }
         </div>
-        <div>
+        <div class="flex-1">
           <label for="numCelulasPurkinje" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
-            Células de Purkinje (cerebelo) <span class="text-danger">*</span>
+            Células de Purkinje <span class="text-danger">*</span>
           </label>
           <input
             id="numCelulasPurkinje" type="number" formControlName="numCelulasPurkinje"
@@ -51,20 +49,19 @@
             <p role="alert" class="mt-1 text-xs text-danger">Campo obligatorio</p>
           }
         </div>
+        <button
+          type="submit"
+          [disabled]="saving()"
+          class="px-4 py-2 bg-primary text-white text-sm font-medium rounded-md
+                 hover:bg-primary-dark transition-colors disabled:opacity-50 whitespace-nowrap"
+        >
+          {{ saving() ? 'Guardando...' : 'Guardar microscopía' }}
+        </button>
       </div>
 
       @if (saveError()) {
-        <p role="alert" class="text-xs text-danger">{{ saveError() }}</p>
+        <p role="alert" class="mt-3 text-xs text-danger">{{ saveError() }}</p>
       }
-
-      <button
-        type="submit"
-        [disabled]="saving()"
-        class="px-4 py-2 bg-primary text-white text-sm font-medium rounded-md
-               hover:bg-primary-dark transition-colors disabled:opacity-50"
-      >
-        {{ saving() ? 'Guardando...' : 'Guardar microscopía' }}
-      </button>
     </form>
   }
 </div>

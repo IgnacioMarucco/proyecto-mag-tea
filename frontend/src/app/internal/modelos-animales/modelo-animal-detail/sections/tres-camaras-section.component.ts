@@ -18,14 +18,19 @@ export class TresCamarasSectionComponent {
   modeloAnimal = input.required<ModeloAnimalResponse>();
   updated      = output<ModeloAnimalResponse>();
 
-  saving    = signal(false);
-  saveError = signal<string | null>(null);
+  savingM1    = signal(false);
+  savingM2    = signal(false);
+  saveErrorM1 = signal<string | null>(null);
+  saveErrorM2 = signal<string | null>(null);
 
-  form = this.fb.group({
-    m1TiempoRatonNovedad:      [null as number | null, [Validators.required, Validators.min(0)]],
-    m1TiempoObjetoNovedoso:    [null as number | null, [Validators.required, Validators.min(0)]],
-    m2TiempoRatonDesconocido:  [null as number | null, [Validators.required, Validators.min(0)]],
-    m2TiempoRatonFamiliar:     [null as number | null, [Validators.required, Validators.min(0)]],
+  formM1 = this.fb.group({
+    m1TiempoRatonNovedad:   [null as number | null, [Validators.required, Validators.min(0)]],
+    m1TiempoObjetoNovedoso: [null as number | null, [Validators.required, Validators.min(0)]],
+  });
+
+  formM2 = this.fb.group({
+    m2TiempoRatonDesconocido: [null as number | null, [Validators.required, Validators.min(0)]],
+    m2TiempoRatonFamiliar:    [null as number | null, [Validators.required, Validators.min(0)]],
   });
 
   readonly socializacionColors: Record<string, string> = {
@@ -37,20 +42,33 @@ export class TresCamarasSectionComponent {
     FALTA_SOCIALIZACION: 'Falta socialización',
   };
 
-  save(): void {
-    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
-    if (this.saving()) return;
-    this.saving.set(true);
-    this.saveError.set(null);
-    const v = this.form.value;
+  saveM1(): void {
+    if (this.formM1.invalid) { this.formM1.markAllAsTouched(); return; }
+    if (this.savingM1()) return;
+    this.savingM1.set(true);
+    this.saveErrorM1.set(null);
+    const v = this.formM1.value;
     this.service.patchTresCamaras(this.modeloAnimal().id, {
-      m1TiempoRatonNovedad:     Number(v.m1TiempoRatonNovedad),
-      m1TiempoObjetoNovedoso:   Number(v.m1TiempoObjetoNovedoso),
+      m1TiempoRatonNovedad:   Number(v.m1TiempoRatonNovedad),
+      m1TiempoObjetoNovedoso: Number(v.m1TiempoObjetoNovedoso),
+    }).subscribe({
+      next:  ma  => { this.updated.emit(ma); this.savingM1.set(false); },
+      error: err => { this.saveErrorM1.set(extractErrorMessage(err, 'Error al guardar')); this.savingM1.set(false); },
+    });
+  }
+
+  saveM2(): void {
+    if (this.formM2.invalid) { this.formM2.markAllAsTouched(); return; }
+    if (this.savingM2()) return;
+    this.savingM2.set(true);
+    this.saveErrorM2.set(null);
+    const v = this.formM2.value;
+    this.service.patchTresCamaras(this.modeloAnimal().id, {
       m2TiempoRatonDesconocido: Number(v.m2TiempoRatonDesconocido),
       m2TiempoRatonFamiliar:    Number(v.m2TiempoRatonFamiliar),
     }).subscribe({
-      next:  ma  => { this.updated.emit(ma); this.saving.set(false); },
-      error: err => { this.saveError.set(extractErrorMessage(err, 'Error al guardar')); this.saving.set(false); },
+      next:  ma  => { this.updated.emit(ma); this.savingM2.set(false); },
+      error: err => { this.saveErrorM2.set(extractErrorMessage(err, 'Error al guardar')); this.savingM2.set(false); },
     });
   }
 }
