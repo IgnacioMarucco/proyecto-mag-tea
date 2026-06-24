@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.envers.Audited;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +41,8 @@ public class Suero extends Auditable {
     @Column(nullable = false)
     private LocalDate fechaExtraccion;
 
-    private Double valorAnticuerpos;
+    @Column(precision = 12, scale = 4)
+    private BigDecimal valorAnticuerpos;
 
     private Integer rango;
 

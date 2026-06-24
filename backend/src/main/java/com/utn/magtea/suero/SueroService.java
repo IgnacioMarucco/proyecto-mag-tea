@@ -2,18 +2,24 @@ package com.utn.magtea.suero;
 
 import com.utn.magtea.caja.Caja;
 import com.utn.magtea.caja.CajaRepository;
+import com.utn.magtea.common.DomainConstants;
 import com.utn.magtea.common.PageResponse;
+import com.utn.magtea.common.SpecificationUtils;
 import com.utn.magtea.common.exception.BusinessRuleException;
 import com.utn.magtea.common.exception.ResourceNotFoundException;
 import com.utn.magtea.paciente.Paciente;
-import com.utn.magtea.paciente.PacienteEstado;
+import com.utn.magtea.paciente.PacienteEvents;
 import com.utn.magtea.paciente.PacienteRepository;
 import com.utn.magtea.paciente.TipoPaciente;
+import com.utn.magtea.pool.PoolSueroAporteRepository;
 import com.utn.magtea.tubo.Tubo;
 import com.utn.magtea.tubo.TipoTubo;
 import com.utn.magtea.tubo.TuboInputDTO;
 import com.utn.magtea.tubo.TuboRepository;
+import com.utn.magtea.tubo.TuboService;
+import com.utn.magtea.tubo.VaciarTuboRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -21,8 +27,9 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -33,18 +40,22 @@ import java.util.stream.Collectors;
 public class SueroService {
 
     private static final Set<String> SORT_FIELDS_VALIDOS = Set.of("createdAt", "fechaExtraccion", "rango", "codigoNumerico");
+    private static final Map<String, String> SORT_FIELD_ALIASES = Map.of("codigoNumerico", "paciente.codigoNumerico");
 
     private final SueroRepository repository;
     private final SueroMapper mapper;
     private final TuboRepository tuboRepository;
     private final PacienteRepository pacienteRepository;
+    private final PoolSueroAporteRepository poolSueroAporteRepository;
+    private final ApplicationEventPublisher events;
     private final CajaRepository cajaRepository;
+    private final TuboService tuboService;
 
     @Transactional(readOnly = true)
     public PageResponse<SueroListDTO> findAll(int page, int size, String q, List<Integer> rangos,
                                               SueroUso uso, String codigoPaciente,
                                               String sortBy, String sortDir) {
-        Sort sort = buildSort(sortBy, sortDir, "createdAt");
+        Sort sort = SpecificationUtils.buildSort(sortBy, sortDir, "createdAt", SORT_FIELDS_VALIDOS, SORT_FIELD_ALIASES);
         Page<Suero> result = repository.findAll(
                 buildSpec(q, rangos, uso, codigoPaciente),
                 PageRequest.of(page, size, sort));
@@ -82,7 +93,7 @@ public class SueroService {
                 .filter(Caja::isActivo)
                 .orElseThrow(() -> new ResourceNotFoundException("Caja con id " + dto.cajaId() + " no existe"));
 
-        validarPosicionesSinSuperposicion(dto.cajaId(), dto.tubos(), null);
+        tuboService.validarPosicionesSinConflicto(dto.cajaId(), dto.tubos(), null, null, Set.of());
 
         Suero suero = new Suero();
         suero.setPaciente(paciente);
@@ -103,8 +114,7 @@ public class SueroService {
             tuboRepository.save(tubo);
         }
 
-        paciente.setEstadoClinico(PacienteEstado.EXTRACCION_REALIZADA);
-        pacienteRepository.save(paciente);
+        events.publishEvent(new PacienteEvents.SueroRegistradoEvent(paciente.getId()));
 
         return mapper.toDTO(repository.findById(saved.getId()).orElseThrow());
     }
@@ -117,7 +127,7 @@ public class SueroService {
                 .filter(Caja::isActivo)
                 .orElseThrow(() -> new ResourceNotFoundException("Caja con id " + dto.cajaId() + " no existe"));
 
-        validarPosicionesSinSuperposicion(dto.cajaId(), dto.tubos(), id);
+        tuboService.validarPosicionesSinConflicto(dto.cajaId(), dto.tubos(), id, null, Set.of());
 
         Map<String, Tubo> existingByPosicion = tuboRepository.findBySueroId(id).stream()
                 .collect(Collectors.toMap(Tubo::getPosicion, t -> t));
@@ -126,7 +136,7 @@ public class SueroService {
                 .collect(Collectors.toSet());
 
         for (Tubo t : existingByPosicion.values()) {
-            if (!newPosiciones.contains(t.getPosicion()) && t.getCantidadUsada() > 0) {
+            if (!newPosiciones.contains(t.getPosicion()) && t.getCantidadUsada().compareTo(BigDecimal.ZERO) > 0) {
                 throw new BusinessRuleException(
                         "El tubo " + t.getPosicion() + " tiene " + t.getCantidadUsada()
                         + " mL usados y no puede eliminarse");
@@ -135,7 +145,7 @@ public class SueroService {
 
         for (TuboInputDTO t : dto.tubos()) {
             Tubo existing = existingByPosicion.get(t.posicion());
-            if (existing != null && t.cantidadInicial() < existing.getCantidadUsada()) {
+            if (existing != null && t.cantidadInicial().compareTo(existing.getCantidadUsada()) < 0) {
                 throw new BusinessRuleException(
                         "El tubo " + t.posicion() + " ya tiene " + existing.getCantidadUsada()
                         + " mL usados; la nueva cantidad inicial no puede ser menor");
@@ -144,13 +154,14 @@ public class SueroService {
 
         for (Tubo t : existingByPosicion.values()) {
             if (!newPosiciones.contains(t.getPosicion())) {
-                tuboRepository.delete(t);
+                suero.getTubos().remove(t);
             }
         }
 
         for (TuboInputDTO t : dto.tubos()) {
             Tubo existing = existingByPosicion.get(t.posicion());
             if (existing != null) {
+                existing.setCaja(caja);
                 existing.setCantidadInicial(t.cantidadInicial());
                 tuboRepository.save(existing);
             } else {
@@ -161,6 +172,7 @@ public class SueroService {
                 newTubo.setPosicion(t.posicion());
                 newTubo.setCantidadInicial(t.cantidadInicial());
                 tuboRepository.save(newTubo);
+                suero.getTubos().add(newTubo);
             }
         }
 
@@ -175,8 +187,24 @@ public class SueroService {
     @Transactional
     public void delete(Long id) {
         Suero suero = findActiveById(id);
+        boolean tieneAportesActivos = suero.getTubos().stream()
+                .anyMatch(tubo -> poolSueroAporteRepository.existsByTuboIdAndPool_ActivoTrue(tubo.getId()));
+        if (tieneAportesActivos)
+            throw new BusinessRuleException("El suero tiene aportes en pools activos y no puede darse de baja");
+        for (Tubo tubo : suero.getTubos()) {
+            tubo.setPosicion(null);
+            tuboRepository.save(tubo);
+        }
         suero.setActivo(false);
         repository.save(suero);
+        events.publishEvent(new PacienteEvents.SueroEliminadoEvent(suero.getPaciente().getId()));
+    }
+
+    @Transactional
+    public SueroResponseDTO liberarGrilla(Long id, VaciarTuboRequest req) {
+        Suero suero = findActiveById(id);
+        suero.getTubos().forEach(tubo -> tuboService.vaciar(tubo.getId(), req));
+        return mapper.toDTO(repository.findById(id).orElseThrow());
     }
 
     @Transactional(readOnly = true)
@@ -186,7 +214,7 @@ public class SueroService {
         record Grupo(SueroUso uso, Integer rango) {}
         Map<Grupo, List<Tubo>> porGrupo = tubos.stream()
                 .filter(t -> t.getSuero().getUso() != null && t.getSuero().getRango() != null)
-                .filter(t -> t.getCantidadRestante() > 0)
+                .filter(t -> t.getCantidadRestante().compareTo(BigDecimal.ZERO) > 0)
                 .collect(Collectors.groupingBy(t -> new Grupo(t.getSuero().getUso(), t.getSuero().getRango())));
 
         List<SueroDisponibilidadDTO> result = new ArrayList<>();
@@ -198,49 +226,18 @@ public class SueroService {
                         .map(t -> t.getSuero().getId())
                         .distinct()
                         .count();
-                double mlDisponibles = grupo.stream()
-                        .mapToDouble(Tubo::getCantidadRestante)
-                        .sum();
-                int ratonesPosibles = (int) Math.floor(mlDisponibles / 0.2);
+                BigDecimal mlDisponibles = grupo.stream()
+                        .map(Tubo::getCantidadRestante)
+                        .reduce(BigDecimal.ZERO, BigDecimal::add);
+                int ratonesPosibles = mlDisponibles.divide(DomainConstants.ML_POR_RATON, 0, RoundingMode.FLOOR).intValue();
                 result.add(new SueroDisponibilidadDTO(uso, rango, cantidadSueros, mlDisponibles, ratonesPosibles));
             }
         }
         return result;
     }
 
-    private void validarPosicionesSinSuperposicion(Long cajaId, List<TuboInputDTO> nuevos, Long excludeSueroId) {
-        Set<String> nuevasPos = nuevos.stream()
-                .map(TuboInputDTO::posicion)
-                .collect(Collectors.toSet());
-
-        Set<String> ocupadasSuero = tuboRepository.findByCajaIdAndSueroActivoTrue(cajaId).stream()
-                .filter(t -> excludeSueroId == null || !t.getSuero().getId().equals(excludeSueroId))
-                .filter(t -> t.getCantidadRestante() > 0)
-                .map(Tubo::getPosicion)
-                .collect(Collectors.toSet());
-
-        Set<String> conflictoSuero = new HashSet<>(nuevasPos);
-        conflictoSuero.retainAll(ocupadasSuero);
-        if (!conflictoSuero.isEmpty()) {
-            throw new BusinessRuleException(
-                    "Las posiciones " + String.join(", ", conflictoSuero) + " ya están ocupadas en esta caja");
-        }
-
-        Set<String> ocupadasPool = tuboRepository.findByCajaIdAndPoolActivoTrue(cajaId).stream()
-                .filter(t -> t.getCantidadRestante() > 0)
-                .map(Tubo::getPosicion)
-                .collect(Collectors.toSet());
-
-        Set<String> conflictoPool = new HashSet<>(nuevasPos);
-        conflictoPool.retainAll(ocupadasPool);
-        if (!conflictoPool.isEmpty()) {
-            throw new BusinessRuleException(
-                    "Las posiciones " + String.join(", ", conflictoPool) + " ya están ocupadas por un pool en esta caja");
-        }
-    }
-
     private Specification<Suero> buildSpec(String q, List<Integer> rangos, SueroUso uso, String codigoPaciente) {
-        Specification<Suero> spec = activoTrue();
+        Specification<Suero> spec = SpecificationUtils.activoTrue();
         if (q != null && !q.isBlank())       spec = spec.and(searchByCodigo(q));
         if (rangos != null && !rangos.isEmpty()) spec = spec.and(rangoIn(rangos));
         if (uso != null)              spec = spec.and(usoEquals(uso));
@@ -258,26 +255,12 @@ public class SueroService {
         return (root, query, cb) -> cb.equal(root.get("paciente").get("codigoNumerico"), codigo);
     }
 
-    private Specification<Suero> activoTrue() {
-        return (root, query, cb) -> cb.isTrue(root.get("activo"));
-    }
-
     private Specification<Suero> rangoIn(List<Integer> rangos) {
         return (root, query, cb) -> root.get("rango").in(rangos);
     }
 
     private Specification<Suero> usoEquals(SueroUso uso) {
         return (root, query, cb) -> cb.equal(root.get("uso"), uso);
-    }
-
-    private Sort buildSort(String sortBy, String sortDir, String defaultField) {
-        Sort.Direction dir = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        String field = SORT_FIELDS_VALIDOS.contains(sortBy) ? sortBy : defaultField;
-        if ("codigoNumerico".equals(field)) {
-            String nestedField = "paciente.codigoNumerico";
-            return Sort.by(dir, nestedField);
-        }
-        return Sort.by(dir, field);
     }
 
     private Suero findActiveById(Long id) {

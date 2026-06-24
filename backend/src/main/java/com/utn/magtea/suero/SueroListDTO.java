@@ -1,15 +1,16 @@
 package com.utn.magtea.suero;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record SueroListDTO(
         Long id,
         Long pacienteId,
         String codigoNumerico,
-        Double valorAnticuerpos,
+        BigDecimal valorAnticuerpos,
         Integer rango,
         SueroUso uso,
-        Double cantidadRestante,
-        Double cantidadTotal,
+        BigDecimal cantidadRestante,
+        BigDecimal cantidadTotal,
         LocalDate fechaExtraccion
 ) {}

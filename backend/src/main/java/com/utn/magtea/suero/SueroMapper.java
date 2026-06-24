@@ -1,19 +1,22 @@
 package com.utn.magtea.suero;
 
+import com.utn.magtea.common.MapperHelper;
 import com.utn.magtea.tubo.Tubo;
 import com.utn.magtea.tubo.TuboDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.Named;
 
-@Mapper(componentModel = "spring")
+import java.math.BigDecimal;
+import java.util.List;
+
+@Mapper(componentModel = "spring", uses = {MapperHelper.class})
 public interface SueroMapper {
 
     @Mapping(target = "pacienteId",      source = "paciente.id")
     @Mapping(target = "codigoNumerico",  source = "paciente.codigoNumerico")
-    @Mapping(target = "cantidadRestante",
-             expression = "java(suero.getTubos().stream().mapToDouble(t -> t.getCantidadRestante()).sum())")
-    @Mapping(target = "cantidadTotal",
-             expression = "java(suero.getTubos().stream().mapToDouble(t -> t.getCantidadInicial()).sum())")
+    @Mapping(target = "cantidadRestante", source = "tubos", qualifiedByName = "sumCantidadRestante")
+    @Mapping(target = "cantidadTotal",    source = "tubos", qualifiedByName = "sumCantidadInicial")
     SueroListDTO toListDTO(Suero suero);
 
     @Mapping(target = "pacienteId",     source = "paciente.id")
@@ -22,13 +25,21 @@ public interface SueroMapper {
     @Mapping(target = "freezer",        source = "caja.freezer")
     @Mapping(target = "cajon",          source = "caja.cajon")
     @Mapping(target = "cajaNumero",     source = "caja.numero")
-    @Mapping(target = "cantidadTotal",
-             expression = "java(suero.getTubos().stream().mapToDouble(t -> t.getCantidadInicial()).sum())")
-    @Mapping(target = "cantidadRestante",
-             expression = "java(suero.getTubos().stream().mapToDouble(t -> t.getCantidadRestante()).sum())")
+    @Mapping(target = "cantidadTotal",    source = "tubos", qualifiedByName = "sumCantidadInicial")
+    @Mapping(target = "cantidadRestante", source = "tubos", qualifiedByName = "sumCantidadRestante")
+    @Mapping(target = "tubos",            source = "tubos", qualifiedByName = "toActiveTuboList")
     SueroResponseDTO toDTO(Suero suero);
 
     TuboDTO toTuboDTO(Tubo tubo);
+
+    @Named("toActiveTuboList")
+    default List<TuboDTO> toActiveTuboList(List<Tubo> tubos) {
+        if (tubos == null) return List.of();
+        return tubos.stream()
+                .filter(t -> t.getCantidadRestante().compareTo(BigDecimal.ZERO) > 0)
+                .map(this::toTuboDTO)
+                .toList();
+    }
 
     @Mapping(target = "id",       ignore = true)
     @Mapping(target = "activo",   ignore = true)

@@ -5,6 +5,8 @@ import com.utn.magtea.common.Auditable;
 import com.utn.magtea.pool.Pool;
 import com.utn.magtea.suero.Suero;
 import jakarta.persistence.*;
+
+import java.math.BigDecimal;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -41,16 +43,23 @@ public class Tubo extends Auditable {
     @JoinColumn(name = "pool_id")
     private Pool pool;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String posicion;
 
-    @Column(nullable = false)
-    private double cantidadInicial;
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal cantidadInicial;
 
-    @Column(nullable = false)
-    private double cantidadUsada = 0.0;
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal cantidadUsada = BigDecimal.ZERO;
 
-    public double getCantidadRestante() {
-        return cantidadInicial - cantidadUsada;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = true)
+    private MotivoVaciado motivoVaciado;
+
+    @Column(nullable = true, length = 500)
+    private String notasVaciado;
+
+    public BigDecimal getCantidadRestante() {
+        return cantidadInicial.subtract(cantidadUsada);
     }
 }
