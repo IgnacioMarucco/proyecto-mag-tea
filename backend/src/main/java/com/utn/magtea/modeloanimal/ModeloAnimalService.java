@@ -350,7 +350,11 @@ public class ModeloAnimalService {
     }
 
     private Specification<ModeloAnimal> searchCamada(String q) {
-        return (root, query, cb) -> cb.like(cb.lower(root.get("camada").get("nombre")), "%" + q.toLowerCase() + "%");
+        String pattern = "%" + q.toLowerCase() + "%";
+        return (root, query, cb) -> cb.or(
+                cb.like(cb.lower(root.get("camada").get("nombre")), pattern),
+                cb.like(cb.lower(root.get("identificador")), pattern)
+        );
     }
 
     private Specification<ModeloAnimal> poolEquals(Long poolId) {
