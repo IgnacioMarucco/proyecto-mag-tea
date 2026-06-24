@@ -1,5 +1,7 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, signal } from '@angular/core';
+import { toObservable, takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Meta, Title } from '@angular/platform-browser';
+import { catchError, filter, switchMap, EMPTY } from 'rxjs';
 import { MchatService, MchatPublicInfo, MchatSubmit } from '../../core/services/mchat.service';
 import { MchatPreguntasComponent } from '../../shared/mchat-preguntas/mchat-preguntas.component';
 import { extractErrorMessage } from '../../shared/utils/error.utils';
@@ -10,7 +12,7 @@ import { extractErrorMessage } from '../../shared/utils/error.utils';
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './mchat-form.component.html',
 })
-export class MchatFormComponent implements OnInit {
+export class MchatFormComponent {
   private readonly service = inject(MchatService);
 
   token = input.required<string>();
@@ -28,15 +30,14 @@ export class MchatFormComponent implements OnInit {
       { property: 'og:description', content: 'Completá el cuestionario enviado por el equipo MAG-TEA.' },
       { property: 'og:type', content: 'website' },
     ]);
-  }
 
-  ngOnInit(): void {
-    const t = this.token();
-    if (!t) return;
-    this.service.getFormulario(t).subscribe({
-      next:  p  => this.paciente.set(p),
-      error: () => this.loadError.set('El enlace no es válido o ha expirado.'),
-    });
+    toObservable(this.token).pipe(
+      filter(t => !!t),
+      switchMap(t => this.service.getFormulario(t!).pipe(
+        catchError(() => { this.loadError.set('El enlace no es válido o ha expirado.'); return EMPTY; })
+      )),
+      takeUntilDestroyed(),
+    ).subscribe(p => this.paciente.set(p));
   }
 
   onSubmit(respuestas: boolean[]): void {
