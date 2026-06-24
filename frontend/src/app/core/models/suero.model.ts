@@ -1,5 +1,12 @@
 export type SueroUso = 'CONTROL' | 'PROBLEMA';
 
+export type MotivoVaciado = 'CONSUMIDO' | 'PERDIDO' | 'VENCIDO' | 'CONTAMINADO' | 'OTRO';
+
+export interface VaciarTuboPayload {
+  motivo: MotivoVaciado;
+  notas?: string;
+}
+
 export interface SueroTuboInput {
   posicion: string;
   cantidadInicial: number;
@@ -10,6 +17,7 @@ export interface SueroTuboItem {
   posicion: string;
   cantidadInicial: number;
   cantidadRestante: number;
+  motivoVaciado?: MotivoVaciado;
 }
 
 export interface SueroListItem {

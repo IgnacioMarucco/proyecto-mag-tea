@@ -14,7 +14,7 @@ export interface PacientePorCodigo {
   codigoNumerico: string;
   nombreNino: string;
   apellidoNino: string;
-  fechaExtraccion: string | null;
+  fechaTurnoExtraccion: string | null;
   tipoPaciente: TipoPaciente;
 }
 
@@ -29,7 +29,8 @@ export interface PacienteListItem {
   tipoPaciente: TipoPaciente;
   pacienteEstado: PacienteEstado;
   fechaPrimeraVisita: string | null;
-  fechaExtraccion: string | null;
+  fechaTurnoExtraccion: string | null;
+  proximaFechaEvento: string | null;
 }
 
 export interface PacienteCreate {
@@ -72,7 +73,7 @@ export interface PacienteUpdate {
   sexo: Sexo;
   notas?: string;
   fechaPrimeraVisita?: string;
-  fechaExtraccion?: string;
+  fechaTurnoExtraccion?: string;
 }
 
 export interface PacienteCriterios {
@@ -134,7 +135,7 @@ export interface PacienteVineland {
 }
 
 export interface PacienteSegundaVisita {
-  fechaExtraccion: string;
+  fechaTurnoExtraccion: string;
 }
 
 export interface PacienteConsentimiento {
@@ -207,7 +208,7 @@ export interface PacienteResponse {
   vinelandConductaDesadaptativa: number | null;
   vinelandInternalizante: number | null;
   vinelandExternalizante: number | null;
-  fechaExtraccion: string | null;
+  fechaTurnoExtraccion: string | null;
   activo: boolean;
   createdAt: string;
 }

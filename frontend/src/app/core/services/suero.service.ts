@@ -9,6 +9,7 @@ import {
   SueroUpdate,
   SueroUso,
   SueroDisponibilidad,
+  VaciarTuboPayload,
 } from '../models/suero.model';
 
 export interface SueroListParams extends PageParams {
@@ -57,5 +58,9 @@ export class SueroService {
 
   getDisponibilidad(): Observable<SueroDisponibilidad[]> {
     return this.http.get<SueroDisponibilidad[]>(`${this.base}/disponibilidad-pool`);
+  }
+
+  liberarGrilla(id: number, payload: VaciarTuboPayload): Observable<SueroResponse> {
+    return this.http.post<SueroResponse>(`${this.base}/${id}/liberar-grilla`, payload);
   }
 }

@@ -3,6 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { PageResponse, PageParams } from '../models/page-response.model';
 import { PoolListItem, PoolResponse, PoolCreate, PoolUpdate } from '../models/pool.model';
+import { VaciarTuboPayload } from '../models/suero.model';
 
 export interface PoolListParams extends PageParams {
   rangos?: string[];
@@ -30,6 +31,10 @@ export class PoolService {
     return this.http.get<PoolResponse>(`${this.base}/${id}`);
   }
 
+  findByCodigo(codigo: string): Observable<PoolResponse> {
+    return this.http.get<PoolResponse>(`${this.base}/by-codigo/${codigo}`);
+  }
+
   create(dto: PoolCreate): Observable<PoolResponse> {
     return this.http.post<PoolResponse>(this.base, dto);
   }
@@ -40,5 +45,9 @@ export class PoolService {
 
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/${id}`);
+  }
+
+  liberarGrilla(id: number, payload: VaciarTuboPayload): Observable<PoolResponse> {
+    return this.http.post<PoolResponse>(`${this.base}/${id}/liberar-grilla`, payload);
   }
 }

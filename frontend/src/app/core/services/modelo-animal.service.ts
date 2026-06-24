@@ -7,6 +7,7 @@ import {
   ModeloAnimalResponse,
   ModeloAnimalCreate,
   ModeloAnimalUpdate,
+  ModeloAnimalInoculacionCreate,
   SexoRaton,
   VocalizacionesCreate,
   TresCamarasCreate,
@@ -37,6 +38,10 @@ export class ModeloAnimalService {
     return this.http.get<PageResponse<ModeloAnimalListItem>>(this.base, { params: p });
   }
 
+  findByCode(identificador: string): Observable<ModeloAnimalResponse> {
+    return this.http.get<ModeloAnimalResponse>(`${this.base}/by-code/${identificador}`);
+  }
+
   findById(id: number): Observable<ModeloAnimalResponse> {
     return this.http.get<ModeloAnimalResponse>(`${this.base}/${id}`);
   }
@@ -51,6 +56,10 @@ export class ModeloAnimalService {
 
   delete(id: number): Observable<void> {
     return this.http.delete<void>(`${this.base}/${id}`);
+  }
+
+  patchInoculacion(id: number, dto: ModeloAnimalInoculacionCreate): Observable<ModeloAnimalResponse> {
+    return this.http.patch<ModeloAnimalResponse>(`${this.base}/${id}/inoculacion`, dto);
   }
 
   patchVocalizaciones(id: number, dto: VocalizacionesCreate): Observable<ModeloAnimalResponse> {

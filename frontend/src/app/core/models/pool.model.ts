@@ -1,4 +1,4 @@
-import { SueroUso } from './suero.model';
+import { MotivoVaciado, SueroUso } from './suero.model';
 
 export interface PoolTuboInput {
   posicion: string;
@@ -10,6 +10,7 @@ export interface PoolTuboItem {
   posicion: string;
   cantidadInicial: number;
   cantidadRestante: number;
+  motivoVaciado?: MotivoVaciado;
 }
 
 export interface SueroTuboAporte {
@@ -18,8 +19,7 @@ export interface SueroTuboAporte {
 }
 
 export interface PoolSueroAporteItem {
-  sueroTuboId: number;
-  posicion: string;
+  sueroId: number;
   codigoSuero: string;
   codigoPaciente: string;
   cantidadAportada: number;
@@ -47,6 +47,9 @@ export interface PoolResponse {
   cantidadTotal: number;
   cantidadRestante: number;
   cajaId: number;
+  freezer: string;
+  cajon: number;
+  cajaNumero: number;
   tubos: PoolTuboItem[];
   aportes: PoolSueroAporteItem[];
   activo: boolean;
@@ -55,7 +58,6 @@ export interface PoolResponse {
 
 export interface PoolCreate {
   cajaId: number;
-  fechaCreacion: string;
   aportes: SueroTuboAporte[];
   tubos: PoolTuboInput[];
 }

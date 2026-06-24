@@ -1,6 +1,7 @@
 export type SexoRaton = 'MACHO' | 'HEMBRA';
 export type VusBanda = 'AVERSIVA' | 'APETITIVA';
 export type SocializacionResultado = 'NORMAL' | 'FALTA_SOCIALIZACION';
+export type SueroUso = 'PROBLEMA' | 'CONTROL';
 
 export interface VocalizacionesCreate {
   muestra1Khz: number;
@@ -15,19 +16,19 @@ export interface VocalizacionesResponse {
 }
 
 export interface TresCamarasCreate {
-  m1TiempoRatonNovedad: number;
-  m1TiempoObjetoNovedoso: number;
-  m2TiempoRatonDesconocido: number;
-  m2TiempoRatonFamiliar: number;
+  m1TiempoRatonNovedad?: number;
+  m1TiempoObjetoNovedoso?: number;
+  m2TiempoRatonDesconocido?: number;
+  m2TiempoRatonFamiliar?: number;
 }
 
 export interface TresCamarasResponse {
   m1TiempoRatonNovedad: number;
   m1TiempoObjetoNovedoso: number;
-  m2TiempoRatonDesconocido: number;
-  m2TiempoRatonFamiliar: number;
+  m2TiempoRatonDesconocido: number | null;
+  m2TiempoRatonFamiliar: number | null;
   sociabilizacion1: SocializacionResultado;
-  sociabilizacion2: SocializacionResultado;
+  sociabilizacion2: SocializacionResultado | null;
 }
 
 export interface MicroscopiaCreate {
@@ -43,9 +44,14 @@ export interface ModeloAnimalPoolAporteInput {
 
 export interface ModeloAnimalPoolAporteItem {
   poolTuboId: number;
-  posicion: string;
+  posicion: string | null;
   cantidadConsumida: number | null;
   dia: number | null;
+}
+
+export interface ModeloAnimalInoculacionCreate {
+  fechaDia1Inoculacion: string;
+  aportes?: ModeloAnimalPoolAporteInput[];
 }
 
 export interface ModeloAnimalListItem {
@@ -54,9 +60,11 @@ export interface ModeloAnimalListItem {
   poolId: number;
   poolRango: number;
   poolCodigo: string;
+  poolUso: SueroUso;
   camadaNombre: string;
   fechaNacimiento: string;
   sexo: SexoRaton;
+  aportesCount: number;
   necesitaVocalizaciones: boolean;
   necesitaTresCamaras: boolean;
 }
@@ -67,11 +75,12 @@ export interface ModeloAnimalResponse {
   poolId: number;
   poolRango: number;
   poolCodigo: string;
+  poolUso: SueroUso;
   camadaId: number;
   camadaNombre: string;
   fechaNacimiento: string;
   sexo: SexoRaton;
-  fechaDia1Inoculacion: string;
+  fechaDia1Inoculacion: string | null;
   necesitaVocalizaciones: boolean;
   necesitaTresCamaras: boolean;
   vocalizaciones: VocalizacionesResponse | null;
@@ -84,13 +93,9 @@ export interface ModeloAnimalResponse {
 }
 
 export interface ModeloAnimalCreate {
-  identificador: string;
   poolId: number;
   camadaId: number;
-  fechaNacimiento: string;
   sexo: SexoRaton;
-  fechaDia1Inoculacion: string;
-  aportes?: ModeloAnimalPoolAporteInput[];
 }
 
 export interface ModeloAnimalUpdate extends ModeloAnimalCreate {}
