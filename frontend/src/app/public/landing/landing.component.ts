@@ -7,7 +7,7 @@ import {
   signal,
 } from '@angular/core';
 import { extractErrorMessage } from '../../shared/utils/error.utils';
-import { CommonModule, NgOptimizedImage } from '@angular/common';
+import { NgOptimizedImage, DecimalPipe } from '@angular/common';
 import { Meta, Title } from '@angular/platform-browser';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -17,12 +17,12 @@ import { DonacionService } from '../../core/services/donacion.service';
 
 @Component({
   selector: 'app-landing',
-  imports: [CommonModule, NgOptimizedImage, ReactiveFormsModule],
+  imports: [NgOptimizedImage, ReactiveFormsModule, DecimalPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './landing.component.html',
 })
 export class LandingComponent implements AfterViewInit, OnDestroy {
-  activeSection = 'proyecto';
+  readonly activeSection = signal('proyecto');
   readonly portalInternoUrl = (() => {
     const { protocol, hostname, port } = window.location;
     return `${protocol}//app.${hostname}${port ? ':' + port : ''}/login`;
@@ -69,7 +69,7 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            this.activeSection = entry.target.id;
+            this.activeSection.set(entry.target.id);
           }
         });
       },

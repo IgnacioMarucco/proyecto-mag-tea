@@ -9,9 +9,9 @@
 
     <!-- Nav — visible siempre -->
     <nav class="flex items-center gap-7" aria-label="Navegación principal">
-      <a href="#proyecto"   class="text-sm hover:text-text transition-colors" [class.text-primary]="activeSection==='proyecto'" [class.text-text-muted]="activeSection!=='proyecto'">El proyecto</a>
-      <a href="#participar" class="text-sm hover:text-text transition-colors" [class.text-primary]="activeSection==='participar'" [class.text-text-muted]="activeSection!=='participar'">Cómo participar</a>
-      <a href="#donar"      class="text-sm hover:text-text transition-colors" [class.text-primary]="activeSection==='donar'" [class.text-text-muted]="activeSection!=='donar'">Donar</a>
+      <a href="#proyecto"   class="text-sm hover:text-text transition-colors" [class.text-primary]="activeSection()==='proyecto'" [class.text-text-muted]="activeSection()!=='proyecto'">El proyecto</a>
+      <a href="#participar" class="text-sm hover:text-text transition-colors" [class.text-primary]="activeSection()==='participar'" [class.text-text-muted]="activeSection()!=='participar'">Cómo participar</a>
+      <a href="#donar"      class="text-sm hover:text-text transition-colors" [class.text-primary]="activeSection()==='donar'" [class.text-text-muted]="activeSection()!=='donar'">Donar</a>
     </nav>
 
     <!-- CTA mobile -->
