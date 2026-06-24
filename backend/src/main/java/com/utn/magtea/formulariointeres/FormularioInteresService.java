@@ -1,6 +1,7 @@
 package com.utn.magtea.formulariointeres;
 
 import com.utn.magtea.common.PageResponse;
+import com.utn.magtea.common.SpecificationUtils;
 import com.utn.magtea.common.exception.BusinessRuleException;
 import com.utn.magtea.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -28,7 +29,7 @@ public class FormularioInteresService {
     public PageResponse<FormularioInteresResponseDTO> findAll(int page, int size, String q,
                                                               List<EstadoFormulario> estados,
                                                               String sortBy, String sortDir) {
-        Sort sort = buildSort(sortBy, sortDir, "fechaContacto");
+        Sort sort = SpecificationUtils.buildSort(sortBy, sortDir, "fechaContacto", SORT_FIELDS_VALIDOS);
         Page<FormularioInteres> result = repository.findAll(buildSpec(q, estados), PageRequest.of(page, size, sort));
         return new PageResponse<>(
                 result.map(mapper::toDTO).getContent(),
@@ -121,14 +122,10 @@ public class FormularioInteresService {
     }
 
     private Specification<FormularioInteres> buildSpec(String q, List<EstadoFormulario> estados) {
-        Specification<FormularioInteres> spec = activoTrue();
+        Specification<FormularioInteres> spec = SpecificationUtils.activoTrue();
         if (q != null && !q.isBlank()) spec = spec.and(searchText(q));
         if (estados != null && !estados.isEmpty()) spec = spec.and(estadoIn(estados));
         return spec;
-    }
-
-    private Specification<FormularioInteres> activoTrue() {
-        return (root, query, cb) -> cb.isTrue(root.get("activo"));
     }
 
     private Specification<FormularioInteres> searchText(String q) {
@@ -145,9 +142,4 @@ public class FormularioInteresService {
         return (root, query, cb) -> root.get("estado").in(estados);
     }
 
-    private Sort buildSort(String sortBy, String sortDir, String defaultField) {
-        String field = SORT_FIELDS_VALIDOS.contains(sortBy) ? sortBy : defaultField;
-        Sort.Direction dir = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        return Sort.by(dir, field);
-    }
 }

@@ -1,19 +1,14 @@
 package com.utn.magtea.formulariointeres;
 
+import com.utn.magtea.common.MapperHelper;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = {MapperHelper.class})
 public interface FormularioInteresMapper {
 
-    @Mapping(
-        target = "edadActual",
-        expression = "java(entity.getFechaNacimientoNino() != null ? java.time.Period.between(entity.getFechaNacimientoNino(), java.time.LocalDate.now()).getYears() : null)"
-    )
-    @Mapping(
-        target = "edadMeses",
-        expression = "java(entity.getFechaNacimientoNino() != null ? java.time.Period.between(entity.getFechaNacimientoNino(), java.time.LocalDate.now()).getMonths() : null)"
-    )
+    @Mapping(target = "edadActual", source = "fechaNacimientoNino", qualifiedByName = "calculateAgeYears")
+    @Mapping(target = "edadMeses",  source = "fechaNacimientoNino", qualifiedByName = "calculateAgeMonths")
     FormularioInteresResponseDTO toDTO(FormularioInteres entity);
 
     @Mapping(target = "id", ignore = true)

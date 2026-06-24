@@ -19,13 +19,12 @@ import java.util.List;
 @RequestMapping(ApiConstants.V1 + "/formularios-interes")
 @Tag(name = "Formularios de Interés")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
 public class FormularioInteresController {
 
     private final FormularioInteresService service;
 
-    @GetMapping
-    @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Listar formularios de interés con paginación")
+    @GetMapping    @Operation(summary = "Listar formularios de interés con paginación")
     public PageResponse<FormularioInteresResponseDTO> findAll(
             @RequestParam(defaultValue = "0")            int page,
             @RequestParam(defaultValue = "20")           int size,
@@ -36,14 +35,13 @@ public class FormularioInteresController {
         return service.findAll(page, size, q, estados, sortBy, sortDir);
     }
 
-    @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Obtener formulario de interés por id")
+    @GetMapping("/{id}")    @Operation(summary = "Obtener formulario de interés por id")
     public FormularioInteresResponseDTO findById(@PathVariable Long id) {
         return service.findById(id);
     }
 
     @PostMapping
+    @PreAuthorize("permitAll()")
     @Operation(summary = "Registrar formulario de interés (acceso público)")
     public ResponseEntity<FormularioInteresResponseDTO> create(@RequestBody @Valid FormularioInteresCreateDTO dto) {
         FormularioInteresResponseDTO created = service.create(dto);
@@ -52,17 +50,13 @@ public class FormularioInteresController {
         return ResponseEntity.created(location).body(created);
     }
 
-    @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Actualizar formulario de interés")
+    @PutMapping("/{id}")    @Operation(summary = "Actualizar formulario de interés")
     public FormularioInteresResponseDTO update(@PathVariable Long id,
                                                @RequestBody @Valid FormularioInteresCreateDTO dto) {
         return service.update(id, dto);
     }
 
-    @PatchMapping("/{id}/estado")
-    @PreAuthorize("hasAnyRole('CUERPO_MEDICO', 'INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Cambiar estado del formulario (PENDIENTE→CONTACTADO, CONTACTADO/PENDIENTE→DESCARTADO)")
+    @PatchMapping("/{id}/estado")    @Operation(summary = "Cambiar estado del formulario (PENDIENTE→CONTACTADO, CONTACTADO/PENDIENTE→DESCARTADO)")
     public FormularioInteresResponseDTO cambiarEstado(@PathVariable Long id,
                                                       @RequestBody @Valid EstadoUpdateDTO dto) {
         return service.cambiarEstado(id, dto);
