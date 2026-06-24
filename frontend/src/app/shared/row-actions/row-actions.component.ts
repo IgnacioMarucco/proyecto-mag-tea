@@ -1,4 +1,6 @@
 import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, input, signal, viewChild, viewChildren } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { filter, fromEvent, merge } from 'rxjs';
 import { IconComponent } from '../icon/icon.component';
 
 export type RowActionStyle = 'default' | 'primary' | 'danger';
@@ -34,6 +36,14 @@ export class RowActionsComponent {
       if (!this.panelOpen() || this.actionItems().length === 0) return;
       this.actionItems().find(r => !r.nativeElement.disabled)?.nativeElement.focus();
     });
+
+    merge(
+      fromEvent(window, 'resize'),
+      fromEvent(window, 'scroll', { capture: true }),
+    ).pipe(
+      filter(() => this.panelOpen()),
+      takeUntilDestroyed(),
+    ).subscribe(() => this.panelOpen.set(false));
   }
 
   togglePanel(event: MouseEvent): void {

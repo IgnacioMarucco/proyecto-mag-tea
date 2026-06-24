@@ -1,0 +1,82 @@
+<!-- Backdrop -->
+<div
+  class="fixed inset-0 bg-sidebar/50 flex items-center justify-center z-50 p-5"
+  (click)="cancelled.emit()"
+>
+  <!-- Panel -->
+  <div
+    class="bg-surface border border-border rounded-lg w-full max-w-md shadow-md"
+    (click)="$event.stopPropagation()"
+    (keydown.escape)="cancelled.emit()"
+    cdkTrapFocus
+    cdkTrapFocusAutoCapture
+  >
+    <!-- Header -->
+    <div class="flex items-start justify-between px-6 pt-5 pb-4 border-b border-border">
+      <h3 id="vaciar-modal-title" class="text-base font-semibold text-text">{{ titulo }}</h3>
+      <button
+        type="button"
+        (click)="cancelled.emit()"
+        aria-label="Cerrar"
+        class="text-text-muted hover:text-text transition-colors text-xl leading-none cursor-pointer ml-4"
+      >×</button>
+    </div>
+
+    <!-- Body -->
+    <div class="px-6 py-5 space-y-4">
+      <p class="text-sm text-text-muted">{{ descripcion }}</p>
+
+      <form [formGroup]="form" class="space-y-4">
+        <!-- Motivo -->
+        <div class="space-y-1.5">
+          <label for="vaciar-motivo" class="block text-sm font-medium text-text">
+            Motivo <span class="text-danger" aria-hidden="true">*</span>
+          </label>
+          <select
+            id="vaciar-motivo"
+            formControlName="motivo"
+            class="w-full px-3 py-2 text-sm bg-background border rounded-md text-text focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors"
+            [class.border-danger]="form.get('motivo')?.invalid && form.get('motivo')?.touched"
+            [class.border-border]="!(form.get('motivo')?.invalid && form.get('motivo')?.touched)"
+          >
+            <option value="" disabled>Seleccioná un motivo...</option>
+            @for (m of motivos; track m.value) {
+              <option [value]="m.value">{{ m.label }}</option>
+            }
+          </select>
+          @if (form.get('motivo')?.invalid && form.get('motivo')?.touched) {
+            <p class="text-xs text-danger">El motivo es obligatorio.</p>
+          }
+        </div>
+
+        <!-- Notas -->
+        <div class="space-y-1.5">
+          <label for="vaciar-notas" class="block text-sm font-medium text-text">
+            Notas <span class="text-text-muted text-xs">(opcional)</span>
+          </label>
+          <textarea
+            id="vaciar-notas"
+            formControlName="notas"
+            rows="3"
+            placeholder="Ej: corte de luz del 15 al 22 de junio"
+            class="w-full px-3 py-2 text-sm bg-background border border-border rounded-md text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors resize-none"
+          ></textarea>
+        </div>
+      </form>
+    </div>
+
+    <!-- Acciones -->
+    <div class="flex items-center justify-end gap-3 px-6 pb-5">
+      <button
+        type="button"
+        (click)="cancelled.emit()"
+        class="px-4 py-2 text-sm font-medium text-text-muted hover:text-text transition-colors cursor-pointer"
+      >Cancelar</button>
+      <button
+        type="button"
+        (click)="onConfirm()"
+        class="px-5 py-2 text-sm font-medium text-white bg-warning rounded-md hover:opacity-90 transition-opacity cursor-pointer"
+      >{{ titulo }}</button>
+    </div>
+  </div>
+</div>

@@ -13,7 +13,7 @@
   >
     <!-- Header -->
     <div class="flex items-start justify-between px-6 pt-5 pb-4 border-b border-border">
-      <h3 id="confirm-modal-title" class="text-base font-semibold text-text">{{ title() }}</h3>
+      <h3 [id]="titleId" class="text-base font-semibold text-text">{{ title() }}</h3>
       <button
         (click)="cancelled.emit()"
         aria-label="Cerrar"

@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnChanges, SimpleChanges, computed, inject, input, output } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { startWith } from 'rxjs';
@@ -13,7 +13,7 @@ const INVERTIDAS = new Set(MCHAT_PREGUNTAS.filter(p => p.invertida).map(p => p.n
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './mchat-preguntas.component.html',
 })
-export class MchatPreguntasComponent {
+export class MchatPreguntasComponent implements OnChanges {
   private readonly fb = inject(FormBuilder);
 
   // 'inicial' → Sí/No (familia) | 'seguimiento' → Pasa/Falla (profesional)
@@ -77,14 +77,12 @@ export class MchatPreguntasComponent {
     }).filter(Boolean).length
   );
 
-  constructor() {
-    effect(() => {
-      const r = this.respuestas();
-      if (r !== null) {
-        this.form.patchValue(Object.fromEntries(r.map((val, i) => [`q${i + 1}`, val])));
-      }
-      // Si null: el formulario queda vacío (deseleccionado) independientemente del modo
-    });
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['respuestas'] && this.respuestas() !== null) {
+      this.form.patchValue(
+        Object.fromEntries(this.respuestas()!.map((val, i) => [`q${i + 1}`, val]))
+      );
+    }
   }
 
   onSubmit(): void {

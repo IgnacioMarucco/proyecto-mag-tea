@@ -6,9 +6,11 @@ import { CdkTrapFocus } from '@angular/cdk/a11y';
   imports: [CdkTrapFocus],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './confirm-modal.component.html',
-  host: { role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'confirm-modal-title' },
+  host: { role: 'dialog', 'aria-modal': 'true', '[attr.aria-labelledby]': 'titleId' },
 })
 export class ConfirmModalComponent implements OnInit, OnDestroy {
+  readonly titleId = `confirm-modal-${crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)}`;
+
   title         = input('¿Confirmás esta acción?');
   message       = input('');
   confirmLabel  = input('Confirmar');

@@ -1,16 +1,19 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { SortState } from '../sort.utils';
+import { IconComponent } from '../icon/icon.component';
 
 export interface TableColumn {
   label: string;
   hidden?: 'sm' | 'md' | 'lg';
   sortKey?: string;
+  align?: 'center' | 'right';
 }
 
 @Component({
   selector: 'app-data-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './data-table.component.html',
+  imports: [IconComponent],
 })
 export class DataTableComponent {
   columns       = input.required<TableColumn[]>();
@@ -50,6 +53,9 @@ export class DataTableComponent {
       col.hidden === 'sm' ? ' hidden sm:table-cell' :
       col.hidden === 'md' ? ' hidden md:table-cell' :
       col.hidden === 'lg' ? ' hidden lg:table-cell' : '';
-    return 'text-left px-5 py-3 text-xs font-mono text-text-muted tracking-wider uppercase' + hidden;
+    const align =
+      col.align === 'center' ? ' text-center' :
+      col.align === 'right'  ? ' text-right'  : ' text-left';
+    return 'px-5 py-3 text-xs font-mono text-text-muted tracking-wider uppercase' + align + hidden;
   }
 }

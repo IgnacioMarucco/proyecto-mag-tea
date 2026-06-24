@@ -6,7 +6,7 @@ import { IconComponent } from '../icon/icon.component';
   selector: 'app-modal-container',
   imports: [IconComponent, CdkTrapFocus],
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { role: 'dialog', 'aria-modal': 'true', 'aria-labelledby': 'modal-container-title' },
+  host: { role: 'dialog', 'aria-modal': 'true', '[attr.aria-labelledby]': 'titleId' },
   template: `
     <div class="fixed inset-0 bg-sidebar/50 flex items-center justify-center z-50 p-5"
          (click)="closed.emit()">
@@ -21,7 +21,7 @@ import { IconComponent } from '../icon/icon.component';
            cdkTrapFocus
            cdkTrapFocusAutoCapture>
         <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border shrink-0 rounded-t-lg">
-          <h3 id="modal-container-title" class="text-base font-semibold text-text">{{ title() }}</h3>
+          <h3 [id]="titleId" class="text-base font-semibold text-text">{{ title() }}</h3>
           <div class="flex items-center gap-2">
             <ng-content select="[modal-header-actions]" />
             <button type="button" (click)="closed.emit()" aria-label="Cerrar"
@@ -38,6 +38,8 @@ import { IconComponent } from '../icon/icon.component';
   `,
 })
 export class ModalContainerComponent implements OnInit, OnDestroy {
+  readonly titleId = `modal-container-${crypto.randomUUID?.() ?? Math.random().toString(36).slice(2)}`;
+
   title  = input.required<string>();
   size   = input<'sm' | 'md' | 'lg' | 'xl'>('md');
   closed = output<void>();

@@ -36,9 +36,9 @@
       </select>
     </div>
 
-    <!-- Caja Nº -->
+    <!-- Caja -->
     <div class="flex flex-col gap-1">
-      <span class="text-xs text-text-muted">Caja Nº</span>
+      <span class="text-xs text-text-muted">Caja</span>
       <select
         (change)="selectCaja($any($event.target).value)"
         [disabled]="!cajonSel()"
@@ -54,15 +54,18 @@
     </div>
 
     <!-- Nueva caja -->
-    <button
-      type="button"
-      (click)="openModal()"
-      title="Nueva caja"
-      class="px-3 py-2 bg-surface border border-border rounded-md text-text-muted
-             hover:border-primary hover:text-primary transition-colors"
-    >
-      <app-icon name="plus" class="w-4 h-4" />
-    </button>
+    <div class="flex flex-col gap-1">
+      <span aria-hidden="true" class="text-xs invisible select-none">·</span>
+      <button
+        type="button"
+        (click)="openModal()"
+        title="Nueva caja"
+        class="flex items-center justify-center px-3 py-2 bg-surface border border-border rounded-md text-text-muted
+               hover:border-primary hover:text-primary transition-colors"
+      >
+        <app-icon name="plus" class="w-4 h-4" />
+      </button>
+    </div>
 
   </div>
 </div>
@@ -111,7 +114,7 @@
           </div>
           <div>
             <label for="fp-numero" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
-              Caja Nº <span class="text-danger">*</span>
+              Caja <span class="text-danger">*</span>
             </label>
             <input
               id="fp-numero" type="number" formControlName="numero" min="1" placeholder="1"
