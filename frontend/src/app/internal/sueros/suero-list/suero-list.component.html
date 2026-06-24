@@ -2,10 +2,31 @@
 
   <div class="flex items-center justify-between mb-6">
     <app-page-header [crumbs]="crumbs()" />
-    <a routerLink="/internal/sueros/nuevo"
-      class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors whitespace-nowrap">
-      <app-icon name="plus" class="w-4 h-4" /> Nuevo suero
-    </a>
+    <div class="flex items-center gap-2">
+      <div class="relative group/pool inline-flex">
+        <button
+          type="button"
+          [disabled]="!canCreatePool()"
+          (click)="crearPool()"
+          class="inline-flex items-center gap-1.5 px-4 py-2 bg-surface border border-border text-sm font-medium rounded-md whitespace-nowrap transition-colors"
+          [class.text-text]="canCreatePool()"
+          [class.hover:bg-background]="canCreatePool()"
+          [class.opacity-50]="!canCreatePool()"
+          [class.cursor-not-allowed]="!canCreatePool()">
+          Crear pool
+        </button>
+        @if (!canCreatePool()) {
+          <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2.5 py-1.5 bg-gray-900 text-white text-xs rounded whitespace-nowrap pointer-events-none z-50 invisible group-hover/pool:visible">
+            Seleccioná un único tipo y un único rango
+            <div class="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+          </div>
+        }
+      </div>
+      <a routerLink="/internal/sueros/nuevo"
+        class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors whitespace-nowrap">
+        <app-icon name="plus" class="w-4 h-4" /> Registrar suero
+      </a>
+    </div>
   </div>
 
   @if (codigoPacienteFiltro()) {
@@ -58,6 +79,14 @@
         </td>
 
         <td class="px-5 py-3.5">
+          @if (suero.uso) {
+            <app-status-badge [value]="suero.uso" [labels]="usoLabels" [colorMap]="usoColors" />
+          } @else {
+            <span class="text-text-muted text-xs">—</span>
+          }
+        </td>
+
+        <td class="px-5 py-3.5">
           @if (suero.rango != null) {
             <app-status-badge [value]="'' + suero.rango" [labels]="rangoLabels" [colorMap]="rangoColors" />
           } @else {
@@ -69,25 +98,7 @@
         </td>
 
         <td class="px-5 py-3.5">
-          @if (suero.uso) {
-            <app-status-badge [value]="suero.uso" [labels]="usoLabels" [colorMap]="usoColors" />
-          } @else {
-            <span class="text-text-muted text-xs">—</span>
-          }
-        </td>
-
-        <td class="px-5 py-3.5">
-          @let pct = suero.cantidadTotal > 0 ? suero.cantidadRestante / suero.cantidadTotal : 0;
-          <div class="w-28">
-            <div class="h-1.5 bg-border rounded-full overflow-hidden mb-1">
-              <div class="h-full rounded-full"
-                   [style.width.%]="pct * 100"
-                   [class]="pct > 0.5 ? 'bg-accent' : pct > 0.2 ? 'bg-warning' : 'bg-danger'">
-              </div>
-            </div>
-            <span class="text-xs font-mono text-text">{{ suero.cantidadRestante | ml }}</span>
-            <span class="text-xs font-mono text-text-muted"> / {{ suero.cantidadTotal | ml }} ml</span>
-          </div>
+          <app-volume-bar [value]="suero.cantidadRestante" [total]="suero.cantidadTotal" />
         </td>
 
         <td class="px-5 py-3.5">

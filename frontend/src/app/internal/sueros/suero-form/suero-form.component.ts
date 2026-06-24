@@ -1,11 +1,12 @@
-import { ChangeDetectionStrategy, Component, ElementRef, computed, effect, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, ElementRef, computed, inject, input, signal } from '@angular/core';
 import { ToastService } from '../../../core/services/toast.service';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { catchError, map, of } from 'rxjs';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { catchError, filter, map, of, startWith, tap, Observable } from 'rxjs';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { SueroService } from '../../../core/services/suero.service';
-import { SueroCreate, SueroResponse, SueroTuboInput, SueroUpdate } from '../../../core/models/suero.model';
+import { SueroCreate, SueroResponse, SueroTuboInput, SueroUpdate, VaciarTuboPayload } from '../../../core/models/suero.model';
+import { TuboService } from '../../../core/services/tubo.service';
 import { PacienteService } from '../../../core/services/paciente.service';
 import { PacientePorCodigo } from '../../../core/models/paciente.model';
 import { CajaService } from '../../../core/services/caja.service';
@@ -17,18 +18,24 @@ import { FreezerPickerComponent } from '../../../shared/freezer-picker/freezer-p
 import { IconComponent } from '../../../shared/icon/icon.component';
 import { FirstFocusDirective } from '../../../shared/directives/first-focus.directive';
 import { ConfirmModalComponent } from '../../../shared/confirm-modal/confirm-modal.component';
+import { VaciarTuboModalComponent } from '../../../shared/vaciar-tubo-modal/vaciar-tubo-modal.component';
+import { MlPipe } from '../../../core/pipes/ml.pipe';
+import { FechaPipe } from '../../../core/pipes/fecha.pipe';
+import { getBtuLabel, getBtuColor } from '../../../shared/utils/btu.utils';
 
 @Component({
   selector: 'app-suero-form',
-  imports: [ReactiveFormsModule, PageHeaderComponent, TuboGridComponent, TuboQuantityTableComponent, FreezerPickerComponent, IconComponent, FirstFocusDirective, ConfirmModalComponent],
+  imports: [ReactiveFormsModule, PageHeaderComponent, TuboGridComponent, TuboQuantityTableComponent, FreezerPickerComponent, IconComponent, FirstFocusDirective, ConfirmModalComponent, VaciarTuboModalComponent, MlPipe, FechaPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './suero-form.component.html',
   host: { '(keydown)': 'onKeydown($event)' },
 })
 export class SueroFormComponent {
   private readonly elRef           = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly destroyRef      = inject(DestroyRef);
   private readonly fb              = inject(FormBuilder);
   private readonly service         = inject(SueroService);
+  private readonly tuboService     = inject(TuboService);
   private readonly toast           = inject(ToastService);
   private readonly pacienteService = inject(PacienteService);
   private readonly cajaService     = inject(CajaService);
@@ -44,6 +51,11 @@ export class SueroFormComponent {
   loading         = signal(false);
   error           = signal<string | null>(null);
   showExitConfirm = signal(false);
+
+  // ── Vaciado de tubos ──────────────────────────────────────────────────────
+  showVaciarModal  = signal<'none' | 'tubo' | 'grilla'>('none');
+  vaciarTuboId     = signal<number | null>(null);
+  vaciarLoading    = signal(false);
 
   // ── Formulario principal ──────────────────────────────────────────────────
   form = this.fb.group({
@@ -72,37 +84,43 @@ export class SueroFormComponent {
   );
 
   // ── Preview rango ─────────────────────────────────────────────────────────
-  private readonly btuSignal = signal<number | null>(null);
-  readonly rangoPreview      = computed(() => this.calcRangoLabel(this.btuSignal()));
-  readonly rangoPreviewColor = computed(() => this.calcRangoColor(this.btuSignal()));
+  private readonly btuSignal = toSignal(
+    this.form.get('valorAnticuerpos')!.valueChanges.pipe(
+      startWith(this.form.get('valorAnticuerpos')!.value)
+    ),
+    { initialValue: null as number | null }
+  );
+  readonly rangoPreview      = computed(() => getBtuLabel(this.btuSignal() ?? null));
+  readonly rangoPreviewColor = computed(() => getBtuColor(this.btuSignal() ?? null));
 
-  get isEdit(): boolean { return !!this.codigo(); }
+  readonly isEdit = computed(() => !!this.codigo());
 
   constructor() {
-    this.form.get('valorAnticuerpos')!.valueChanges.subscribe(v => this.btuSignal.set(v));
+    toObservable(this.codigo).pipe(
+      filter((codigo): codigo is string => !!codigo),
+      tap(() => {
+        this.form.get('pacienteId')!.clearValidators();
+        this.form.get('pacienteId')!.updateValueAndValidity();
+      }),
+      takeUntilDestroyed(this.destroyRef),
+    ).subscribe(codigo => this.loadSuero(codigo));
+  }
 
-    effect(() => {
-      const codigo = this.codigo();
-      if (!codigo) return;
-
-      this.form.get('pacienteId')!.clearValidators();
-      this.form.get('pacienteId')!.updateValueAndValidity();
-
-      this.service.findByCodigo(codigo).subscribe({
-        next: suero => {
-          this.sueroLoaded.set(suero);
-          this.tubosValue.set(suero.tubos.map(t => t.posicion).join(', '));
-          this.tubosConCantidad.set(
-            suero.tubos.map(t => ({ posicion: t.posicion, cantidadInicial: t.cantidadInicial }))
-          );
-          this.form.patchValue({
-            cajaId:           suero.cajaId,
-            valorAnticuerpos: suero.valorAnticuerpos,
-          });
-          this.onCajaChange(suero.cajaId);
-        },
-        error: () => this.error.set('No se pudo cargar el suero'),
-      });
+  private loadSuero(codigo: string): void {
+    this.service.findByCodigo(codigo).subscribe({
+      next: suero => {
+        this.sueroLoaded.set(suero);
+        this.tubosValue.set(suero.tubos.map(t => t.posicion).join(', '));
+        this.tubosConCantidad.set(
+          suero.tubos.map(t => ({ posicion: t.posicion, cantidadInicial: t.cantidadInicial }))
+        );
+        this.form.patchValue({
+          cajaId:           suero.cajaId,
+          valorAnticuerpos: suero.valorAnticuerpos,
+        });
+        this.onCajaChange(suero.cajaId);
+      },
+      error: () => this.error.set('No se pudo cargar el suero'),
     });
   }
 
@@ -221,38 +239,57 @@ export class SueroFormComponent {
           pacienteId:       Number(v.pacienteId),
           cajaId:           Number(v.cajaId),
           tubos,
-          fechaExtraccion:  this.pacienteResuelto()!.fechaExtraccion!,
+          fechaExtraccion:  this.pacienteResuelto()!.fechaTurnoExtraccion!,
           valorAnticuerpos: btu,
         } satisfies SueroCreate);
 
     req$.subscribe({
-      next:  () => { this.toast.show(this.isEdit ? 'Suero actualizado' : 'Suero registrado'); this.router.navigate(['/internal/sueros']); },
+      next:  () => { this.toast.show(this.isEdit() ? 'Suero actualizado' : 'Suero registrado'); this.router.navigate(['/internal/sueros']); },
       error: err => { this.error.set(extractErrorMessage(err, 'Error al guardar')); this.loading.set(false); },
     });
   }
 
   cancel(): void { this.router.navigate(['/internal/sueros']); }
 
-  formatDate(date: string | null): string {
-    if (!date) return '—';
-    return new Date(date + 'T00:00:00').toLocaleDateString('es-AR', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
+  // ── Vaciado de tubos ──────────────────────────────────────────────────────
+  openVaciarTubo(tuboId: number): void {
+    this.vaciarTuboId.set(tuboId);
+    this.showVaciarModal.set('tubo');
+  }
+
+  openLiberarGrilla(): void {
+    this.showVaciarModal.set('grilla');
+  }
+
+  onVaciarConfirm(payload: VaciarTuboPayload): void {
+    const modo   = this.showVaciarModal();
+    const tuboId = this.vaciarTuboId();
+    const suero  = this.sueroLoaded();
+    this.showVaciarModal.set('none');
+    this.vaciarLoading.set(true);
+    if (!suero) return;
+
+    const req$: Observable<void> = tuboId !== null
+      ? this.tuboService.vaciar(tuboId, payload)
+      : this.service.liberarGrilla(suero.id, payload).pipe(map(() => undefined as void));
+
+    req$.subscribe({
+      next: () => {
+        this.vaciarLoading.set(false);
+        this.vaciarTuboId.set(null);
+        this.toast.show(modo === 'grilla' ? 'Grilla liberada' : 'Tubo vaciado');
+        this.loadSuero(this.codigo()!);
+      },
+      error: err => {
+        this.vaciarLoading.set(false);
+        this.error.set(extractErrorMessage(err, 'Error al vaciar'));
+      },
     });
   }
 
-  private calcRangoLabel(btu: number | null): string | null {
-    if (btu == null || btu < 0) return null;
-    if (btu <= 1313) return 'Rango 0';
-    if (btu <= 2500) return 'Rango 1';
-    if (btu <= 8000) return 'Rango 2';
-    return 'Rango 3';
+  onVaciarCancel(): void {
+    this.showVaciarModal.set('none');
+    this.vaciarTuboId.set(null);
   }
 
-  private calcRangoColor(btu: number | null): string {
-    if (btu == null || btu < 0) return '';
-    if (btu <= 1313) return 'badge-rango0';
-    if (btu <= 2500) return 'badge-rango1';
-    if (btu <= 8000) return 'badge-rango2';
-    return 'badge-rango3';
-  }
 }

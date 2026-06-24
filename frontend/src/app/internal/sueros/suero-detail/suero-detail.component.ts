@@ -42,7 +42,7 @@ export class SueroDetailComponent {
     '0': 'badge-rango0', '1': 'badge-rango1', '2': 'badge-rango2', '3': 'badge-rango3',
   };
   readonly usoLabels: Record<string, string> = {
-    'CONTROL': 'Control', 'PROBLEMA': 'Caso problema',
+    'CONTROL': 'Caso Control', 'PROBLEMA': 'Caso Problema',
   };
   readonly usoColors: Record<string, string> = {
     'CONTROL': 'bg-background text-text-muted border border-border',

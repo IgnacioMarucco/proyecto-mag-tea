@@ -12,6 +12,12 @@
   <div class="flex items-start justify-between mb-6 gap-4">
     <app-page-header [crumbs]="crumbs()">
       <app-copy-badge [value]="s.codigoNumerico" />
+      @if (s.uso) {
+        <app-status-badge [value]="s.uso" [labels]="usoLabels" [colorMap]="usoColors" />
+      }
+      @if (s.rango != null) {
+        <app-status-badge [value]="'' + s.rango" [labels]="rangoLabels" [colorMap]="rangoColors" />
+      }
     </app-page-header>
     <a [routerLink]="['/internal/sueros', s.codigoNumerico, 'editar']"
        class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors whitespace-nowrap flex-shrink-0">
@@ -25,55 +31,35 @@
       <div class="px-6 py-4 border-b border-border">
         <h2 class="text-sm font-semibold text-text">Información del suero</h2>
       </div>
-      <dl class="px-6 py-4 grid grid-cols-2 gap-x-6 gap-y-4" style="grid-template-columns: repeat(6, minmax(0, 1fr))">
-        <div>
-          <dt class="text-xs text-text-muted mb-1">Rango</dt>
-          <dd>
-            @if (s.rango != null) {
-              <app-status-badge [value]="'' + s.rango" [labels]="rangoLabels" [colorMap]="rangoColors" />
-            } @else {
-              <span class="text-xs text-text-muted">Pendiente</span>
-            }
-          </dd>
-        </div>
-        <div>
-          <dt class="text-xs text-text-muted mb-1">Uso</dt>
-          <dd>
-            @if (s.uso) {
-              <app-status-badge [value]="s.uso" [labels]="usoLabels" [colorMap]="usoColors" />
-            } @else {
-              <span class="text-xs text-text-muted">—</span>
-            }
-          </dd>
-        </div>
+      <dl class="px-6 py-4 grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-4 text-sm">
         <div>
           <dt class="text-xs text-text-muted mb-0.5">Fecha de extracción</dt>
-          <dd class="text-sm font-medium text-text font-mono">{{ s.fechaExtraccion | fecha }}</dd>
+          <dd class="font-medium text-text font-mono">{{ s.fechaExtraccion | fecha }}</dd>
         </div>
         <div>
           <dt class="text-xs text-text-muted mb-0.5">Valor anticuerpos (BTU)</dt>
-          <dd class="text-sm font-medium text-text font-mono">{{ formatBtu(s.valorAnticuerpos) }}</dd>
+          <dd class="font-medium text-text font-mono">{{ formatBtu(s.valorAnticuerpos) }}</dd>
         </div>
         <div>
-          <dt class="text-xs text-text-muted mb-0.5">Cantidad total</dt>
-          <dd class="text-sm font-medium text-text font-mono">{{ s.cantidadTotal | ml }} ml</dd>
+          <dt class="text-xs text-text-muted mb-0.5">Total</dt>
+          <dd class="font-medium text-text font-mono">{{ s.cantidadTotal | ml }} ml</dd>
         </div>
         <div>
-          <dt class="text-xs text-text-muted mb-0.5">Cantidad restante</dt>
-          <dd class="text-sm font-medium text-text font-mono">{{ s.cantidadRestante | ml }} ml</dd>
+          <dt class="text-xs text-text-muted mb-0.5">Restante</dt>
+          <dd class="text-accent font-mono font-semibold">{{ s.cantidadRestante | ml }} ml</dd>
         </div>
       </dl>
-      <div class="px-6 pb-4 pt-2 border-t border-border">
-        <dt class="text-xs text-text-muted mb-0.5">Ubicación en freezer</dt>
-        <dd class="text-sm text-text font-mono">
-          Freezer {{ s.freezer }} / Cajón {{ s.cajon }} / Caja {{ s.cajaNumero }}
-        </dd>
-      </div>
     </div>
 
     <div class="bg-surface border border-border rounded-lg">
       <div class="px-6 py-4 border-b border-border">
-        <h2 class="text-sm font-semibold text-text">Tubos</h2>
+        <h2 class="text-sm font-semibold text-text">Ubicación y tubos</h2>
+      </div>
+      <div class="px-6 py-3 border-b border-border">
+        <dt class="text-xs text-text-muted mb-0.5">Ubicación en freezer</dt>
+        <dd class="text-sm text-text font-mono">
+          Freezer {{ s.freezer }} / Cajón {{ s.cajon }} / Caja {{ s.cajaNumero }}
+        </dd>
       </div>
       <div class="overflow-x-auto">
         <table class="w-full text-sm">

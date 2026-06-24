@@ -12,17 +12,18 @@ import { StatusBadgeComponent } from '../../../shared/status-badge/status-badge.
 import { RowActionsComponent, RowAction } from '../../../shared/row-actions/row-actions.component';
 import { PaginatorComponent } from '../../../shared/paginator/paginator.component';
 import { IconComponent } from '../../../shared/icon/icon.component';
-import { SortState } from '../../../shared/sort.utils';
+import { SortState } from '../../../shared/utils/sort.utils';
+import { hasActiveSearch } from '../../../shared/utils/list.utils';
 import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 import { FechaPipe } from '../../../core/pipes/fecha.pipe';
-import { MlPipe } from '../../../core/pipes/ml.pipe';
+import { VolumeBarComponent } from '../../../shared/volume-bar/volume-bar.component';
 
 const PAGE_SIZE = 20;
 
 @Component({
   selector: 'app-suero-list',
   imports: [RouterLink, ListToolbarComponent, ConfirmModalComponent, DataTableComponent,
-            StatusBadgeComponent, RowActionsComponent, PaginatorComponent, IconComponent, PageHeaderComponent, FechaPipe, MlPipe],
+            StatusBadgeComponent, RowActionsComponent, PaginatorComponent, IconComponent, PageHeaderComponent, FechaPipe, VolumeBarComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './suero-list.component.html',
   host: { '(window:keydown)': 'onGlobalKey($event)' },
@@ -97,10 +98,10 @@ export class SueroListComponent {
   ];
 
   readonly columns: TableColumn[] = [
-    { label: 'Suero',        sortKey: 'fechaExtraccion'  },
-    { label: 'Rango / BTU',  sortKey: 'valorAnticuerpos' },
-    { label: 'Uso'                                       },
-    { label: 'Cant. rest.'                               },
+    { label: 'SUERO',       sortKey: 'fechaExtraccion'  },
+    { label: 'TIPO'                                     },
+    { label: 'RANGO / BTU', sortKey: 'valorAnticuerpos' },
+    { label: 'CANT. REST.'                              },
   ];
 
   readonly rangoColors: Record<string, string> = {
@@ -118,7 +119,7 @@ export class SueroListComponent {
     'PROBLEMA': 'bg-primary-light text-primary',
   };
   readonly usoLabels: Record<string, string> = {
-    'CONTROL': 'Control', 'PROBLEMA': 'Caso problema',
+    'CONTROL': 'Caso Control', 'PROBLEMA': 'Caso Problema',
   };
 
   readonly emptyTitle = computed(() =>
@@ -131,6 +132,12 @@ export class SueroListComponent {
       ? 'Registrá el primero con el botón de arriba'
       : 'Probá ajustando los filtros o la búsqueda'
   );
+
+  readonly canCreatePool = computed(() => {
+    const usos   = this.activeFilters()['uso']   as string[] | undefined;
+    const rangos = this.activeFilters()['rango'] as string[] | undefined;
+    return usos?.length === 1 && rangos?.length === 1;
+  });
 
   formatBtu(val: number | null | undefined): string {
     return val != null ? val.toLocaleString('es-AR') : '—';
@@ -162,15 +169,7 @@ export class SueroListComponent {
   private reload(): void       { this.params$.next({ ...this.params$.value }); }
 
   private hasActiveSearch(): boolean {
-    if (this.search()) return true;
-    const f = this.activeFilters();
-    return this.filterGroups.some(group => {
-      const val = f[group.key];
-      if (val === undefined) return false;
-      return group.multiSelect
-        ? (val as string[]).length < group.options.length
-        : val !== group.options[0]?.key;
-    });
+    return hasActiveSearch(this.search, this.activeFilters, this.filterGroups);
   }
 
   getActionsFor(s: SueroListItem): RowAction[] {
@@ -192,6 +191,14 @@ export class SueroListComponent {
     this.service.delete(id).subscribe({
       next:  () => { this.deleting.set(null); this.toast.show('Suero dado de baja'); this.reload(); },
       error: () =>   this.deleting.set(null),
+    });
+  }
+
+  crearPool(): void {
+    const usos   = this.activeFilters()['uso']   as string[];
+    const rangos = this.activeFilters()['rango'] as string[];
+    this.router.navigate(['/internal/pools/nuevo'], {
+      queryParams: { uso: usos[0], rango: rangos[0] },
     });
   }
 
