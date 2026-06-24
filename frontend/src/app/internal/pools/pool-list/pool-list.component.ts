@@ -14,17 +14,19 @@ import { StatusBadgeComponent } from '../../../shared/status-badge/status-badge.
 import { RowActionsComponent, RowAction } from '../../../shared/row-actions/row-actions.component';
 import { PaginatorComponent } from '../../../shared/paginator/paginator.component';
 import { IconComponent } from '../../../shared/icon/icon.component';
-import { SortState } from '../../../shared/sort.utils';
+import { SortState } from '../../../shared/utils/sort.utils';
+import { hasActiveSearch } from '../../../shared/utils/list.utils';
 import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 import { FechaPipe } from '../../../core/pipes/fecha.pipe';
 import { MlPipe } from '../../../core/pipes/ml.pipe';
+import { VolumeBarComponent } from '../../../shared/volume-bar/volume-bar.component';
 
 const PAGE_SIZE = 20;
 
 @Component({
   selector: 'app-pool-list',
   imports: [RouterLink, ListToolbarComponent, ConfirmModalComponent, DataTableComponent,
-            StatusBadgeComponent, RowActionsComponent, PaginatorComponent, IconComponent, PageHeaderComponent, FechaPipe, MlPipe],
+            StatusBadgeComponent, RowActionsComponent, PaginatorComponent, IconComponent, PageHeaderComponent, FechaPipe, MlPipe, VolumeBarComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './pool-list.component.html',
   host: { '(window:keydown)': 'onGlobalKey($event)' },
@@ -82,7 +84,6 @@ export class PoolListComponent {
   readonly totalPages    = computed(() => this.response()?.totalPages ?? 1);
   readonly currentPage   = computed(() => this.response()?.page ?? 0);
 
-  panelAbierto    = signal(false);
   search          = signal('');
   sortState       = signal<SortState>({ key: 'fechaCreacion', direction: 'desc' });
   activeFilters   = signal<Record<string, string | string[]>>({});
@@ -113,14 +114,12 @@ export class PoolListComponent {
   ];
 
   readonly columns: TableColumn[] = [
-    { label: 'Pool'                                                 },
-    { label: 'Tipo',       hidden: 'sm'                            },
-    { label: 'Rango',       sortKey: 'rango'                       },
-    { label: 'Fecha',       hidden: 'sm', sortKey: 'fechaCreacion' },
-    { label: 'Aportes',     hidden: 'md'                           },
-    { label: 'Total (ml)',  hidden: 'sm'                           },
-    { label: 'Restante (ml)'                                       },
-    { label: 'Ratones',     hidden: 'sm'                           },
+    { label: 'POOL',          sortKey: 'fechaCreacion'  },
+    { label: 'TIPO',          hidden: 'sm'              },
+    { label: 'RANGO',         sortKey: 'rango'          },
+    { label: 'CANT. REST.'                                        },
+    { label: 'APORTES', hidden: 'md', align: 'center'            },
+    { label: 'RATONES', hidden: 'sm', align: 'center'            },
   ];
 
   readonly rangoColors: Record<string, string> = {
@@ -135,8 +134,23 @@ export class PoolListComponent {
     'PROBLEMA': 'bg-primary-light text-primary',
   };
   readonly usoLabels: Record<string, string> = {
-    'CONTROL': 'Control', 'PROBLEMA': 'Caso problema',
+    'CONTROL': 'Caso Control', 'PROBLEMA': 'Caso Problema',
   };
+
+  readonly canCreateRaton = computed(() => {
+    const usos   = this.activeFilters()['uso']   as string[] | undefined;
+    const rangos = this.activeFilters()['rango'] as string[] | undefined;
+    return usos?.length === 1 && rangos?.length === 1;
+  });
+
+  crearRaton(): void {
+    if (!this.canCreateRaton()) return;
+    const usos   = this.activeFilters()['uso']   as string[];
+    const rangos = this.activeFilters()['rango'] as string[];
+    this.router.navigate(['/internal/modelos-animales/nuevo'], {
+      queryParams: { uso: usos[0], rango: rangos[0] },
+    });
+  }
 
   readonly emptyTitle = computed(() =>
     this.totalElements() === 0 && !this.hasActiveSearch()
@@ -175,20 +189,13 @@ export class PoolListComponent {
   private reload(): void       { this.params$.next({ ...this.params$.value }); }
 
   private hasActiveSearch(): boolean {
-    if (this.search()) return true;
-    const f = this.activeFilters();
-    return this.filterGroups.some(group => {
-      const val = f[group.key];
-      if (val === undefined) return false;
-      return group.multiSelect
-        ? (val as string[]).length < group.options.length
-        : val !== group.options[0]?.key;
-    });
+    return hasActiveSearch(this.search, this.activeFilters, this.filterGroups);
   }
 
   getActionsFor(pool: PoolListItem): RowAction[] {
     return [
-      { label: 'Ver detalle', style: 'primary', onClick: () => this.router.navigate(['/internal/pools', pool.id]) },
+      { label: 'Detalles', onClick: () => this.router.navigate(['/internal/pools', pool.codigo]) },
+      { label: 'Editar',      style: 'primary', onClick: () => this.router.navigate(['/internal/pools', pool.codigo, 'editar']) },
       { label: 'Dar de baja', style: 'danger',  disabled: this.deleting() === pool.id, onClick: () => this.requestDelete(pool.id) },
     ];
   }
