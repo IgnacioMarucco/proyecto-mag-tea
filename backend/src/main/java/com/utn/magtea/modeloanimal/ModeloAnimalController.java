@@ -4,6 +4,7 @@ import com.utn.magtea.common.ApiConstants;
 import com.utn.magtea.common.PageResponse;
 import com.utn.magtea.modeloanimal.estudios.TresCamarasDTO;
 import com.utn.magtea.modeloanimal.estudios.VocalizacionesDTO;
+import com.utn.magtea.suero.SueroUso;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -23,15 +24,18 @@ public class ModeloAnimalController {
 
     private final ModeloAnimalService service;
 
-    @GetMapping    @Operation(summary = "Listar modelos animales activos (filtro por pool y sexo)")
+    @GetMapping    @Operation(summary = "Listar modelos animales activos (filtro por pool, sexo, tipo, rango y búsqueda por camada)")
     public PageResponse<ModeloAnimalListDTO> findAll(
-            @RequestParam(defaultValue = "0")        int page,
-            @RequestParam(defaultValue = "20")       int size,
-            @RequestParam(required = false)          Long poolId,
-            @RequestParam(required = false)          SexoRaton sexo,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "desc")     String sortDir) {
-        return service.findAll(page, size, poolId, sexo, sortBy, sortDir);
+            @RequestParam(defaultValue = "0")             int page,
+            @RequestParam(defaultValue = "20")            int size,
+            @RequestParam(required = false)               String q,
+            @RequestParam(required = false)               Long poolId,
+            @RequestParam(required = false)               SexoRaton sexo,
+            @RequestParam(required = false)               SueroUso uso,
+            @RequestParam(required = false)               Integer rango,
+            @RequestParam(defaultValue = "fechaNacimiento") String sortBy,
+            @RequestParam(defaultValue = "desc")          String sortDir) {
+        return service.findAll(page, size, q, poolId, sexo, uso, rango, sortBy, sortDir);
     }
 
     @GetMapping("/by-code/{identificador}")    @Operation(summary = "Obtener modelo animal por identificador alfanumérico")

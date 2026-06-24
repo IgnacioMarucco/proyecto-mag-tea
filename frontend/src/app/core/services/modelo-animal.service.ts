@@ -17,6 +17,8 @@ import {
 export interface ModeloAnimalListParams extends PageParams {
   poolId?: number;
   sexo?: SexoRaton;
+  uso?: string;
+  rango?: number;
   soloAlertas?: boolean;
 }
 
@@ -34,6 +36,8 @@ export class ModeloAnimalService {
     if (params.sortDir)     p = p.set('sortDir', params.sortDir);
     if (params.poolId)      p = p.set('poolId', params.poolId);
     if (params.sexo)        p = p.set('sexo', params.sexo);
+    if (params.uso)         p = p.set('uso', params.uso);
+    if (params.rango != null) p = p.set('rango', params.rango);
     if (params.soloAlertas) p = p.set('soloAlertas', params.soloAlertas);
     return this.http.get<PageResponse<ModeloAnimalListItem>>(this.base, { params: p });
   }

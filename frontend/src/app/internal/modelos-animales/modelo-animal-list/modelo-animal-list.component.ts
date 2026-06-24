@@ -14,13 +14,14 @@ import { PaginatorComponent } from '../../../shared/paginator/paginator.componen
 import { IconComponent } from '../../../shared/icon/icon.component';
 import { SortState } from '../../../shared/utils/sort.utils';
 import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-header.component';
+import { FechaPipe } from '../../../core/pipes/fecha.pipe';
 
 const PAGE_SIZE = 20;
 
 @Component({
   selector: 'app-modelo-animal-list',
   imports: [RouterLink, ListToolbarComponent, ConfirmModalComponent, DataTableComponent,
-            StatusBadgeComponent, RowActionsComponent, PaginatorComponent, IconComponent, PageHeaderComponent],
+            StatusBadgeComponent, RowActionsComponent, PaginatorComponent, IconComponent, PageHeaderComponent, FechaPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './modelo-animal-list.component.html',
   host: { '(window:keydown)': 'onGlobalKey($event)' },
@@ -38,7 +39,7 @@ export class ModeloAnimalListComponent {
   );
 
   private readonly params$ = new BehaviorSubject<ModeloAnimalListParams>({
-    page: 0, size: PAGE_SIZE, sortBy: 'createdAt', sortDir: 'desc',
+    page: 0, size: PAGE_SIZE, sortBy: 'fechaNacimiento', sortDir: 'desc',
   });
 
   private readonly response = toSignal(
@@ -54,12 +55,31 @@ export class ModeloAnimalListComponent {
   readonly currentPage     = computed(() => this.response()?.page ?? 0);
 
   search          = signal('');
-  sortState       = signal<SortState>({ key: 'createdAt', direction: 'desc' });
+  sortState       = signal<SortState>({ key: 'fechaNacimiento', direction: 'desc' });
   activeFilters   = signal<Record<string, string | string[]>>({});
   deleting        = signal<number | null>(null);
   pendingDeleteId = signal<number | null>(null);
 
   readonly filterGroups: FilterGroup[] = [
+    {
+      key: 'uso',
+      label: 'Tipo',
+      multiSelect: false,
+      options: [
+        { key: 'PROBLEMA', label: 'Caso Problema' },
+        { key: 'CONTROL',  label: 'Caso Control'  },
+      ],
+    },
+    {
+      key: 'rango',
+      label: 'Rango',
+      multiSelect: false,
+      options: [
+        { key: '1', label: 'Rango 1' },
+        { key: '2', label: 'Rango 2' },
+        { key: '3', label: 'Rango 3' },
+      ],
+    },
     {
       key: 'sexo',
       label: 'Sexo',
@@ -81,10 +101,11 @@ export class ModeloAnimalListComponent {
   ];
 
   readonly columns: TableColumn[] = [
-    { label: 'CÓDIGO',   sortKey: 'identificador' },
-    { label: 'TIPO',     hidden: 'sm'             },
-    { label: 'RANGO',    hidden: 'sm'             },
-    { label: 'APORTES',  hidden: 'md'             },
+    { label: 'CÓDIGO',  sortKey: 'fechaNacimiento' },
+    { label: 'CAMADA',  sortKey: 'camadaNombre', hidden: 'sm' },
+    { label: 'TIPO',    hidden: 'sm'             },
+    { label: 'RANGO',   hidden: 'sm'             },
+    { label: 'APORTES', hidden: 'md'             },
   ];
 
   readonly rangoColors: Record<string, string> = {
@@ -124,11 +145,15 @@ export class ModeloAnimalListComponent {
 
   onFiltersChange(filters: Record<string, string | string[]>): void {
     this.activeFilters.set(filters);
-    const sexo        = filters['sexo']        as string | undefined;
-    const alertasVal  = filters['soloAlertas'] as string | undefined;
+    const uso        = filters['uso']         as string | undefined;
+    const rangoVal   = filters['rango']       as string | undefined;
+    const sexo       = filters['sexo']        as string | undefined;
+    const alertasVal = filters['soloAlertas'] as string | undefined;
     this.params$.next({
       ...this.params$.value,
       page:        0,
+      uso:         (uso === 'PROBLEMA' || uso === 'CONTROL') ? uso : undefined,
+      rango:       rangoVal ? Number(rangoVal) : undefined,
       sexo:        (sexo === 'MACHO' || sexo === 'HEMBRA') ? sexo : undefined,
       soloAlertas: alertasVal === 'true' ? true : undefined,
     });
@@ -144,7 +169,7 @@ export class ModeloAnimalListComponent {
 
   private hasActiveSearch(): boolean {
     const p = this.params$.value;
-    return !!(p.q || p.sexo || p.soloAlertas);
+    return !!(p.q || p.uso || p.rango != null || p.sexo || p.soloAlertas);
   }
 
   getActionsFor(ma: ModeloAnimalListItem): RowAction[] {

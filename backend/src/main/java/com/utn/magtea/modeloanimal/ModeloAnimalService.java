@@ -4,6 +4,7 @@ import com.utn.magtea.camada.Camada;
 import com.utn.magtea.camada.CamadaRepository;
 import com.utn.magtea.common.PageResponse;
 import com.utn.magtea.common.SpecificationUtils;
+import com.utn.magtea.suero.SueroUso;
 import com.utn.magtea.common.exception.BusinessRuleException;
 import com.utn.magtea.common.exception.ResourceNotFoundException;
 import com.utn.magtea.modeloanimal.estudios.TresCamaras;
@@ -27,13 +28,18 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class ModeloAnimalService {
 
-    private static final Set<String> SORT_FIELDS_VALIDOS = Set.of("createdAt", "identificador");
+    private static final Set<String> SORT_FIELDS_VALIDOS = Set.of("createdAt", "identificador", "fechaNacimiento", "camadaNombre");
+    private static final Map<String, String> SORT_ALIASES = Map.of(
+            "fechaNacimiento", "camada.fechaNacimiento",
+            "camadaNombre",    "camada.nombre"
+    );
     private final ModeloAnimalRepository repository;
     private final ModeloAnimalMapper mapper;
     private final PoolRepository poolRepository;
@@ -43,11 +49,12 @@ public class ModeloAnimalService {
     private final Clock clock;
 
     @Transactional(readOnly = true)
-    public PageResponse<ModeloAnimalListDTO> findAll(int page, int size, Long poolId,
-                                                     SexoRaton sexo, String sortBy, String sortDir) {
-        Sort sort = SpecificationUtils.buildSort(sortBy, sortDir, "createdAt", SORT_FIELDS_VALIDOS);
+    public PageResponse<ModeloAnimalListDTO> findAll(int page, int size, String q, Long poolId,
+                                                     SexoRaton sexo, SueroUso uso, Integer rango,
+                                                     String sortBy, String sortDir) {
+        Sort sort = SpecificationUtils.buildSort(sortBy, sortDir, "fechaNacimiento", SORT_FIELDS_VALIDOS, SORT_ALIASES);
         Page<ModeloAnimal> result = repository.findAll(
-                buildSpec(poolId, sexo), PageRequest.of(page, size, sort));
+                buildSpec(q, poolId, sexo, uso, rango), PageRequest.of(page, size, sort));
         LocalDate hoy = LocalDate.now(clock);
         List<ModeloAnimalListDTO> content = result.getContent().stream()
                 .map(m -> mapper.toListDTO(m,
@@ -332,11 +339,18 @@ public class ModeloAnimalService {
                 && fn.plusDays(19).equals(hoy);
     }
 
-    private Specification<ModeloAnimal> buildSpec(Long poolId, SexoRaton sexo) {
+    private Specification<ModeloAnimal> buildSpec(String q, Long poolId, SexoRaton sexo, SueroUso uso, Integer rango) {
         Specification<ModeloAnimal> spec = SpecificationUtils.activoTrue();
+        if (q      != null && !q.isBlank()) spec = spec.and(searchCamada(q));
         if (poolId != null) spec = spec.and(poolEquals(poolId));
-        if (sexo != null) spec = spec.and(sexoEquals(sexo));
+        if (sexo   != null) spec = spec.and(sexoEquals(sexo));
+        if (uso    != null) spec = spec.and(usoEquals(uso));
+        if (rango  != null) spec = spec.and(rangoEquals(rango));
         return spec;
+    }
+
+    private Specification<ModeloAnimal> searchCamada(String q) {
+        return (root, query, cb) -> cb.like(cb.lower(root.get("camada").get("nombre")), "%" + q.toLowerCase() + "%");
     }
 
     private Specification<ModeloAnimal> poolEquals(Long poolId) {
@@ -345,6 +359,14 @@ public class ModeloAnimalService {
 
     private Specification<ModeloAnimal> sexoEquals(SexoRaton sexo) {
         return (root, query, cb) -> cb.equal(root.get("sexo"), sexo);
+    }
+
+    private Specification<ModeloAnimal> usoEquals(SueroUso uso) {
+        return (root, query, cb) -> cb.equal(root.get("pool").get("uso"), uso);
+    }
+
+    private Specification<ModeloAnimal> rangoEquals(Integer rango) {
+        return (root, query, cb) -> cb.equal(root.get("pool").get("rango"), rango);
     }
 
     private ModeloAnimal findActiveById(Long id) {
