@@ -66,7 +66,7 @@
       <div class="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-4">
         <div>
           <p class="text-xs text-text-muted mb-0.5">Nacimiento</p>
-          <p class="text-text">{{ formatDate(p.fechaNacimientoNino) }}</p>
+          <p class="text-text">{{ p.fechaNacimientoNino | fecha }}</p>
         </div>
         <div>
           <p class="text-xs text-text-muted mb-0.5">Edad actual</p>
@@ -77,11 +77,11 @@
         </div>
         <div>
           <p class="text-xs text-text-muted mb-0.5">Fecha visita</p>
-          <p class="text-text">{{ formatDateTime(p.fechaPrimeraVisita) }}</p>
+          <p class="text-text">{{ p.fechaPrimeraVisita | fecha:'datetime' }}</p>
         </div>
         <div>
           <p class="text-xs text-text-muted mb-0.5">Fecha extracción</p>
-          <p class="text-text">{{ formatDate(p.fechaExtraccion) }}</p>
+          <p class="text-text">{{ p.fechaTurnoExtraccion | fecha:'datetime' }}</p>
         </div>
       </div>
 

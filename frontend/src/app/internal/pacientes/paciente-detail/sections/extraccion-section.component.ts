@@ -6,10 +6,11 @@ import { AuthService } from '../../../../core/services/auth.service';
 import { extractErrorMessage } from '../../../../shared/utils/error.utils';
 import { PacienteResponse } from '../../../../core/models/paciente.model';
 import { ModalContainerComponent } from '../../../../shared/modal-container/modal-container.component';
+import { FechaPipe } from '../../../../core/pipes/fecha.pipe';
 
 @Component({
   selector: 'app-extraccion-section',
-  imports: [ReactiveFormsModule, RouterLink, ModalContainerComponent],
+  imports: [ReactiveFormsModule, RouterLink, ModalContainerComponent, FechaPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './extraccion-section.component.html',
 })
@@ -29,30 +30,24 @@ export class ExtraccionSectionComponent {
   saving    = signal(false);
   saveError = signal<string | null>(null);
 
-  form = this.fb.group({ fechaExtraccion: [''] });
+  form = this.fb.group({ fechaTurnoExtraccion: [''] });
 
   openModal(): void {
     this.saveError.set(null);
-    this.form.patchValue({ fechaExtraccion: this.paciente().fechaExtraccion ?? '' });
+    this.form.patchValue({ fechaTurnoExtraccion: this.paciente().fechaTurnoExtraccion?.substring(0, 16) ?? '' });
     this.showModal.set(true);
   }
 
   save(): void {
     if (this.saving()) return;
-    const fecha = this.form.value.fechaExtraccion;
+    const fecha = this.form.value.fechaTurnoExtraccion;
     if (!fecha) { this.saveError.set('La fecha de extracción es obligatoria'); return; }
     this.saving.set(true);
     this.saveError.set(null);
-    this.service.patchSegundaVisita(this.paciente().codigoNumerico, { fechaExtraccion: fecha }).subscribe({
+    this.service.patchSegundaVisita(this.paciente().codigoNumerico, { fechaTurnoExtraccion: fecha }).subscribe({
       next: p  => { this.updated.emit(p); this.showModal.set(false); this.saving.set(false); },
       error: err => { this.saveError.set(extractErrorMessage(err, 'Error al guardar')); this.saving.set(false); },
     });
   }
 
-  formatDate(date: string | null | undefined): string {
-    if (!date) return '—';
-    return new Date(date + 'T00:00:00').toLocaleDateString('es-AR', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-    });
-  }
 }

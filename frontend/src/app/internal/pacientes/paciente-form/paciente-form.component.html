@@ -1,4 +1,4 @@
-<div class="px-8 pb-8 max-w-2xl mx-auto">
+<div class="px-8 pb-8 max-w-5xl mx-auto">
 
   <div class="mb-6">
     <app-page-header [crumbs]="crumbs()" />
@@ -37,159 +37,159 @@
       <!-- ═══════════════════════════════ PASO 1 ═══════════════════════════════ -->
       @if (currentStep() === 1) {
 
-        <div appFirstFocus class="space-y-5">
+        <div appFirstFocus>
 
-          <!-- Tutor/a -->
-          <p class="text-xs font-mono text-text-muted uppercase tracking-wider">Datos del tutor/a</p>
+          <div class="grid grid-cols-2 gap-8">
 
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label for="apellidoTutor" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Apellido <span class="text-danger">*</span></label>
-              <input id="apellidoTutor" type="text" formControlName="apellidoTutor" autocomplete="family-name"
-                class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
-                [class.border-danger]="form.get('apellidoTutor')?.invalid && form.get('apellidoTutor')?.touched"
-                [attr.aria-invalid]="form.get('apellidoTutor')?.invalid && form.get('apellidoTutor')?.touched" />
-              @if (form.get('apellidoTutor')?.invalid && form.get('apellidoTutor')?.touched) {
-                <p role="alert" class="mt-1 text-xs text-danger">El apellido es obligatorio</p>
-              }
+            <!-- ── Columna izquierda: tutor + niño ── -->
+            <div class="space-y-5">
+
+              <p class="text-xs font-mono text-text-muted uppercase tracking-wider">Datos del tutor/a</p>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label for="apellidoTutor" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Apellido <span class="text-danger">*</span></label>
+                  <input id="apellidoTutor" type="text" formControlName="apellidoTutor" autocomplete="family-name"
+                    class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                    [class.border-danger]="form.get('apellidoTutor')?.invalid && form.get('apellidoTutor')?.touched"
+                    [attr.aria-invalid]="form.get('apellidoTutor')?.invalid && form.get('apellidoTutor')?.touched" />
+                  @if (form.get('apellidoTutor')?.invalid && form.get('apellidoTutor')?.touched) {
+                    <p role="alert" class="mt-1 text-xs text-danger">El apellido es obligatorio</p>
+                  }
+                </div>
+                <div>
+                  <label for="nombreTutor" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Nombre <span class="text-danger">*</span></label>
+                  <input id="nombreTutor" type="text" formControlName="nombreTutor" autocomplete="given-name"
+                    class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                    [class.border-danger]="form.get('nombreTutor')?.invalid && form.get('nombreTutor')?.touched"
+                    [attr.aria-invalid]="form.get('nombreTutor')?.invalid && form.get('nombreTutor')?.touched" />
+                  @if (form.get('nombreTutor')?.invalid && form.get('nombreTutor')?.touched) {
+                    <p role="alert" class="mt-1 text-xs text-danger">El nombre es obligatorio</p>
+                  }
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label for="correoTutor" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Correo electrónico <span class="text-danger">*</span></label>
+                  <input id="correoTutor" type="email" formControlName="correoTutor" autocomplete="email"
+                    class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text font-mono focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                    [class.border-danger]="form.get('correoTutor')?.invalid && form.get('correoTutor')?.touched"
+                    [attr.aria-invalid]="form.get('correoTutor')?.invalid && form.get('correoTutor')?.touched" />
+                  @if (form.get('correoTutor')?.touched) {
+                    @if (form.get('correoTutor')?.hasError('required')) {
+                      <p role="alert" class="mt-1 text-xs text-danger">El correo es obligatorio</p>
+                    } @else if (form.get('correoTutor')?.hasError('email')) {
+                      <p role="alert" class="mt-1 text-xs text-danger">Correo inválido</p>
+                    }
+                  }
+                </div>
+                <div>
+                  <label for="telefono" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Teléfono</label>
+                  <input id="telefono" type="tel" formControlName="telefono"
+                    class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text font-mono focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" />
+                </div>
+              </div>
+
+              <div class="border-t border-border"></div>
+
+              <p class="text-xs font-mono text-text-muted uppercase tracking-wider">Datos del niño/a</p>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label for="apellidoNino" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Apellido <span class="text-danger">*</span></label>
+                  <input id="apellidoNino" type="text" formControlName="apellidoNino"
+                    class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                    [class.border-danger]="form.get('apellidoNino')?.invalid && form.get('apellidoNino')?.touched"
+                    [attr.aria-invalid]="form.get('apellidoNino')?.invalid && form.get('apellidoNino')?.touched" />
+                  @if (form.get('apellidoNino')?.invalid && form.get('apellidoNino')?.touched) {
+                    <p role="alert" class="mt-1 text-xs text-danger">El apellido es obligatorio</p>
+                  }
+                </div>
+                <div>
+                  <label for="nombreNino" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Nombre <span class="text-danger">*</span></label>
+                  <input id="nombreNino" type="text" formControlName="nombreNino"
+                    class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                    [class.border-danger]="form.get('nombreNino')?.invalid && form.get('nombreNino')?.touched"
+                    [attr.aria-invalid]="form.get('nombreNino')?.invalid && form.get('nombreNino')?.touched" />
+                  @if (form.get('nombreNino')?.invalid && form.get('nombreNino')?.touched) {
+                    <p role="alert" class="mt-1 text-xs text-danger">El nombre es obligatorio</p>
+                  }
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-4">
+                <div>
+                  <label for="fechaNacimientoNino" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Fecha de nacimiento</label>
+                  <input id="fechaNacimientoNino" type="date" formControlName="fechaNacimientoNino"
+                    class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" />
+                </div>
+                <div>
+                  <label for="sexo" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Sexo <span class="text-danger">*</span></label>
+                  <select id="sexo" formControlName="sexo"
+                    class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                    [class.border-danger]="form.get('sexo')?.invalid && form.get('sexo')?.touched"
+                    [attr.aria-invalid]="form.get('sexo')?.invalid && form.get('sexo')?.touched">
+                    <option value="" disabled>Seleccioná</option>
+                    <option value="FEMENINO">Femenino</option>
+                    <option value="MASCULINO">Masculino</option>
+                  </select>
+                  @if (form.get('sexo')?.invalid && form.get('sexo')?.touched) {
+                    <p role="alert" class="mt-1 text-xs text-danger">El sexo es obligatorio</p>
+                  }
+                </div>
+              </div>
+
             </div>
-            <div>
-              <label for="nombreTutor" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Nombre <span class="text-danger">*</span></label>
-              <input id="nombreTutor" type="text" formControlName="nombreTutor" autocomplete="given-name"
-                class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
-                [class.border-danger]="form.get('nombreTutor')?.invalid && form.get('nombreTutor')?.touched"
-                [attr.aria-invalid]="form.get('nombreTutor')?.invalid && form.get('nombreTutor')?.touched" />
-              @if (form.get('nombreTutor')?.invalid && form.get('nombreTutor')?.touched) {
-                <p role="alert" class="mt-1 text-xs text-danger">El nombre es obligatorio</p>
-              }
-            </div>
-          </div>
 
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label for="correoTutor" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Correo electrónico <span class="text-danger">*</span></label>
-              <input id="correoTutor" type="email" formControlName="correoTutor" autocomplete="email"
-                class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text font-mono focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
-                [class.border-danger]="form.get('correoTutor')?.invalid && form.get('correoTutor')?.touched"
-                [attr.aria-invalid]="form.get('correoTutor')?.invalid && form.get('correoTutor')?.touched" />
-              @if (form.get('correoTutor')?.touched) {
-                @if (form.get('correoTutor')?.hasError('required')) {
-                  <p role="alert" class="mt-1 text-xs text-danger">El correo es obligatorio</p>
-                } @else if (form.get('correoTutor')?.hasError('email')) {
-                  <p role="alert" class="mt-1 text-xs text-danger">Correo inválido</p>
+            <!-- ── Columna derecha: primera visita + tipo + notas ── -->
+            <div class="space-y-5">
+
+              <p class="text-xs font-mono text-text-muted uppercase tracking-wider">Primera visita</p>
+              <div>
+                <label for="fechaPrimeraVisita" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Fecha y hora <span class="text-danger">*</span></label>
+                <input id="fechaPrimeraVisita" type="datetime-local" formControlName="fechaPrimeraVisita"
+                  class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                  [class.border-danger]="form.get('fechaPrimeraVisita')?.invalid && form.get('fechaPrimeraVisita')?.touched"
+                  [attr.aria-invalid]="form.get('fechaPrimeraVisita')?.invalid && form.get('fechaPrimeraVisita')?.touched" />
+                @if (form.get('fechaPrimeraVisita')?.invalid && form.get('fechaPrimeraVisita')?.touched) {
+                  <p role="alert" class="mt-1 text-xs text-danger">La fecha de la primera visita es obligatoria</p>
                 }
+              </div>
+
+              <div class="border-t border-border"></div>
+
+              <p class="text-xs font-mono text-text-muted uppercase tracking-wider">Tipo de paciente <span class="text-danger">*</span></p>
+              <div class="grid grid-cols-2 gap-4">
+                @for (tipo of [{ value: 'PROBLEMA', label: 'Caso problema' }, { value: 'CONTROL', label: 'Caso control' }]; track tipo.value) {
+                  <label class="flex items-center gap-3 px-4 py-3 border rounded-md cursor-pointer transition-colors"
+                    [class.border-primary]="form.get('tipoPaciente')?.value === tipo.value"
+                    [class.bg-primary-light]="form.get('tipoPaciente')?.value === tipo.value"
+                    [class.border-border]="form.get('tipoPaciente')?.value !== tipo.value">
+                    <input type="radio" formControlName="tipoPaciente" [value]="tipo.value" class="accent-primary cursor-pointer shrink-0" />
+                    <span class="text-sm font-medium text-text">{{ tipo.label }}</span>
+                  </label>
+                }
+              </div>
+              @if (form.get('tipoPaciente')?.invalid && form.get('tipoPaciente')?.touched) {
+                <p role="alert" class="text-xs text-danger">El tipo de paciente es obligatorio</p>
               }
+
+              <div class="border-t border-border"></div>
+
+              <div>
+                <label for="notas" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Notas</label>
+                <textarea id="notas" rows="5" formControlName="notas" placeholder="Observaciones del investigador…"
+                  class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text placeholder-text-muted/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors resize-none"></textarea>
+              </div>
+
             </div>
-            <div>
-              <label for="telefono" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Teléfono</label>
-              <input id="telefono" type="tel" formControlName="telefono"
-                class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text font-mono focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" />
-            </div>
-          </div>
-
-          <div class="border-t border-border"></div>
-
-          <!-- Niño/a -->
-          <p class="text-xs font-mono text-text-muted uppercase tracking-wider">Datos del niño/a</p>
-
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label for="apellidoNino" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Apellido <span class="text-danger">*</span></label>
-              <input id="apellidoNino" type="text" formControlName="apellidoNino"
-                class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
-                [class.border-danger]="form.get('apellidoNino')?.invalid && form.get('apellidoNino')?.touched"
-                [attr.aria-invalid]="form.get('apellidoNino')?.invalid && form.get('apellidoNino')?.touched" />
-              @if (form.get('apellidoNino')?.invalid && form.get('apellidoNino')?.touched) {
-                <p role="alert" class="mt-1 text-xs text-danger">El apellido es obligatorio</p>
-              }
-            </div>
-            <div>
-              <label for="nombreNino" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Nombre <span class="text-danger">*</span></label>
-              <input id="nombreNino" type="text" formControlName="nombreNino"
-                class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
-                [class.border-danger]="form.get('nombreNino')?.invalid && form.get('nombreNino')?.touched"
-                [attr.aria-invalid]="form.get('nombreNino')?.invalid && form.get('nombreNino')?.touched" />
-              @if (form.get('nombreNino')?.invalid && form.get('nombreNino')?.touched) {
-                <p role="alert" class="mt-1 text-xs text-danger">El nombre es obligatorio</p>
-              }
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label for="fechaNacimientoNino" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Fecha de nacimiento</label>
-              <input id="fechaNacimientoNino" type="date" formControlName="fechaNacimientoNino"
-                class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" />
-            </div>
-            <div>
-              <label for="sexo" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Sexo <span class="text-danger">*</span></label>
-              <select id="sexo" formControlName="sexo"
-                class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
-                [class.border-danger]="form.get('sexo')?.invalid && form.get('sexo')?.touched"
-                [attr.aria-invalid]="form.get('sexo')?.invalid && form.get('sexo')?.touched">
-                <option value="" disabled>Seleccioná</option>
-                <option value="FEMENINO">Femenino</option>
-                <option value="MASCULINO">Masculino</option>
-              </select>
-              @if (form.get('sexo')?.invalid && form.get('sexo')?.touched) {
-                <p role="alert" class="mt-1 text-xs text-danger">El sexo es obligatorio</p>
-              }
-            </div>
-          </div>
-
-          <div class="border-t border-border"></div>
-
-          <!-- Primera visita -->
-          <p class="text-xs font-mono text-text-muted uppercase tracking-wider">Primera visita</p>
-          <div>
-            <label for="fechaPrimeraVisita" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Fecha y hora <span class="text-danger">*</span></label>
-            <input id="fechaPrimeraVisita" type="datetime-local" formControlName="fechaPrimeraVisita"
-              class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
-              [class.border-danger]="form.get('fechaPrimeraVisita')?.invalid && form.get('fechaPrimeraVisita')?.touched"
-              [attr.aria-invalid]="form.get('fechaPrimeraVisita')?.invalid && form.get('fechaPrimeraVisita')?.touched" />
-            @if (form.get('fechaPrimeraVisita')?.invalid && form.get('fechaPrimeraVisita')?.touched) {
-              <p role="alert" class="mt-1 text-xs text-danger">La fecha de la primera visita es obligatoria</p>
-            }
-          </div>
-
-          <div class="border-t border-border"></div>
-
-          <!-- Tipo de paciente -->
-          <p class="text-xs font-mono text-text-muted uppercase tracking-wider">Tipo de paciente <span class="text-danger">*</span></p>
-          <div class="grid grid-cols-2 gap-4">
-            @for (tipo of [{ value: 'PROBLEMA', label: 'Caso problema' }, { value: 'CONTROL', label: 'Caso control' }]; track tipo.value) {
-              <label class="flex items-center gap-3 px-4 py-3 border rounded-md cursor-pointer transition-colors"
-                [class.border-primary]="form.get('tipoPaciente')?.value === tipo.value"
-                [class.bg-primary-light]="form.get('tipoPaciente')?.value === tipo.value"
-                [class.border-border]="form.get('tipoPaciente')?.value !== tipo.value">
-                <input type="radio" formControlName="tipoPaciente" [value]="tipo.value" class="accent-primary cursor-pointer shrink-0" />
-                <span class="text-sm font-medium text-text">{{ tipo.label }}</span>
-              </label>
-            }
-          </div>
-          @if (form.get('tipoPaciente')?.invalid && form.get('tipoPaciente')?.touched) {
-            <p role="alert" class="text-xs text-danger">El tipo de paciente es obligatorio</p>
-          }
-
-          <div class="border-t border-border"></div>
-
-          <!-- Notas -->
-          <div>
-            <label for="notas" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Notas</label>
-            <textarea id="notas" rows="3" formControlName="notas" placeholder="Observaciones del investigador…"
-              class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text placeholder-text-muted/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors resize-none"></textarea>
           </div>
 
           <!-- Navegación paso 1 -->
-          <div class="flex items-center justify-between pt-2 border-t border-border">
-            <button type="button" (click)="handleEscape()"
-              class="px-4 py-2 text-sm font-medium text-text-muted hover:text-text transition-colors cursor-pointer">
-              Cancelar
-            </button>
-            <button type="button" (click)="goToStep2()"
-              class="px-5 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors cursor-pointer">
-              Siguiente
-            </button>
+          <div class="flex items-center justify-end gap-3 pt-5 mt-3 border-t border-border">
+            <button type="button" (click)="handleEscape()" class="btn-ghost">Cancelar</button>
+            <button type="button" (click)="goToStep2()" class="btn-primary">Siguiente</button>
           </div>
 
         </div>
@@ -198,86 +198,86 @@
       <!-- ═══════════════════════════════ PASO 2 ═══════════════════════════════ -->
       @if (currentStep() === 2) {
 
-        <div appFirstFocus class="space-y-5">
+        <div appFirstFocus>
 
-          <!-- Criterios de inclusión -->
-          <div>
-            <p class="text-xs font-mono text-text-muted uppercase tracking-wider mb-3">
-              Criterios de inclusión
-              @if (tipoPacienteActual() === 'PROBLEMA') {
-                <span class="normal-case font-normal">&nbsp;— deben cumplirse los 3</span>
-              } @else {
-                <span class="normal-case font-normal">&nbsp;— solo debe cumplirse el de edad</span>
-              }
-            </p>
-            <div class="space-y-2">
-              @for (c of [
-                { key: 'criterioTEADSMV',  label: 'Criterios clínicos TEA según DSM-V',  labelControl: 'Sin diagnóstico TEA (DSM-V)',  esDSM: true  },
-                { key: 'criterioTGDDSMIV', label: 'Criterios clínicos TGD según DSM-IV', labelControl: 'Sin diagnóstico TGD (DSM-IV)', esDSM: true  },
-                { key: 'criterioEdad',     label: 'Edad entre 2 y 8 años',               labelControl: 'Edad entre 2 y 8 años',        esDSM: false }
-              ]; track c.key) {
-                <div>
+          <div class="grid grid-cols-2 gap-8">
+
+            <!-- ── Columna izquierda: criterios de inclusión ── -->
+            <div>
+              <p class="text-xs font-mono text-text-muted uppercase tracking-wider mb-3">
+                Criterios de inclusión
+                @if (tipoPacienteActual() === 'PROBLEMA') {
+                  <span class="normal-case font-normal">&nbsp;— deben cumplirse los 3</span>
+                } @else {
+                  <span class="normal-case font-normal">&nbsp;— solo debe cumplirse el de edad</span>
+                }
+              </p>
+              <div class="space-y-2">
+                @for (c of [
+                  { key: 'criterioTEADSMV',  label: 'Criterios clínicos TEA según DSM-V',  labelControl: 'Sin diagnóstico TEA (DSM-V)',  esDSM: true  },
+                  { key: 'criterioTGDDSMIV', label: 'Criterios clínicos TGD según DSM-IV', labelControl: 'Sin diagnóstico TGD (DSM-IV)', esDSM: true  },
+                  { key: 'criterioEdad',     label: 'Edad entre 2 y 8 años',               labelControl: 'Edad entre 2 y 8 años',        esDSM: false }
+                ]; track c.key) {
+                  <div>
+                    <label class="flex items-center gap-2.5 cursor-pointer px-2 py-1.5 rounded-md transition-colors"
+                      [class.bg-accent-light]="fieldVal(c.key) && !(tipoPacienteActual() === 'CONTROL' && c.esDSM)"
+                      [class.bg-danger-light]="fieldVal(c.key) && tipoPacienteActual() === 'CONTROL' && c.esDSM">
+                      <input type="checkbox" [formControlName]="c.key"
+                        class="w-4 h-4 rounded border-border cursor-pointer shrink-0"
+                        [class.accent-primary]="!(tipoPacienteActual() === 'CONTROL' && c.esDSM)"
+                        [class.accent-danger]="tipoPacienteActual() === 'CONTROL' && c.esDSM" />
+                      <span class="text-sm text-text">{{ tipoPacienteActual() === 'CONTROL' && c.esDSM ? c.labelControl : c.label }}</span>
+                    </label>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- ── Columna derecha: criterios de exclusión ── -->
+            <div>
+              <p class="text-xs font-mono text-text-muted uppercase tracking-wider mb-3">Criterios de exclusión <span class="normal-case font-normal">— no debe presentar ninguno</span></p>
+              <div class="space-y-1.5">
+                @for (c of [
+                  { key: 'epilepsia',                   label: 'Epilepsia' },
+                  { key: 'paralisisCerebral',           label: 'Parálisis cerebral (cualquier causa)' },
+                  { key: 'infeccionesCongenitas',       label: 'Infecciones congénitas' },
+                  { key: 'lesionesEstructuralesSNC',    label: 'Lesiones estructurales del SNC' },
+                  { key: 'facomatosis',                 label: 'Facomatosis' },
+                  { key: 'patologiasNeurometabolicas',  label: 'Patologías neurometabólicas' },
+                  { key: 'lesionesOcupantesEspacioSNC', label: 'Lesiones ocupantes de espacio en el SNC' },
+                  { key: 'patologiaPsiquiatrica',       label: 'Patología psiquiátrica (sospecha o confirmada)' },
+                  { key: 'otrosSindromesGeneticos',     label: 'Otros síndromes genéticos o cromosómicos' },
+                  { key: 'pubertadPrecoz',              label: 'Pubertad precoz' }
+                ]; track c.key) {
                   <label class="flex items-center gap-2.5 cursor-pointer px-2 py-1.5 rounded-md transition-colors"
-                    [class.bg-accent-light]="fieldVal(c.key) && !(tipoPacienteActual() === 'CONTROL' && c.esDSM)"
-                    [class.bg-danger-light]="fieldVal(c.key) && tipoPacienteActual() === 'CONTROL' && c.esDSM">
+                    [class.bg-danger-light]="fieldVal(c.key)">
                     <input type="checkbox" [formControlName]="c.key"
-                      class="w-4 h-4 rounded border-border cursor-pointer shrink-0"
-                      [class.accent-primary]="!(tipoPacienteActual() === 'CONTROL' && c.esDSM)"
-                      [class.accent-danger]="tipoPacienteActual() === 'CONTROL' && c.esDSM" />
-                    <span class="text-sm text-text">{{ tipoPacienteActual() === 'CONTROL' && c.esDSM ? c.labelControl : c.label }}</span>
+                      class="w-4 h-4 rounded border-border accent-danger cursor-pointer shrink-0" />
+                    <span class="text-sm text-text">{{ c.label }}</span>
                   </label>
-                </div>
-              }
+                }
+              </div>
             </div>
-          </div>
 
-          <!-- Criterios de exclusión -->
-          <div>
-            <p class="text-xs font-mono text-text-muted uppercase tracking-wider mb-3">Criterios de exclusión <span class="normal-case font-normal">— no debe presentar ninguno</span></p>
-            <div class="space-y-1.5">
-              @for (c of [
-                { key: 'epilepsia',                   label: 'Epilepsia' },
-                { key: 'paralisisCerebral',           label: 'Parálisis cerebral (cualquier causa)' },
-                { key: 'infeccionesCongenitas',       label: 'Infecciones congénitas' },
-                { key: 'lesionesEstructuralesSNC',    label: 'Lesiones estructurales del SNC' },
-                { key: 'facomatosis',                 label: 'Facomatosis' },
-                { key: 'patologiasNeurometabolicas',  label: 'Patologías neurometabólicas' },
-                { key: 'lesionesOcupantesEspacioSNC', label: 'Lesiones ocupantes de espacio en el SNC' },
-                { key: 'patologiaPsiquiatrica',       label: 'Patología psiquiátrica (sospecha o confirmada)' },
-                { key: 'otrosSindromesGeneticos',     label: 'Otros síndromes genéticos o cromosómicos' },
-                { key: 'pubertadPrecoz',              label: 'Pubertad precoz' }
-              ]; track c.key) {
-                <label class="flex items-center gap-2.5 cursor-pointer px-2 py-1.5 rounded-md transition-colors"
-                  [class.bg-danger-light]="fieldVal(c.key)">
-                  <input type="checkbox" [formControlName]="c.key"
-                    class="w-4 h-4 rounded border-border accent-danger cursor-pointer shrink-0" />
-                  <span class="text-sm text-text">{{ c.label }}</span>
-                </label>
-              }
-            </div>
           </div>
 
           <!-- Advertencia hard-block -->
           @if (aptitudWarning()) {
-            <div role="alert" class="px-4 py-3 bg-danger/10 border border-danger/30 rounded-md text-sm text-danger">
+            <div role="alert" class="mt-5 px-4 py-3 bg-danger/10 border border-danger/30 rounded-md text-sm text-danger">
               {{ aptitudWarning() }}
             </div>
           }
 
           @if (error()) {
-            <div role="alert" class="px-4 py-3 bg-danger/10 border border-danger/30 rounded-md text-sm text-danger">
+            <div role="alert" class="mt-3 px-4 py-3 bg-danger/10 border border-danger/30 rounded-md text-sm text-danger">
               {{ error() }}
             </div>
           }
 
           <!-- Navegación paso 2 -->
-          <div class="flex items-center justify-between pt-2 border-t border-border">
-            <button type="button" (click)="goToStep1()"
-              class="px-4 py-2 text-sm font-medium text-text-muted hover:text-text transition-colors cursor-pointer">
-              Anterior
-            </button>
-            <button type="submit" [disabled]="loading() || !criteriosApto()"
-              class="px-5 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+          <div class="flex items-center justify-end gap-3 pt-5 mt-3 border-t border-border">
+            <button type="button" (click)="goToStep1()" class="btn-secondary">Anterior</button>
+            <button type="submit" [disabled]="loading() || !criteriosApto()" class="btn-primary">
               {{ loading() ? 'Registrando…' : 'Registrar' }}
             </button>
           </div>
@@ -292,119 +292,128 @@
 
     <!-- ════════════════════════ MODO EDICIÓN (sin stepper) ════════════════════════ -->
     <div class="bg-surface border border-border rounded-lg p-6">
-    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate appFirstFocus class="space-y-5">
+    <form [formGroup]="form" (ngSubmit)="onSubmit()" novalidate appFirstFocus>
 
-      <p class="text-xs font-mono text-text-muted uppercase tracking-wider">Datos del tutor/a</p>
+      <div class="grid grid-cols-2 gap-8">
 
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label for="e-apellidoTutor" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Apellido</label>
-          <input id="e-apellidoTutor" type="text" formControlName="apellidoTutor"
-            class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
-            [class.border-danger]="form.get('apellidoTutor')?.invalid && form.get('apellidoTutor')?.touched"
-            [attr.aria-invalid]="form.get('apellidoTutor')?.invalid && form.get('apellidoTutor')?.touched" />
+        <!-- ── Columna izquierda: tutor + niño ── -->
+        <div class="space-y-5">
+
+          <p class="text-xs font-mono text-text-muted uppercase tracking-wider">Datos del tutor/a</p>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="e-apellidoTutor" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Apellido</label>
+              <input id="e-apellidoTutor" type="text" formControlName="apellidoTutor"
+                class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                [class.border-danger]="form.get('apellidoTutor')?.invalid && form.get('apellidoTutor')?.touched"
+                [attr.aria-invalid]="form.get('apellidoTutor')?.invalid && form.get('apellidoTutor')?.touched" />
+            </div>
+            <div>
+              <label for="e-nombreTutor" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Nombre</label>
+              <input id="e-nombreTutor" type="text" formControlName="nombreTutor"
+                class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                [class.border-danger]="form.get('nombreTutor')?.invalid && form.get('nombreTutor')?.touched"
+                [attr.aria-invalid]="form.get('nombreTutor')?.invalid && form.get('nombreTutor')?.touched" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="e-correoTutor" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Correo electrónico</label>
+              <input id="e-correoTutor" type="email" formControlName="correoTutor"
+                class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text font-mono focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                [class.border-danger]="form.get('correoTutor')?.invalid && form.get('correoTutor')?.touched"
+                [attr.aria-invalid]="form.get('correoTutor')?.invalid && form.get('correoTutor')?.touched" />
+              @if (form.get('correoTutor')?.touched && form.get('correoTutor')?.hasError('email')) {
+                <p role="alert" class="mt-1 text-xs text-danger">Correo inválido</p>
+              }
+            </div>
+            <div>
+              <label for="e-telefono" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Teléfono</label>
+              <input id="e-telefono" type="tel" formControlName="telefono"
+                class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text font-mono focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" />
+            </div>
+          </div>
+
+          <div class="border-t border-border"></div>
+          <p class="text-xs font-mono text-text-muted uppercase tracking-wider">Datos del niño/a</p>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="e-apellidoNino" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Apellido</label>
+              <input id="e-apellidoNino" type="text" formControlName="apellidoNino"
+                class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                [class.border-danger]="form.get('apellidoNino')?.invalid && form.get('apellidoNino')?.touched"
+                [attr.aria-invalid]="form.get('apellidoNino')?.invalid && form.get('apellidoNino')?.touched" />
+            </div>
+            <div>
+              <label for="e-nombreNino" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Nombre</label>
+              <input id="e-nombreNino" type="text" formControlName="nombreNino"
+                class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+                [class.border-danger]="form.get('nombreNino')?.invalid && form.get('nombreNino')?.touched"
+                [attr.aria-invalid]="form.get('nombreNino')?.invalid && form.get('nombreNino')?.touched" />
+            </div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label for="e-fechaNacimientoNino" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Fecha de nacimiento</label>
+              <input id="e-fechaNacimientoNino" type="date" formControlName="fechaNacimientoNino"
+                class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" />
+            </div>
+            <div>
+              <label for="e-sexo" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Sexo</label>
+              <select id="e-sexo" formControlName="sexo"
+                class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors">
+                <option value="" disabled>Seleccioná</option>
+                <option value="FEMENINO">Femenino</option>
+                <option value="MASCULINO">Masculino</option>
+              </select>
+            </div>
+          </div>
+
         </div>
-        <div>
-          <label for="e-nombreTutor" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Nombre</label>
-          <input id="e-nombreTutor" type="text" formControlName="nombreTutor"
-            class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
-            [class.border-danger]="form.get('nombreTutor')?.invalid && form.get('nombreTutor')?.touched"
-            [attr.aria-invalid]="form.get('nombreTutor')?.invalid && form.get('nombreTutor')?.touched" />
-        </div>
-      </div>
 
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label for="e-correoTutor" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Correo electrónico</label>
-          <input id="e-correoTutor" type="email" formControlName="correoTutor"
-            class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text font-mono focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
-            [class.border-danger]="form.get('correoTutor')?.invalid && form.get('correoTutor')?.touched"
-            [attr.aria-invalid]="form.get('correoTutor')?.invalid && form.get('correoTutor')?.touched" />
-          @if (form.get('correoTutor')?.touched && form.get('correoTutor')?.hasError('email')) {
-            <p role="alert" class="mt-1 text-xs text-danger">Correo inválido</p>
-          }
-        </div>
-        <div>
-          <label for="e-telefono" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Teléfono</label>
-          <input id="e-telefono" type="tel" formControlName="telefono"
-            class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text font-mono focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" />
-        </div>
-      </div>
+        <!-- ── Columna derecha: primera visita + notas + segunda visita ── -->
+        <div class="space-y-5">
 
-      <div class="border-t border-border"></div>
-      <p class="text-xs font-mono text-text-muted uppercase tracking-wider">Datos del niño/a</p>
+          <p class="text-xs font-mono text-text-muted uppercase tracking-wider">Primera visita</p>
+          <div>
+            <label for="e-fechaPrimeraVisita" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Fecha y hora</label>
+            <input id="e-fechaPrimeraVisita" type="datetime-local" formControlName="fechaPrimeraVisita"
+              class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" />
+          </div>
 
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label for="e-apellidoNino" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Apellido</label>
-          <input id="e-apellidoNino" type="text" formControlName="apellidoNino"
-            class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
-            [class.border-danger]="form.get('apellidoNino')?.invalid && form.get('apellidoNino')?.touched"
-            [attr.aria-invalid]="form.get('apellidoNino')?.invalid && form.get('apellidoNino')?.touched" />
+          <div class="border-t border-border"></div>
+
+          <div>
+            <label for="e-notas" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Notas</label>
+            <textarea id="e-notas" rows="5" formControlName="notas" placeholder="Observaciones del investigador…"
+              class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text placeholder-text-muted/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors resize-none"></textarea>
+          </div>
+
+          <div class="border-t border-border"></div>
+          <p class="text-xs font-mono text-text-muted uppercase tracking-wider">Segunda visita</p>
+          <div>
+            <label for="e-fechaTurnoExtraccion" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Fecha de extracción</label>
+            <input id="e-fechaTurnoExtraccion" type="datetime-local" formControlName="fechaTurnoExtraccion"
+              class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" />
+          </div>
+
         </div>
-        <div>
-          <label for="e-nombreNino" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Nombre</label>
-          <input id="e-nombreNino" type="text" formControlName="nombreNino"
-            class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
-            [class.border-danger]="form.get('nombreNino')?.invalid && form.get('nombreNino')?.touched"
-            [attr.aria-invalid]="form.get('nombreNino')?.invalid && form.get('nombreNino')?.touched" />
-        </div>
-      </div>
-
-      <div class="grid grid-cols-2 gap-4">
-        <div>
-          <label for="e-fechaNacimientoNino" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Fecha de nacimiento</label>
-          <input id="e-fechaNacimientoNino" type="date" formControlName="fechaNacimientoNino"
-            class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" />
-        </div>
-        <div>
-          <label for="e-sexo" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Sexo</label>
-          <select id="e-sexo" formControlName="sexo"
-            class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors">
-            <option value="" disabled>Seleccioná</option>
-            <option value="FEMENINO">Femenino</option>
-            <option value="MASCULINO">Masculino</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="border-t border-border"></div>
-      <p class="text-xs font-mono text-text-muted uppercase tracking-wider">Primera visita</p>
-      <div>
-        <label for="e-fechaPrimeraVisita" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Fecha y hora</label>
-        <input id="e-fechaPrimeraVisita" type="datetime-local" formControlName="fechaPrimeraVisita"
-          class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" />
-      </div>
-
-      <div class="border-t border-border"></div>
-      <div>
-        <label for="e-notas" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Notas</label>
-        <textarea id="e-notas" rows="3" formControlName="notas" placeholder="Observaciones del investigador…"
-          class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text placeholder-text-muted/50 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors resize-none"></textarea>
-      </div>
-
-      <div class="border-t border-border"></div>
-      <p class="text-xs font-mono text-text-muted uppercase tracking-wider">Segunda visita</p>
-      <div>
-        <label for="e-fechaExtraccion" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Fecha de extracción</label>
-        <input id="e-fechaExtraccion" type="date" formControlName="fechaExtraccion"
-          class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" />
       </div>
 
       @if (error()) {
-        <div role="alert" class="px-4 py-3 bg-danger/10 border border-danger/30 rounded-md text-sm text-danger">
+        <div role="alert" class="mt-5 px-4 py-3 bg-danger/10 border border-danger/30 rounded-md text-sm text-danger">
           {{ error() }}
         </div>
       }
 
-      <div class="flex items-center gap-3 pt-2">
-        <button type="submit" [disabled]="loading()"
-          class="px-5 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors disabled:opacity-50 cursor-pointer">
+      <div class="flex items-center justify-end gap-3 pt-5 mt-3 border-t border-border">
+        <button type="button" (click)="handleEscape()" class="btn-ghost">Cancelar</button>
+        <button type="submit" [disabled]="loading()" class="btn-primary">
           {{ loading() ? 'Guardando…' : 'Guardar cambios' }}
-        </button>
-        <button type="button" (click)="handleEscape()"
-          class="px-5 py-2 text-sm font-medium text-text-muted hover:text-text transition-colors cursor-pointer">
-          Cancelar
         </button>
       </div>
 

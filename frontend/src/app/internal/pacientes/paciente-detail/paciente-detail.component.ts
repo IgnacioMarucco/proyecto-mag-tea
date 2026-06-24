@@ -7,9 +7,9 @@ import {
   input,
   signal,
 } from '@angular/core';
-import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { filter, switchMap, tap } from 'rxjs';
+import { filter, map, switchMap, tap } from 'rxjs';
 import { PacienteService } from '../../../core/services/paciente.service';
 import { PacienteResponse } from '../../../core/models/paciente.model';
 import { StatusBadgeComponent } from '../../../shared/status-badge/status-badge.component';
@@ -66,13 +66,13 @@ export class PacienteDetailComponent {
     const raw: { label: string; done: boolean }[] = control
       ? [
           { label: 'Admisión',   done: true },
-          { label: '1ª visita',  done: p.fechaExtraccion != null },
+          { label: '1ª visita',  done: p.fechaTurnoExtraccion != null },
           { label: 'Extracción', done: estado === 'EXTRACCION_REALIZADA' },
         ]
       : [
           { label: 'Admisión',   done: true },
           { label: 'M-CHAT',     done: ['MCHAT_RESPONDIDO', 'EXTRACCION_PENDIENTE', 'EXTRACCION_REALIZADA'].includes(estado) },
-          { label: '1ª visita',  done: p.fechaExtraccion != null },
+          { label: '1ª visita',  done: p.fechaTurnoExtraccion != null },
           { label: 'Extracción', done: estado === 'EXTRACCION_REALIZADA' },
         ];
 
@@ -84,8 +84,13 @@ export class PacienteDetailComponent {
     });
   });
 
+  private readonly baseCrumbs = toSignal(
+    this.route.data.pipe(map(d => d['crumbs'] as Crumb[] ?? [])),
+    { initialValue: [] as Crumb[] }
+  );
+
   readonly crumbs = computed<Crumb[]>(() => {
-    const base: Crumb[] = this.route.snapshot.data['crumbs'] ?? [];
+    const base = this.baseCrumbs();
     const p = this.paciente();
     if (!p) return base;
     return [...base.slice(0, -1), { label: `${p.apellidoNino}, ${p.nombreNino}` }];

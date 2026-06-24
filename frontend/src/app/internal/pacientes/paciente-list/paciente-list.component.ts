@@ -11,7 +11,8 @@ import { StatusBadgeComponent } from '../../../shared/status-badge/status-badge.
 import { RowActionsComponent, RowAction } from '../../../shared/row-actions/row-actions.component';
 import { PaginatorComponent } from '../../../shared/paginator/paginator.component';
 import { PacienteListItem } from '../../../core/models/paciente.model';
-import { SortState } from '../../../shared/sort.utils';
+import { SortState } from '../../../shared/utils/sort.utils';
+import { hasActiveSearch } from '../../../shared/utils/list.utils';
 import { IconComponent } from '../../../shared/icon/icon.component';
 import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 import { EdadPipe } from '../../../core/pipes/edad.pipe';
@@ -39,7 +40,7 @@ export class PacienteListComponent {
   );
 
   private readonly params$ = new BehaviorSubject<PacienteListParams>({
-    page: 0, size: PAGE_SIZE, sortBy: 'createdAt', sortDir: 'desc',
+    page: 0, size: PAGE_SIZE, sortBy: 'proximaFechaEvento', sortDir: 'asc',
     estados: ['ADMITIDO', 'MCHAT_RESPONDIDO', 'EXTRACCION_PENDIENTE'],
   });
 
@@ -64,7 +65,7 @@ export class PacienteListComponent {
 
   search          = signal('');
   activeFilters   = signal<Record<string, string | string[]>>({ estado: ['ADMITIDO', 'MCHAT_RESPONDIDO', 'EXTRACCION_PENDIENTE'] });
-  sortState       = signal<SortState>({ key: 'createdAt', direction: 'desc' });
+  sortState       = signal<SortState>({ key: 'proximaFechaEvento', direction: 'asc' });
   deleting        = signal<string | null>(null);
   pendingDeleteId = signal<string | null>(null);
 
@@ -92,16 +93,16 @@ export class PacienteListComponent {
   ];
 
   readonly columns: TableColumn[] = [
-    { label: 'Paciente' },
-    { label: 'Edad' },
-    { label: 'Tipo' },
-    { label: 'Estado' },
-    { label: 'Fecha', sortKey: 'createdAt' },
+    { label: 'PACIENTE' },
+    { label: 'EDAD' },
+    { label: 'TIPO' },
+    { label: 'ESTADO' },
+    { label: 'FECHA', sortKey: 'proximaFechaEvento' },
   ];
 
   readonly tipoLabels: Record<string, string> = {
-    CONTROL:  'Control',
-    PROBLEMA: 'Caso problema',
+    CONTROL:  'Caso Control',
+    PROBLEMA: 'Caso Problema',
   };
 
   readonly tipoColors: Record<string, string> = {
@@ -168,15 +169,7 @@ export class PacienteListComponent {
   }
 
   private hasActiveSearch(): boolean {
-    if (this.search()) return true;
-    const f = this.activeFilters();
-    return this.filterGroups.some(group => {
-      const val = f[group.key];
-      if (val === undefined) return false;
-      return group.multiSelect
-        ? (val as string[]).length < group.options.length
-        : val !== group.options[0]?.key;
-    });
+    return hasActiveSearch(this.search, this.activeFilters, this.filterGroups);
   }
 
 proximaFecha(p: PacienteListItem): { label: string; valor: string } | null {
@@ -184,32 +177,19 @@ proximaFecha(p: PacienteListItem): { label: string; valor: string } | null {
       case 'ADMITIDO':
       case 'MCHAT_RESPONDIDO':
         if (!p.fechaPrimeraVisita) return null;
-        return { label: 'Primera visita', valor: this.formatDateTime(p.fechaPrimeraVisita) };
+        return { label: 'Primera visita', valor: new Date(p.fechaPrimeraVisita).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) };
       case 'EXTRACCION_PENDIENTE':
-        if (!p.fechaExtraccion) return null;
-        return { label: 'Extracción', valor: this.formatDate(p.fechaExtraccion) };
+        if (!p.fechaTurnoExtraccion) return null;
+        return { label: 'Extracción', valor: new Date(p.fechaTurnoExtraccion).toLocaleString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) };
       default:
         return null;
     }
   }
 
-  private formatDate(date: string): string {
-    return new Date(date + 'T00:00:00').toLocaleDateString('es-AR', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-    });
-  }
-
-  private formatDateTime(dt: string): string {
-    return new Date(dt).toLocaleString('es-AR', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit',
-    });
-  }
-
   getActionsFor(p: PacienteListItem): RowAction[] {
     return [
       { label: 'Detalles', onClick: () => this.router.navigate(['/internal/pacientes', p.codigoNumerico]) },
-      { label: 'Editar',      style: 'default', onClick: () => this.router.navigate(['/internal/pacientes', p.codigoNumerico, 'editar']) },
+      { label: 'Editar',      style: 'primary', onClick: () => this.router.navigate(['/internal/pacientes', p.codigoNumerico, 'editar']) },
       { label: 'Dar de baja', style: 'danger',  disabled: this.deleting() === p.codigoNumerico, onClick: () => this.requestDelete(p.codigoNumerico) },
     ];
   }

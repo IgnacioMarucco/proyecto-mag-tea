@@ -73,7 +73,7 @@ export class PacienteFormComponent implements OnInit {
     otrosSindromesGeneticos:     [false],
     pubertadPrecoz:              [false],
     // Solo edición
-    fechaExtraccion:             [''],
+    fechaTurnoExtraccion:        [''],
   });
 
   private readonly STEP1_FIELDS = [
@@ -151,7 +151,7 @@ export class PacienteFormComponent implements OnInit {
           fechaPrimeraVisita:  p.fechaPrimeraVisita?.substring(0, 16) ?? '',
           notas:               p.notas ?? '',
           tipoPaciente:        p.tipoPaciente,
-          fechaExtraccion:     p.fechaExtraccion ?? '',
+          fechaTurnoExtraccion: p.fechaTurnoExtraccion?.substring(0, 16) ?? '',
         }),
         error: () => this.error.set('No se pudo cargar el paciente'),
       });
@@ -197,7 +197,7 @@ export class PacienteFormComponent implements OnInit {
         sexo:                v.sexo as PacienteUpdate['sexo'],
         notas:               v.notas || undefined,
         fechaPrimeraVisita:  v.fechaPrimeraVisita || undefined,
-        fechaExtraccion:     v.fechaExtraccion || undefined,
+        fechaTurnoExtraccion: v.fechaTurnoExtraccion || undefined,
       };
       this.pacienteService.update(this.codigo()!, dto).subscribe({
         next: p   => { this.toast.show('Paciente actualizado'); this.router.navigate(['/internal/pacientes', p.codigoNumerico]); },

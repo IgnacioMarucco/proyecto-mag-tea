@@ -7,13 +7,14 @@ import { PacienteService } from '../../../../core/services/paciente.service';
 import { PacienteResponse } from '../../../../core/models/paciente.model';
 import { StatusBadgeComponent } from '../../../../shared/status-badge/status-badge.component';
 import { EdadPipe } from '../../../../core/pipes/edad.pipe';
+import { FechaPipe } from '../../../../core/pipes/fecha.pipe';
 import { CriteriosSectionComponent } from './criterios-section.component';
 import { ConfirmModalComponent } from '../../../../shared/confirm-modal/confirm-modal.component';
 import { extractErrorMessage } from '../../../../shared/utils/error.utils';
 
 @Component({
   selector: 'app-datos-basicos-section',
-  imports: [RouterLink, StatusBadgeComponent, EdadPipe, CriteriosSectionComponent, ConfirmModalComponent],
+  imports: [RouterLink, StatusBadgeComponent, EdadPipe, FechaPipe, CriteriosSectionComponent, ConfirmModalComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './datos-basicos-section.component.html',
 })
@@ -70,18 +71,4 @@ export class DatosBasicosSectionComponent {
     return !!(this.paciente() as unknown as Record<string, unknown>)[key];
   }
 
-  formatDate(date: string | null | undefined): string {
-    if (!date) return '—';
-    return new Date(date + 'T00:00:00').toLocaleDateString('es-AR', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-    });
-  }
-
-  formatDateTime(dt: string | null | undefined): string {
-    if (!dt) return '—';
-    return new Date(dt).toLocaleString('es-AR', {
-      day: '2-digit', month: '2-digit', year: 'numeric',
-      hour: '2-digit', minute: '2-digit',
-    });
-  }
 }
