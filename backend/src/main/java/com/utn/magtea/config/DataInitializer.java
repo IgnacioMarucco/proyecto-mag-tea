@@ -57,8 +57,10 @@ import com.utn.magtea.modeloanimal.ModeloAnimalPoolAporteRepository;
 import com.utn.magtea.modeloanimal.SexoRaton;
 import com.utn.magtea.modeloanimal.estudios.VocalizacionesUltrasonicas;
 import com.utn.magtea.modeloanimal.estudios.TresCamaras;
+import org.springframework.context.annotation.Profile;
 import org.springframework.transaction.annotation.Transactional;
 
+@Profile({"dev", "local"})
 @Component
 @RequiredArgsConstructor
 public class DataInitializer implements ApplicationRunner {
@@ -209,10 +211,10 @@ public class DataInitializer implements ApplicationRunner {
 
         String em = "ignaciomarucco@gmail.com";
 
-        saveControl("Flores",    "Cecilia",  em, "11-4700-1122",  "Flores",    "Mateo",     LocalDate.of(2021,  2, 18), Sexo.MASCULINO, "C0001", LocalDate.of(2026, 1, 10), LocalDateTime.of(2026, 1, 20, 10, 0), LocalDate.of(2026, 7, 10));
-        saveControl("Jiménez",   "Héctor",   em, "351-620-4433",  "Jiménez",   "Valentina", LocalDate.of(2020,  7, 31), Sexo.FEMENINO,  "C0002", LocalDate.of(2026, 1, 15), LocalDateTime.of(2026, 1, 25, 10, 0), LocalDate.of(2026, 7, 12));
-        saveControl("Torres",    "Ricardo",  em, "351-300-9988",  "Torres",    "Camila",    LocalDate.of(2021,  7,  6), Sexo.FEMENINO,  "C0003", LocalDate.of(2026, 1, 20), LocalDateTime.of(2026, 1, 30, 10, 0), LocalDate.of(2026, 7, 15));
-        saveControl("Medina",    "Patricia", em, "11-5800-3344",  "Medina",    "Julián",    LocalDate.of(2021, 11, 20), Sexo.MASCULINO, "C0004", LocalDate.of(2026, 1, 25), LocalDateTime.of(2026, 2,  4, 10, 0), LocalDate.of(2026, 7, 20));
+        saveControl("Flores",    "Cecilia",  em, "11-4700-1122",  "Flores",    "Mateo",     LocalDate.of(2021,  2, 18), Sexo.MASCULINO, "C0001", LocalDate.of(2026, 1, 10), LocalDateTime.of(2026, 1, 20, 10, 0), LocalDateTime.of(2026, 7, 10, 9, 0));
+        saveControl("Jiménez",   "Héctor",   em, "351-620-4433",  "Jiménez",   "Valentina", LocalDate.of(2020,  7, 31), Sexo.FEMENINO,  "C0002", LocalDate.of(2026, 1, 15), LocalDateTime.of(2026, 1, 25, 10, 0), LocalDateTime.of(2026, 7, 12, 9, 0));
+        saveControl("Torres",    "Ricardo",  em, "351-300-9988",  "Torres",    "Camila",    LocalDate.of(2021,  7,  6), Sexo.FEMENINO,  "C0003", LocalDate.of(2026, 1, 20), LocalDateTime.of(2026, 1, 30, 10, 0), LocalDateTime.of(2026, 7, 15, 9, 0));
+        saveControl("Medina",    "Patricia", em, "11-5800-3344",  "Medina",    "Julián",    LocalDate.of(2021, 11, 20), Sexo.MASCULINO, "C0004", LocalDate.of(2026, 1, 25), LocalDateTime.of(2026, 2,  4, 10, 0), LocalDateTime.of(2026, 7, 20, 9, 0));
         saveControl("Vargas",    "Mónica",   em, "11-4400-7755",  "Vargas",    "Lucas",     LocalDate.of(2020,  9, 18), Sexo.MASCULINO, "C0005", LocalDate.of(2026, 2,  1), LocalDateTime.of(2026, 2, 12, 10, 0), null);
 
         saveProblema("García",    "Claudia",   em, "11-4523-8871",  "García",    "Matías",    LocalDate.of(2021,  3, 15), Sexo.MASCULINO, "P0001", LocalDate.of(2026, 4,  1), LocalDateTime.of(2026, 4, 10, 10, 0));
@@ -221,29 +223,29 @@ public class DataInitializer implements ApplicationRunner {
         saveProblema("Martínez",  "Pablo",     em, "11-5500-2233",  "Martínez",  "Sofía",     LocalDate.of(2022,  1, 25), Sexo.FEMENINO,  "P0004", LocalDate.of(2026, 3, 22), LocalDateTime.of(2026, 4,  1, 10, 0));
         saveProblema("González",  "Andrea",    em, "351-489-6677",  "González",  "Tomás",     LocalDate.of(2020,  6, 12), Sexo.MASCULINO, "P0005", LocalDate.of(2026, 3, 18), LocalDateTime.of(2026, 3, 28, 10, 0));
 
-        saveProblemaConMchat("Herrera", "Jorge",   em, "11-4801-3322",  "Herrera", "Emma",   LocalDate.of(2023,  2,  8), Sexo.FEMENINO,  "P0006", LocalDate.of(2026, 3, 12), LocalDateTime.of(2026, 3, 22, 10, 0), LocalDate.of(2026, 7, 18), 1, MchatResultadoFinal.NEGATIVA);
-        saveProblemaConMchat("Morales", "Silvana", em, "351-601-5544",  "Morales", "Franco", LocalDate.of(2021, 12,  3), Sexo.MASCULINO, "P0007", LocalDate.of(2026, 3, 15), LocalDateTime.of(2026, 3, 25, 10, 0), LocalDate.of(2026, 7, 22), 2, MchatResultadoFinal.NEGATIVA);
+        saveProblemaConMchat("Herrera", "Jorge",   em, "11-4801-3322",  "Herrera", "Emma",   LocalDate.of(2023,  2,  8), Sexo.FEMENINO,  "P0006", LocalDate.of(2026, 3, 12), LocalDateTime.of(2026, 3, 22, 10, 0), LocalDateTime.of(2026, 7, 18, 9, 0), 1, MchatResultadoFinal.NEGATIVA);
+        saveProblemaConMchat("Morales", "Silvana", em, "351-601-5544",  "Morales", "Franco", LocalDate.of(2021, 12,  3), Sexo.MASCULINO, "P0007", LocalDate.of(2026, 3, 15), LocalDateTime.of(2026, 3, 25, 10, 0), LocalDateTime.of(2026, 7, 22, 9, 0), 2, MchatResultadoFinal.NEGATIVA);
 
-        saveProblemaConMchatYSeguimiento("Sánchez",   "Natalia",  em, "11-5701-4466",  "Sánchez",   "Isabella", LocalDate.of(2022, 10, 30), Sexo.FEMENINO,  "P0008", LocalDate.of(2026, 3,  8), LocalDateTime.of(2026, 3, 18, 10, 0), LocalDate.of(2026, 8,  5), 5, 3, MchatResultadoFinal.POSITIVA);
-        saveProblemaConMchatYSeguimiento("Ruiz",       "Daniel",   em, "351-420-3355",  "Ruiz",       "Nicolás",  LocalDate.of(2023,  3, 22), Sexo.MASCULINO, "P0009", LocalDate.of(2026, 3,  5), LocalDateTime.of(2026, 3, 15, 10, 0), LocalDate.of(2026, 8, 10), 4, 2, MchatResultadoFinal.POSITIVA);
-        saveProblemaConMchatYSeguimiento("Pereyra",    "Gustavo",  em, "351-555-7766",  "Pereyra",    "Benjamín", LocalDate.of(2020,  8, 29), Sexo.MASCULINO, "P0010", LocalDate.of(2026, 3,  1), LocalDateTime.of(2026, 3, 11, 10, 0), LocalDate.of(2026, 8, 12), 6, 4, MchatResultadoFinal.POSITIVA);
-        saveProblemaConMchatYSeguimiento("Castro",     "Valeria",  em, "11-4923-1100",  "Castro",     "Agustina", LocalDate.of(2021,  5, 14), Sexo.FEMENINO,  "P0011", LocalDate.of(2026, 2, 22), LocalDateTime.of(2026, 3,  5, 10, 0), LocalDate.of(2026, 8, 15), 7, 3, MchatResultadoFinal.POSITIVA);
-        saveProblemaConMchatYSeguimiento("Ramos",      "Alberto",  em, "351-508-6611",  "Ramos",      "Victoria", LocalDate.of(2020,  4,  9), Sexo.FEMENINO,  "P0012", LocalDate.of(2026, 2, 10), LocalDateTime.of(2026, 2, 20, 10, 0), LocalDate.of(2026, 8, 18), 3, 2, MchatResultadoFinal.POSITIVA);
-        saveProblemaConMchatYSeguimiento("Acosta",     "Fernando", em, "351-611-2200",  "Acosta",     "Renata",   LocalDate.of(2022,  3,  5), Sexo.FEMENINO,  "P0013", LocalDate.of(2026, 2,  5), LocalDateTime.of(2026, 2, 15, 10, 0), LocalDate.of(2026, 8, 20), 5, 3, MchatResultadoFinal.POSITIVA);
-        saveProblemaConMchatYSeguimiento("Domínguez",  "Sergio",   em, "351-402-8800",  "Domínguez",  "Catalina", LocalDate.of(2022,  6, 27), Sexo.FEMENINO,  "P0014", LocalDate.of(2026, 2, 18), LocalDateTime.of(2026, 2, 28, 10, 0), LocalDate.of(2026, 8, 25), 4, 1, MchatResultadoFinal.NEGATIVA);
-        saveProblemaConMchatYSeguimiento("Gutiérrez",  "Laura",    em, "11-6100-5577",  "Gutiérrez",  "Máximo",   LocalDate.of(2023,  1, 14), Sexo.MASCULINO, "P0015", LocalDate.of(2026, 2, 14), LocalDateTime.of(2026, 2, 24, 10, 0), LocalDate.of(2026, 8, 28), 6, 1, MchatResultadoFinal.NEGATIVA);
+        saveProblemaConMchatYSeguimiento("Sánchez",   "Natalia",  em, "11-5701-4466",  "Sánchez",   "Isabella", LocalDate.of(2022, 10, 30), Sexo.FEMENINO,  "P0008", LocalDate.of(2026, 3,  8), LocalDateTime.of(2026, 3, 18, 10, 0), LocalDateTime.of(2026, 8,  5, 9, 0), 5, 3, MchatResultadoFinal.POSITIVA);
+        saveProblemaConMchatYSeguimiento("Ruiz",       "Daniel",   em, "351-420-3355",  "Ruiz",       "Nicolás",  LocalDate.of(2023,  3, 22), Sexo.MASCULINO, "P0009", LocalDate.of(2026, 3,  5), LocalDateTime.of(2026, 3, 15, 10, 0), LocalDateTime.of(2026, 8, 10, 9, 0), 4, 2, MchatResultadoFinal.POSITIVA);
+        saveProblemaConMchatYSeguimiento("Pereyra",    "Gustavo",  em, "351-555-7766",  "Pereyra",    "Benjamín", LocalDate.of(2020,  8, 29), Sexo.MASCULINO, "P0010", LocalDate.of(2026, 3,  1), LocalDateTime.of(2026, 3, 11, 10, 0), LocalDateTime.of(2026, 8, 12, 9, 0), 6, 4, MchatResultadoFinal.POSITIVA);
+        saveProblemaConMchatYSeguimiento("Castro",     "Valeria",  em, "11-4923-1100",  "Castro",     "Agustina", LocalDate.of(2021,  5, 14), Sexo.FEMENINO,  "P0011", LocalDate.of(2026, 2, 22), LocalDateTime.of(2026, 3,  5, 10, 0), LocalDateTime.of(2026, 8, 15, 9, 0), 7, 3, MchatResultadoFinal.POSITIVA);
+        saveProblemaConMchatYSeguimiento("Ramos",      "Alberto",  em, "351-508-6611",  "Ramos",      "Victoria", LocalDate.of(2020,  4,  9), Sexo.FEMENINO,  "P0012", LocalDate.of(2026, 2, 10), LocalDateTime.of(2026, 2, 20, 10, 0), LocalDateTime.of(2026, 8, 18, 9, 0), 3, 2, MchatResultadoFinal.POSITIVA);
+        saveProblemaConMchatYSeguimiento("Acosta",     "Fernando", em, "351-611-2200",  "Acosta",     "Renata",   LocalDate.of(2022,  3,  5), Sexo.FEMENINO,  "P0013", LocalDate.of(2026, 2,  5), LocalDateTime.of(2026, 2, 15, 10, 0), LocalDateTime.of(2026, 8, 20, 9, 0), 5, 3, MchatResultadoFinal.POSITIVA);
+        saveProblemaConMchatYSeguimiento("Domínguez",  "Sergio",   em, "351-402-8800",  "Domínguez",  "Catalina", LocalDate.of(2022,  6, 27), Sexo.FEMENINO,  "P0014", LocalDate.of(2026, 2, 18), LocalDateTime.of(2026, 2, 28, 10, 0), LocalDateTime.of(2026, 8, 25, 9, 0), 4, 1, MchatResultadoFinal.NEGATIVA);
+        saveProblemaConMchatYSeguimiento("Gutiérrez",  "Laura",    em, "11-6100-5577",  "Gutiérrez",  "Máximo",   LocalDate.of(2023,  1, 14), Sexo.MASCULINO, "P0015", LocalDate.of(2026, 2, 14), LocalDateTime.of(2026, 2, 24, 10, 0), LocalDateTime.of(2026, 8, 28, 9, 0), 6, 1, MchatResultadoFinal.NEGATIVA);
     }
 
     private void saveControl(
             String apellidoTutor, String nombreTutor, String correo, String telefono,
             String apellidoNino, String nombreNino, LocalDate fechaNac, Sexo sexo,
             String codigo, LocalDate fechaContacto, LocalDateTime fechaPrimeraVisita,
-            LocalDate fechaExtraccion) {
+            LocalDateTime fechaExtraccion) {
         Paciente p = buildPaciente(apellidoTutor, nombreTutor, correo, telefono,
                 apellidoNino, nombreNino, fechaNac, sexo,
                 TipoPaciente.CONTROL, codigo, fechaContacto, fechaPrimeraVisita);
         if (fechaExtraccion != null) {
-            p.setFechaExtraccion(fechaExtraccion);
+            p.setFechaTurnoExtraccion(fechaExtraccion);
             p.setEstadoClinico(PacienteEstado.EXTRACCION_PENDIENTE);
         }
         pacienteRepository.save(p);
@@ -262,11 +264,11 @@ public class DataInitializer implements ApplicationRunner {
             String apellidoTutor, String nombreTutor, String correo, String telefono,
             String apellidoNino, String nombreNino, LocalDate fechaNac, Sexo sexo,
             String codigo, LocalDate fechaContacto, LocalDateTime fechaPrimeraVisita,
-            LocalDate fechaExtraccion, int scoreMchat, MchatResultadoFinal resultado) {
+            LocalDateTime fechaExtraccion, int scoreMchat, MchatResultadoFinal resultado) {
         Paciente p = buildPaciente(apellidoTutor, nombreTutor, correo, telefono,
                 apellidoNino, nombreNino, fechaNac, sexo,
                 TipoPaciente.PROBLEMA, codigo, fechaContacto, fechaPrimeraVisita);
-        p.setFechaExtraccion(fechaExtraccion);
+        p.setFechaTurnoExtraccion(fechaExtraccion);
         p.setEstadoClinico(PacienteEstado.EXTRACCION_PENDIENTE);
         Paciente saved = pacienteRepository.save(p);
         mchatFamiliaRepository.save(buildMchatFamilia(saved, scoreMchat, resultado));
@@ -276,11 +278,11 @@ public class DataInitializer implements ApplicationRunner {
             String apellidoTutor, String nombreTutor, String correo, String telefono,
             String apellidoNino, String nombreNino, LocalDate fechaNac, Sexo sexo,
             String codigo, LocalDate fechaContacto, LocalDateTime fechaPrimeraVisita,
-            LocalDate fechaExtraccion, int scoreMchat, int fallas, MchatResultadoFinal resultado) {
+            LocalDateTime fechaExtraccion, int scoreMchat, int fallas, MchatResultadoFinal resultado) {
         Paciente p = buildPaciente(apellidoTutor, nombreTutor, correo, telefono,
                 apellidoNino, nombreNino, fechaNac, sexo,
                 TipoPaciente.PROBLEMA, codigo, fechaContacto, fechaPrimeraVisita);
-        p.setFechaExtraccion(fechaExtraccion);
+        p.setFechaTurnoExtraccion(fechaExtraccion);
         p.setEstadoClinico(PacienteEstado.EXTRACCION_PENDIENTE);
         Paciente saved = pacienteRepository.save(p);
         mchatFamiliaRepository.save(buildMchatFamilia(saved, scoreMchat, resultado));
@@ -506,37 +508,40 @@ public class DataInitializer implements ApplicationRunner {
         Caja cajaControl  = cajas.get(0);  // Caja A/1/1
         Caja cajaProblema = cajas.get(1);  // Caja A/1/2
 
+        BigDecimal bd100 = BigDecimal.valueOf(1.0);
+        BigDecimal bd075 = new BigDecimal("0.75");
+
         // Control: rango 0
-        saveSueroConTubos(porCodigo.get("C0001"), cajaControl,  0.0,  "A1", 1.0, "A2", 1.0);
-        saveSueroConTubos(porCodigo.get("C0002"), cajaControl,  0.0,  "A3", 1.0, "A4", 1.0);
-        saveSueroConTubos(porCodigo.get("C0003"), cajaControl,  0.0,  "A5", 1.0, "A6", 1.0);
-        saveSueroConTubos(porCodigo.get("C0004"), cajaControl,  0.0,  "A7", 1.0, "A8", 1.0);
+        saveSueroConTubos(porCodigo.get("C0001"), cajaControl,  new BigDecimal("0"),    "A1", bd100, "A2", bd100);
+        saveSueroConTubos(porCodigo.get("C0002"), cajaControl,  new BigDecimal("0"),    "A3", bd100, "A4", bd100);
+        saveSueroConTubos(porCodigo.get("C0003"), cajaControl,  new BigDecimal("0"),    "A5", bd100, "A6", bd100);
+        saveSueroConTubos(porCodigo.get("C0004"), cajaControl,  new BigDecimal("0"),    "A7", bd100, "A8", bd100);
 
         // Rango 1 (1314–2500 BTU)
-        saveSueroConTubos(porCodigo.get("P0006"), cajaProblema, 1800.0, "B1", 0.75, "B2", 0.75);
-        saveSueroConTubos(porCodigo.get("P0007"), cajaProblema, 2000.0, "B3", 0.75, "B4", 0.75);
-        saveSueroConTubos(porCodigo.get("P0014"), cajaProblema, 1500.0, "B5", 0.75, "B6", 0.75);
-        saveSueroConTubos(porCodigo.get("P0015"), cajaProblema, 2200.0, "B7", 0.75, "B8", 0.75);
+        saveSueroConTubos(porCodigo.get("P0006"), cajaProblema, new BigDecimal("1800"), "B1", bd075, "B2", bd075);
+        saveSueroConTubos(porCodigo.get("P0007"), cajaProblema, new BigDecimal("2000"), "B3", bd075, "B4", bd075);
+        saveSueroConTubos(porCodigo.get("P0014"), cajaProblema, new BigDecimal("1500"), "B5", bd075, "B6", bd075);
+        saveSueroConTubos(porCodigo.get("P0015"), cajaProblema, new BigDecimal("2200"), "B7", bd075, "B8", bd075);
 
         // Rango 2 (2501–8000 BTU)
-        saveSueroConTubos(porCodigo.get("P0009"), cajaProblema, 5000.0, "C1", 0.75, "C2", 0.75);
-        saveSueroConTubos(porCodigo.get("P0012"), cajaProblema, 4000.0, "C3", 0.75, "C4", 0.75);
-        saveSueroConTubos(porCodigo.get("P0013"), cajaProblema, 4500.0, "C5", 0.75, "C6", 0.75);
+        saveSueroConTubos(porCodigo.get("P0009"), cajaProblema, new BigDecimal("5000"), "C1", bd075, "C2", bd075);
+        saveSueroConTubos(porCodigo.get("P0012"), cajaProblema, new BigDecimal("4000"), "C3", bd075, "C4", bd075);
+        saveSueroConTubos(porCodigo.get("P0013"), cajaProblema, new BigDecimal("4500"), "C5", bd075, "C6", bd075);
 
         // Rango 3 (> 8000 BTU)
-        saveSueroConTubos(porCodigo.get("P0008"), cajaProblema, 9000.0, "D1", 0.75, "D2", 0.75);
-        saveSueroConTubos(porCodigo.get("P0010"), cajaProblema, 9500.0, "D3", 0.75, "D4", 0.75);
-        saveSueroConTubos(porCodigo.get("P0011"), cajaProblema, 8500.0, "D5", 0.75, "D6", 0.75);
+        saveSueroConTubos(porCodigo.get("P0008"), cajaProblema, new BigDecimal("9000"), "D1", bd075, "D2", bd075);
+        saveSueroConTubos(porCodigo.get("P0010"), cajaProblema, new BigDecimal("9500"), "D3", bd075, "D4", bd075);
+        saveSueroConTubos(porCodigo.get("P0011"), cajaProblema, new BigDecimal("8500"), "D5", bd075, "D6", bd075);
     }
 
-    private void saveSueroConTubos(Paciente paciente, Caja caja, double valorAnticuerpos,
-                                    String pos1, double cant1, String pos2, double cant2) {
+    private void saveSueroConTubos(Paciente paciente, Caja caja, BigDecimal valorAnticuerpos,
+                                    String pos1, BigDecimal cant1, String pos2, BigDecimal cant2) {
         if (paciente == null) return;
 
         Suero s = new Suero();
         s.setPaciente(paciente);
         s.setCaja(caja);
-        s.setFechaExtraccion(paciente.getFechaExtraccion());
+        s.setFechaExtraccion(paciente.getFechaTurnoExtraccion().toLocalDate());
         s.setValorAnticuerpos(valorAnticuerpos);
         s.setRango(SueroRangoUtil.calcularRango(valorAnticuerpos));
         s.setUso(paciente.getTipoPaciente() == TipoPaciente.CONTROL ? SueroUso.CONTROL : SueroUso.PROBLEMA);
@@ -599,13 +604,14 @@ public class DataInitializer implements ApplicationRunner {
             pt1.setCaja(cajaPools);
             pt1.setPool(savedPool1);
             pt1.setPosicion("P2-A");
-            pt1.setCantidadInicial(2.0);
+            pt1.setCantidadInicial(new BigDecimal("2.00"));
             Tubo savedPt1 = tuboRepository.save(pt1);
 
-            crearAporte(savedPool1, st_C1, 0.5);
-            crearAporte(savedPool1, st_C2, 0.5);
-            crearAporte(savedPool1, st_C3, 0.5);
-            crearAporte(savedPool1, st_C4, 0.5);
+            BigDecimal bd050 = new BigDecimal("0.50");
+            crearAporte(savedPool1, st_C1, bd050);
+            crearAporte(savedPool1, st_C2, bd050);
+            crearAporte(savedPool1, st_C3, bd050);
+            crearAporte(savedPool1, st_C4, bd050);
 
             // Seed algunos aportes de modelos animales en pool1 (se usan en seedModelosAnimales)
             // Pool tubo P2-A tendrá cantidadUsada = 0 por ahora; se actualiza en seedModelosAnimales
@@ -628,40 +634,43 @@ public class DataInitializer implements ApplicationRunner {
             pt2.setCaja(cajaPools);
             pt2.setPool(savedPool2);
             pt2.setPosicion("P3-A");
-            pt2.setCantidadInicial(2.0);
+            pt2.setCantidadInicial(new BigDecimal("2.00"));
             tuboRepository.save(pt2);
 
-            crearAporte(savedPool2, st_D1, 0.5);
-            crearAporte(savedPool2, st_D2, 0.5);
-            crearAporte(savedPool2, st_D3, 0.5);
-            crearAporte(savedPool2, st_D4, 0.5);
+            BigDecimal bd050 = new BigDecimal("0.50");
+            crearAporte(savedPool2, st_D1, bd050);
+            crearAporte(savedPool2, st_D2, bd050);
+            crearAporte(savedPool2, st_D3, bd050);
+            crearAporte(savedPool2, st_D4, bd050);
         }
     }
 
-    private void crearAporte(Pool pool, Tubo tubo, double cantidad) {
+    private void crearAporte(Pool pool, Tubo tubo, BigDecimal cantidad) {
         PoolSueroAporte aporte = new PoolSueroAporte();
         aporte.setPool(pool);
         aporte.setTubo(tubo);
         aporte.setCantidadAportada(cantidad);
         poolSueroAporteRepository.save(aporte);
 
-        tubo.setCantidadUsada(tubo.getCantidadUsada() + cantidad);
+        tubo.setCantidadUsada(tubo.getCantidadUsada().add(cantidad));
         tuboRepository.save(tubo);
     }
 
     private void seedCamadas() {
         if (camadaRepository.count() > 0) return;
 
+        LocalDate hoy = LocalDate.now(clock);
         var camadas = List.of(
-            createCamada("C2026-A"),
-            createCamada("C2026-B")
+            createCamada("C2026-A", hoy.minusDays(25)),
+            createCamada("C2026-B", hoy.minusDays(19))
         );
         camadaRepository.saveAll(camadas);
     }
 
-    private Camada createCamada(String nombre) {
+    private Camada createCamada(String nombre, LocalDate fechaNacimiento) {
         Camada c = new Camada();
         c.setNombre(nombre);
+        c.setFechaNacimiento(fechaNacimiento);
         c.setActivo(true);
         return c;
     }
@@ -692,7 +701,6 @@ public class DataInitializer implements ApplicationRunner {
         m1.setIdentificador("M-R2-A");
         m1.setPool(pool1);
         m1.setCamada(camada1);
-        m1.setFechaNacimiento(hoy.minusDays(25));
         m1.setSexo(SexoRaton.MACHO);
         m1.setFechaDia1Inoculacion(hoy.minusDays(19));
         m1.setNumCelulasGanglionares(150);
@@ -715,10 +723,10 @@ public class DataInitializer implements ApplicationRunner {
         ModeloAnimal savedM1 = modeloAnimalRepository.save(m1);
 
         if (tuboP2A != null) {
-            crearAporteModelo(savedM1, tuboP2A, 0.2, 1);
-            crearAporteModelo(savedM1, tuboP2A, 0.2, 2);
-            crearAporteModelo(savedM1, tuboP2A, 0.2, 3);
-            crearAporteModelo(savedM1, tuboP2A, 0.2, 4);
+            crearAporteModelo(savedM1, tuboP2A, new BigDecimal("0.20"), 1);
+            crearAporteModelo(savedM1, tuboP2A, new BigDecimal("0.20"), 2);
+            crearAporteModelo(savedM1, tuboP2A, new BigDecimal("0.20"), 3);
+            crearAporteModelo(savedM1, tuboP2A, new BigDecimal("0.20"), 4);
         }
 
         // Ratón 2: M-R2-B — rango 2, solo vocalizaciones
@@ -726,7 +734,6 @@ public class DataInitializer implements ApplicationRunner {
         m2.setIdentificador("M-R2-B");
         m2.setPool(pool1);
         m2.setCamada(camada1);
-        m2.setFechaNacimiento(hoy.minusDays(25));
         m2.setSexo(SexoRaton.HEMBRA);
         m2.setFechaDia1Inoculacion(hoy.minusDays(19));
         m2.setNumCelulasGanglionares(160);
@@ -745,7 +752,6 @@ public class DataInitializer implements ApplicationRunner {
         m3.setIdentificador("M-R3-A");
         m3.setPool(pool2);
         m3.setCamada(camada2);
-        m3.setFechaNacimiento(hoy.minusDays(5));
         m3.setSexo(SexoRaton.MACHO);
         m3.setFechaDia1Inoculacion(hoy.minusDays(1));
         m3.setActivo(true);
@@ -756,14 +762,13 @@ public class DataInitializer implements ApplicationRunner {
         m4.setIdentificador("M-R3-B");
         m4.setPool(pool2);
         m4.setCamada(camada2);
-        m4.setFechaNacimiento(hoy.minusDays(19));
         m4.setSexo(SexoRaton.HEMBRA);
         m4.setFechaDia1Inoculacion(hoy.minusDays(15));
         m4.setActivo(true);
         modeloAnimalRepository.save(m4);
     }
 
-    private void crearAporteModelo(ModeloAnimal modelo, Tubo tubo, double cantidadConsumida, int dia) {
+    private void crearAporteModelo(ModeloAnimal modelo, Tubo tubo, BigDecimal cantidadConsumida, int dia) {
         ModeloAnimalPoolAporte aporte = new ModeloAnimalPoolAporte();
         aporte.setModeloAnimal(modelo);
         aporte.setTubo(tubo);
@@ -771,7 +776,7 @@ public class DataInitializer implements ApplicationRunner {
         aporte.setDia(dia);
         modeloAnimalPoolAporteRepository.save(aporte);
 
-        tubo.setCantidadUsada(tubo.getCantidadUsada() + cantidadConsumida);
+        tubo.setCantidadUsada(tubo.getCantidadUsada().add(cantidadConsumida));
         tuboRepository.save(tubo);
     }
 
