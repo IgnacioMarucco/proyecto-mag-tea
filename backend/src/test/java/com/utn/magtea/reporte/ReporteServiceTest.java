@@ -15,15 +15,20 @@ import com.utn.magtea.paciente.mchat.MchatResultadoFinal;
 import com.utn.magtea.paciente.mchat.MchatSeguimiento;
 import com.utn.magtea.paciente.vineland.EvaluacionVineland;
 import com.utn.magtea.reporte.dto.DashboardAnaliticaDTO;
+import com.utn.magtea.suero.Suero;
+import com.utn.magtea.suero.SueroRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,8 +44,18 @@ class ReporteServiceTest {
     @Mock
     private FormularioInteresRepository formularioRepository;
 
-    @InjectMocks
+    @Mock
+    private SueroRepository sueroRepository;
+
+    private final Clock clock = Clock.fixed(
+        Instant.parse("2025-06-01T12:00:00Z"), ZoneId.of("America/Argentina/Cordoba"));
+
     private ReporteService service;
+
+    @BeforeEach
+    void setUp() {
+        service = new ReporteService(pacienteRepository, formularioRepository, sueroRepository, clock);
+    }
 
     @Test
     @SuppressWarnings("unchecked")
@@ -150,6 +165,9 @@ class ReporteServiceTest {
         // Mock FormularioInteresRepository
         when(formularioRepository.findAll(any(Specification.class))).thenReturn(formularios);
 
+        // Mock SueroRepository (sin sueros registrados)
+        when(sueroRepository.findAllByPacienteIdInAndActivoTrue(any())).thenReturn(List.of());
+
         // Ejecutar
         DashboardAnaliticaDTO result = service.getDashboard("TODOS", List.of());
 
@@ -167,7 +185,7 @@ class ReporteServiceTest {
         assertThat(result.embudo().etapas()).hasSize(4);
         assertThat(result.embudo().etapas().get(0).nombre()).isEqualTo("Admitidos");
         assertThat(result.embudo().etapas().get(0).n()).isEqualTo(2);
-        assertThat(result.embudo().etapas().get(1).nombre()).isEqualTo("M-CHAT completado");
+        assertThat(result.embudo().etapas().get(1).nombre()).isEqualTo("Primera visita realizada");
         assertThat(result.embudo().etapas().get(1).n()).isEqualTo(1); // paciente 1 (EXTRACCION_REALIZADA)
         assertThat(result.embudo().etapas().get(2).nombre()).isEqualTo("Extracción pendiente");
         assertThat(result.embudo().etapas().get(2).n()).isEqualTo(1); // paciente 1
@@ -200,6 +218,7 @@ class ReporteServiceTest {
     void deberia_retornarCorrelaciones_cuandoEjesValidos() {
         var paciente = new Paciente();
         paciente.setCodigoNumerico("P001");
+        paciente.setTipoPaciente(TipoPaciente.PROBLEMA);
         paciente.setFechaNacimientoNino(LocalDate.now().minusYears(3));
 
         var mchat = new MchatFamilia();
@@ -212,11 +231,11 @@ class ReporteServiceTest {
 
         when(pacienteRepository.findAll(any(Specification.class))).thenReturn(List.of(paciente));
 
-        var puntos = service.getCorrelaciones("MCHAT_SCORE", "CARS_RAW", "TODOS", List.of());
+        var resultado = service.getCorrelaciones("MCHAT_SCORE", "CARS_RAW", "TODOS", List.of());
 
-        assertThat(puntos).hasSize(1);
-        assertThat(puntos.get(0).x()).isEqualTo(5.0);
-        assertThat(puntos.get(0).y()).isEqualTo(35.0);
-        assertThat(puntos.get(0).codigoNumerico()).isEqualTo("P001");
+        assertThat(resultado.puntos()).hasSize(1);
+        assertThat(resultado.puntos().get(0).x()).isEqualTo(5.0);
+        assertThat(resultado.puntos().get(0).y()).isEqualTo(35.0);
+        assertThat(resultado.puntos().get(0).codigoNumerico()).isEqualTo("P001");
     }
 }

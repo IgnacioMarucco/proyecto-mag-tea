@@ -3,14 +3,17 @@ package com.utn.magtea.paciente.mchat;
 import com.utn.magtea.common.exception.BusinessRuleException;
 import com.utn.magtea.common.exception.ResourceNotFoundException;
 import com.utn.magtea.paciente.Paciente;
-import com.utn.magtea.paciente.PacienteService;
 import jakarta.persistence.EntityManager;
+import com.utn.magtea.paciente.mchat.MchatResultadoFinal;
+import com.utn.magtea.paciente.mchat.MchatSeguimiento;
+import com.utn.magtea.paciente.mchat.MchatSeguimientoDTO;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.Optional;
 
@@ -21,7 +24,8 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class MchatServiceTest {
 
-    @Mock private PacienteService pacienteService;
+    @Mock private ApplicationEventPublisher events;
+    @Mock private MchatTokenService mchatTokenService;
     @Mock private MchatFamiliaRepository familiaRepository;
     @Mock private MchatFamiliaMapper mapper;
     @Mock private EntityManager em;
@@ -34,7 +38,7 @@ class MchatServiceTest {
     void deberia_validarToken_cuandoTokenValido_sinCompletar() {
         var info = new MchatInfoDTO(1L, "Nombre", "Niño");
 
-        when(pacienteService.validarTokenMchat("token-abc")).thenReturn(info);
+        when(mchatTokenService.validarToken("token-abc")).thenReturn(info);
         when(familiaRepository.existsByPaciente_Id(1L)).thenReturn(false);
 
         var result = service.validarToken("token-abc");
@@ -48,7 +52,7 @@ class MchatServiceTest {
     void deberia_validarToken_cuandoTokenValido_yaCompletado() {
         var info = new MchatInfoDTO(1L, "Nombre", "Niño");
 
-        when(pacienteService.validarTokenMchat("token-abc")).thenReturn(info);
+        when(mchatTokenService.validarToken("token-abc")).thenReturn(info);
         when(familiaRepository.existsByPaciente_Id(1L)).thenReturn(true);
 
         assertThat(service.validarToken("token-abc").yaCompletado()).isTrue();
@@ -56,7 +60,7 @@ class MchatServiceTest {
 
     @Test
     void deberia_lanzarExcepcion_cuandoTokenInvalido() {
-        when(pacienteService.validarTokenMchat("token-invalido"))
+        when(mchatTokenService.validarToken("token-invalido"))
                 .thenThrow(new ResourceNotFoundException("El enlace no es válido o ha expirado"));
 
         assertThatThrownBy(() -> service.validarToken("token-invalido"))
@@ -71,7 +75,7 @@ class MchatServiceTest {
         var dto = todosCorrectos();
         var pacienteMock = mock(Paciente.class);
 
-        when(pacienteService.validarTokenMchat("token-abc")).thenReturn(info);
+        when(mchatTokenService.validarToken("token-abc")).thenReturn(info);
         when(familiaRepository.existsByPaciente_Id(1L)).thenReturn(false);
         when(em.getReference(Paciente.class, 1L)).thenReturn(pacienteMock);
 
@@ -82,14 +86,14 @@ class MchatServiceTest {
         assertThat(captor.getValue().getPaciente()).isSameAs(pacienteMock);
         assertThat(captor.getValue().getScoreTotal()).isEqualTo(0);
         assertThat(captor.getValue().getResultadoFinal()).isEqualTo(MchatResultadoFinal.NEGATIVA);
-        verify(pacienteService).procesarMchatPublico(1L);
+        verify(events).publishEvent(any(MchatEvents.MchatFamiliaGuardadaEvent.class));
     }
 
     @Test
     void deberia_lanzarExcepcion_alGuardar_cuandoYaCompletado() {
         var info = new MchatInfoDTO(1L, "Nombre", "Niño");
 
-        when(pacienteService.validarTokenMchat("token-abc")).thenReturn(info);
+        when(mchatTokenService.validarToken("token-abc")).thenReturn(info);
         when(familiaRepository.existsByPaciente_Id(1L)).thenReturn(true);
 
         assertThatThrownBy(() -> service.guardarRespuestas("token-abc", todosCorrectos()))
@@ -97,7 +101,7 @@ class MchatServiceTest {
                 .hasMessageContaining("ya fue completado");
 
         verify(familiaRepository, never()).save(any());
-        verify(pacienteService, never()).procesarMchatPublico(anyLong());
+        verify(events, never()).publishEvent(any());
     }
 
     // ─── getRespuestasByPaciente ──────────────────────────────────────────────
@@ -138,8 +142,8 @@ class MchatServiceTest {
         var result = service.upsertRespuestasByPaciente(1L, dto);
 
         assertThat(result).isSameAs(response);
-        verify(pacienteService).findById(1L);
-        verify(pacienteService).actualizarMchatInterno(1L);
+        verify(mchatTokenService).verificarActivo(1L);
+        verify(events).publishEvent(any(MchatEvents.MchatFamiliaActualizadaEvent.class));
     }
 
     @Test
@@ -155,14 +159,13 @@ class MchatServiceTest {
         service.upsertRespuestasByPaciente(1L, dto);
 
         verify(familiaRepository).save(familiaExistente);
-        verify(pacienteService).actualizarMchatInterno(1L);
+        verify(events).publishEvent(any(MchatEvents.MchatFamiliaActualizadaEvent.class));
     }
 
     // ─── calcularScore ────────────────────────────────────────────────────────
 
     @Test
     void deberia_calcularScore_cuandoTodasRespuestasCorrectas() {
-        // Correctas: p1=true, p2=false, p3..p11=true, p12=false, p13..p20=true → 0 fallas
         var dto = new MchatSubmitDTO(
                 true,  false, true,  true,  false,
                 true,  true,  true,  true,  true,
@@ -175,7 +178,6 @@ class MchatServiceTest {
 
     @Test
     void deberia_calcularScore_cuandoTodasRespuestasIncorrectas() {
-        // Incorrectas: p1=false, p2=true, p3..p11=false, p12=true, p13..p20=false → 20 fallas
         var dto = new MchatSubmitDTO(
                 false, true,  false, false, true,
                 false, false, false, false, false,
@@ -188,7 +190,6 @@ class MchatServiceTest {
 
     @Test
     void deberia_calcularScore_cuandoPreguntasInvertidas_suman() {
-        // Solo p2=true, p5=true, p12=true fallan (invertidas: Sí = falla)
         var dto = new MchatSubmitDTO(
                 true,  true,  true,  true,  true,
                 true,  true,  true,  true,  true,
@@ -231,7 +232,74 @@ class MchatServiceTest {
         assertThat(service.calcularResultado(20)).isEqualTo(MchatResultadoFinal.POSITIVA);
     }
 
-    // Helpers
+    // ─── aplicarSeguimiento ───────────────────────────────────────────────────
+
+    @Test
+    void deberia_aplicarSeguimiento_cuandoSegNuevo_creaYAsignaFallas() {
+        var paciente = new Paciente();
+        var familia = new MchatFamilia();
+        familia.setScoreTotal(5);
+        paciente.setMchatFamilia(familia);
+
+        var dto = todosCorrectosSeguimiento();
+
+        service.aplicarSeguimiento(paciente, dto);
+
+        assertThat(paciente.getMchatSeguimiento()).isNotNull();
+        assertThat(paciente.getMchatSeguimiento().getFallas()).isEqualTo(0);
+        assertThat(familia.getResultadoFinal()).isEqualTo(MchatResultadoFinal.NEGATIVA);
+    }
+
+    @Test
+    void deberia_aplicarSeguimiento_cuandoDosFallas_resultadoPositivo() {
+        var paciente = new Paciente();
+        var familia = new MchatFamilia();
+        paciente.setMchatFamilia(familia);
+
+        // 2 fallas: item1=false (no inverted → falla), item3=false (no inverted → falla), resto correctos
+        var dto = new MchatSeguimientoDTO(
+                false, false, false, true,  false,
+                true,  true,  true,  true,  true,
+                true,  false, true,  true,  true,
+                true,  true,  true,  true,  true
+        );
+
+        service.aplicarSeguimiento(paciente, dto);
+
+        assertThat(paciente.getMchatSeguimiento().getFallas()).isEqualTo(2);
+        assertThat(familia.getResultadoFinal()).isEqualTo(MchatResultadoFinal.POSITIVA);
+    }
+
+    @Test
+    void deberia_aplicarSeguimiento_cuandoSegExistente_loActualiza() {
+        var paciente = new Paciente();
+        var familia = new MchatFamilia();
+        paciente.setMchatFamilia(familia);
+
+        var segExistente = new MchatSeguimiento();
+        segExistente.setItem1(false);
+        segExistente.setFallas(5);
+        paciente.setMchatSeguimiento(segExistente);
+
+        service.aplicarSeguimiento(paciente, todosCorrectosSeguimiento());
+
+        assertThat(paciente.getMchatSeguimiento()).isSameAs(segExistente);
+        assertThat(paciente.getMchatSeguimiento().isItem1()).isTrue();
+        assertThat(paciente.getMchatSeguimiento().getFallas()).isEqualTo(0);
+    }
+
+    // ─── Helpers ─────────────────────────────────────────────────────────────
+
+    private MchatSeguimientoDTO todosCorrectosSeguimiento() {
+        // invertidos: 2, 5, 12 → valor false = correcto para ítems invertidos en seguimiento
+        return new MchatSeguimientoDTO(
+                true,  false, true,  true,  false,
+                true,  true,  true,  true,  true,
+                true,  false, true,  true,  true,
+                true,  true,  true,  true,  true
+        );
+    }
+
     private MchatSubmitDTO todosCorrectos() {
         return new MchatSubmitDTO(
                 true,  false, true,  true,  false,

@@ -10,6 +10,7 @@ import com.utn.magtea.tubo.Tubo;
 import com.utn.magtea.tubo.TipoTubo;
 import com.utn.magtea.tubo.TuboInputDTO;
 import com.utn.magtea.tubo.TuboRepository;
+import com.utn.magtea.tubo.TuboService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -19,6 +20,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -35,6 +37,7 @@ class PoolServiceTest {
     @Mock private TuboRepository tuboRepository;
     @Mock private PoolSueroAporteRepository poolSueroAporteRepository;
     @Mock private CajaRepository cajaRepository;
+    @Mock private TuboService tuboService;
 
     @InjectMocks private PoolService service;
 
@@ -43,13 +46,13 @@ class PoolServiceTest {
     @Test
     void deberia_listarPools_cuandoExisten() {
         var pool = buildPool(1L);
-        var listDTO = new PoolListDTO(1L, "ABC123", 1, SueroUso.PROBLEMA, 0.3, 0.3, LocalDate.now(), 0, "A-1-1", 0);
+        var listDTO = new PoolListDTO(1L, "ABC123", 1, SueroUso.PROBLEMA, BigDecimal.valueOf(0.3), BigDecimal.valueOf(0.3), LocalDate.now(), 0, "A-1-1", 0);
         var page = new PageImpl<>(List.of(pool));
 
         when(repository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
         when(mapper.toListDTO(pool)).thenReturn(listDTO);
 
-        var result = service.findAll(0, 10, null, null, "createdAt", "desc");
+        var result = service.findAll(0, 10, null, null, null, "createdAt", "desc");
 
         assertThat(result.content()).hasSize(1);
         assertThat(result.content().getFirst().id()).isEqualTo(1L);
@@ -61,7 +64,7 @@ class PoolServiceTest {
 
         when(repository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
-        var result = service.findAll(0, 10, List.of(1, 2), List.of(SueroUso.PROBLEMA), "rango", "asc");
+        var result = service.findAll(0, 10, null, List.of(1, 2), List.of(SueroUso.PROBLEMA), "rango", "asc");
 
         assertThat(result.content()).isEmpty();
     }
@@ -107,8 +110,8 @@ class PoolServiceTest {
 
     @Test
     void deberia_crearPool_cuandoDatosValidos() {
-        var aportes = List.of(new SueroTuboAporteInputDTO(1L, 0.15), new SueroTuboAporteInputDTO(2L, 0.15));
-        var tubos = List.of(new TuboInputDTO("P1", 0.3));
+        var aportes = List.of(new SueroTuboAporteInputDTO(1L, BigDecimal.valueOf(0.15)), new SueroTuboAporteInputDTO(2L, BigDecimal.valueOf(0.15)));
+        var tubos = List.of(new TuboInputDTO("P1", BigDecimal.valueOf(0.3)));
         var dto = new PoolCreateDTO(1L, LocalDate.now(), aportes, tubos);
 
         var caja = buildCaja(1L);
@@ -135,8 +138,8 @@ class PoolServiceTest {
 
     @Test
     void deberia_lanzarBusinessRuleException_cuandoSuerosDeDistintoRango() {
-        var aportes = List.of(new SueroTuboAporteInputDTO(1L, 0.15), new SueroTuboAporteInputDTO(2L, 0.15));
-        var tubos = List.of(new TuboInputDTO("P1", 0.3));
+        var aportes = List.of(new SueroTuboAporteInputDTO(1L, BigDecimal.valueOf(0.15)), new SueroTuboAporteInputDTO(2L, BigDecimal.valueOf(0.15)));
+        var tubos = List.of(new TuboInputDTO("P1", BigDecimal.valueOf(0.3)));
         var dto = new PoolCreateDTO(1L, LocalDate.now(), aportes, tubos);
 
         var caja = buildCaja(1L);
@@ -154,8 +157,8 @@ class PoolServiceTest {
 
     @Test
     void deberia_lanzarBusinessRuleException_cuandoSuerosDeDistintoTipo() {
-        var aportes = List.of(new SueroTuboAporteInputDTO(1L, 0.15), new SueroTuboAporteInputDTO(2L, 0.15));
-        var tubos = List.of(new TuboInputDTO("P1", 0.3));
+        var aportes = List.of(new SueroTuboAporteInputDTO(1L, BigDecimal.valueOf(0.15)), new SueroTuboAporteInputDTO(2L, BigDecimal.valueOf(0.15)));
+        var tubos = List.of(new TuboInputDTO("P1", BigDecimal.valueOf(0.3)));
         var dto = new PoolCreateDTO(1L, LocalDate.now(), aportes, tubos);
 
         var caja = buildCaja(1L);
@@ -173,8 +176,8 @@ class PoolServiceTest {
 
     @Test
     void deberia_lanzarBusinessRuleException_cuandoCantidadTotalMenorA200uL() {
-        var aportes = List.of(new SueroTuboAporteInputDTO(1L, 0.1));
-        var tubos = List.of(new TuboInputDTO("P1", 0.1));
+        var aportes = List.of(new SueroTuboAporteInputDTO(1L, BigDecimal.valueOf(0.1)));
+        var tubos = List.of(new TuboInputDTO("P1", BigDecimal.valueOf(0.1)));
         var dto = new PoolCreateDTO(1L, LocalDate.now(), aportes, tubos);
 
         var caja = buildCaja(1L);
@@ -185,13 +188,13 @@ class PoolServiceTest {
 
         assertThatThrownBy(() -> service.create(dto))
                 .isInstanceOf(BusinessRuleException.class)
-                .hasMessageContaining("El pool debe tener al menos 0.2 mL");
+                .hasMessageContaining("El pool debe tener al menos 0.20 mL");
     }
 
     @Test
     void deberia_lanzarBusinessRuleException_cuandoSueroSinVolumenSuficiente() {
-        var aportes = List.of(new SueroTuboAporteInputDTO(1L, 0.5));
-        var tubos = List.of(new TuboInputDTO("P1", 0.5));
+        var aportes = List.of(new SueroTuboAporteInputDTO(1L, BigDecimal.valueOf(0.5)));
+        var tubos = List.of(new TuboInputDTO("P1", BigDecimal.valueOf(0.5)));
         var dto = new PoolCreateDTO(1L, LocalDate.now(), aportes, tubos);
 
         var caja = buildCaja(1L);
@@ -207,8 +210,8 @@ class PoolServiceTest {
 
     @Test
     void deberia_lanzarResourceNotFoundException_cuandoTuboNoExiste() {
-        var aportes = List.of(new SueroTuboAporteInputDTO(99L, 0.3));
-        var tubos = List.of(new TuboInputDTO("P1", 0.3));
+        var aportes = List.of(new SueroTuboAporteInputDTO(99L, BigDecimal.valueOf(0.3)));
+        var tubos = List.of(new TuboInputDTO("P1", BigDecimal.valueOf(0.3)));
         var dto = new PoolCreateDTO(1L, LocalDate.now(), aportes, tubos);
 
         var caja = buildCaja(1L);
@@ -227,15 +230,15 @@ class PoolServiceTest {
     void deberia_actualizarPool_cuandoDatosValidos() {
         var pool = buildPool(1L);
         var caja = buildCaja(1L);
-        var tubosInput = List.of(new TuboInputDTO("P1", 0.3));
+        var tubosInput = List.of(new TuboInputDTO("P1", BigDecimal.valueOf(0.3)));
         var dto = new PoolUpdateDTO(1L, LocalDate.now(), tubosInput);
         var response = buildResponseDTO(1L);
 
         var tuboExistente = new Tubo();
         tuboExistente.setTipo(TipoTubo.POOL);
         tuboExistente.setPosicion("P1");
-        tuboExistente.setCantidadInicial(0.3);
-        tuboExistente.setCantidadUsada(0.0);
+        tuboExistente.setCantidadInicial(BigDecimal.valueOf(0.3));
+        tuboExistente.setCantidadUsada(BigDecimal.ZERO);
         tuboExistente.setPool(pool);
 
         when(repository.findById(1L)).thenReturn(Optional.of(pool));
@@ -257,13 +260,13 @@ class PoolServiceTest {
         var pool = buildPool(1L);
         var caja = buildCaja(1L);
         // dto pide P2, pero P1 tiene volumen usado → debe fallar
-        var dto = new PoolUpdateDTO(1L, LocalDate.now(), List.of(new TuboInputDTO("P2", 0.3)));
+        var dto = new PoolUpdateDTO(1L, LocalDate.now(), List.of(new TuboInputDTO("P2", BigDecimal.valueOf(0.3))));
 
         var tuboConUso = new Tubo();
         tuboConUso.setTipo(TipoTubo.POOL);
         tuboConUso.setPosicion("P1");
-        tuboConUso.setCantidadInicial(0.3);
-        tuboConUso.setCantidadUsada(0.1);
+        tuboConUso.setCantidadInicial(BigDecimal.valueOf(0.3));
+        tuboConUso.setCantidadUsada(BigDecimal.valueOf(0.1));
         tuboConUso.setPool(pool);
 
         when(repository.findById(1L)).thenReturn(Optional.of(pool));
@@ -343,13 +346,13 @@ class PoolServiceTest {
         t.setTipo(TipoTubo.SUERO);
         t.setSuero(suero);
         t.setPosicion(posicion);
-        t.setCantidadInicial(cantidadInicial);
-        t.setCantidadUsada(cantidadUsada);
+        t.setCantidadInicial(BigDecimal.valueOf(cantidadInicial));
+        t.setCantidadUsada(BigDecimal.valueOf(cantidadUsada));
         return t;
     }
 
     private PoolResponseDTO buildResponseDTO(Long id) {
-        return new PoolResponseDTO(id, "ABC123", 1L, List.of(),
-                LocalDate.now(), 1, SueroUso.PROBLEMA, 0.3, 0.3, List.of(), true, null);
+        return new PoolResponseDTO(id, "ABC123", 1L, "F1", 1, 1,
+                List.of(), LocalDate.now(), 1, SueroUso.PROBLEMA, BigDecimal.valueOf(0.3), BigDecimal.valueOf(0.3), List.of(), true, null);
     }
 }

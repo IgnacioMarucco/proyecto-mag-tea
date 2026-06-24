@@ -5,21 +5,24 @@ import com.utn.magtea.caja.CajaRepository;
 import com.utn.magtea.common.exception.BusinessRuleException;
 import com.utn.magtea.common.exception.ResourceNotFoundException;
 import com.utn.magtea.paciente.Paciente;
-import com.utn.magtea.paciente.PacienteEstado;
+import com.utn.magtea.paciente.PacienteEvents;
 import com.utn.magtea.paciente.PacienteRepository;
 import com.utn.magtea.paciente.TipoPaciente;
 import com.utn.magtea.tubo.Tubo;
 import com.utn.magtea.tubo.TuboInputDTO;
 import com.utn.magtea.tubo.TuboRepository;
+import com.utn.magtea.tubo.TuboService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -35,7 +38,9 @@ class SueroServiceTest {
     @Mock private SueroMapper mapper;
     @Mock private TuboRepository tuboRepository;
     @Mock private PacienteRepository pacienteRepository;
+    @Mock private ApplicationEventPublisher events;
     @Mock private CajaRepository cajaRepository;
+    @Mock private TuboService tuboService;
 
     @InjectMocks private SueroService service;
 
@@ -133,8 +138,8 @@ class SueroServiceTest {
 
     @Test
     void deberia_crearSuero_cuandoDatosValidos() {
-        var tubosInput = List.of(new TuboInputDTO("A1", 1.0), new TuboInputDTO("A2", 1.0));
-        var dto = new SueroCreateDTO(1L, 1L, tubosInput, LocalDate.now(), 1500.0);
+        var tubosInput = List.of(new TuboInputDTO("A1", BigDecimal.valueOf(1.0)), new TuboInputDTO("A2", BigDecimal.valueOf(1.0)));
+        var dto = new SueroCreateDTO(1L, 1L, tubosInput, LocalDate.now(), new BigDecimal("1500"));
 
         var paciente = buildPaciente(1L, TipoPaciente.PROBLEMA);
         var caja = buildCaja(1L);
@@ -154,15 +159,14 @@ class SueroServiceTest {
 
         assertThat(result).isNotNull();
         assertThat(result.id()).isEqualTo(1L);
-        assertThat(paciente.getEstadoClinico()).isEqualTo(PacienteEstado.EXTRACCION_REALIZADA);
-        verify(pacienteRepository).save(paciente);
+        verify(events).publishEvent(any(PacienteEvents.SueroRegistradoEvent.class));
         verify(repository).save(any(Suero.class));
     }
 
     @Test
     void deberia_actualizarEstadoAExtraccionRealizada_cuandoPacienteControl() {
-        var tubosInput = List.of(new TuboInputDTO("A1", 1.0));
-        var dto = new SueroCreateDTO(1L, 1L, tubosInput, LocalDate.now(), 0.0);
+        var tubosInput = List.of(new TuboInputDTO("A1", BigDecimal.valueOf(1.0)));
+        var dto = new SueroCreateDTO(1L, 1L, tubosInput, LocalDate.now(), new BigDecimal("0"));
 
         var paciente = buildPaciente(1L, TipoPaciente.CONTROL);
         var caja = buildCaja(1L);
@@ -180,14 +184,13 @@ class SueroServiceTest {
 
         service.create(dto);
 
-        assertThat(paciente.getEstadoClinico()).isEqualTo(PacienteEstado.EXTRACCION_REALIZADA);
-        verify(pacienteRepository).save(paciente);
+        verify(events).publishEvent(any(PacienteEvents.SueroRegistradoEvent.class));
     }
 
     @Test
     void deberia_lanzarBusinessRuleException_cuandoPacienteYaTieneSuero() {
-        var tubosInput = List.of(new TuboInputDTO("A1", 1.0));
-        var dto = new SueroCreateDTO(1L, 1L, tubosInput, LocalDate.now(), 100.0);
+        var tubosInput = List.of(new TuboInputDTO("A1", BigDecimal.valueOf(1.0)));
+        var dto = new SueroCreateDTO(1L, 1L, tubosInput, LocalDate.now(), new BigDecimal("100"));
         var paciente = buildPaciente(1L, TipoPaciente.PROBLEMA);
 
         when(pacienteRepository.findById(1L)).thenReturn(Optional.of(paciente));
@@ -200,7 +203,7 @@ class SueroServiceTest {
 
     @Test
     void deberia_lanzarResourceNotFoundException_cuandoPacienteNoExisteAlCrear() {
-        var dto = new SueroCreateDTO(99L, 1L, List.of(new TuboInputDTO("A1", 1.0)), LocalDate.now(), 100.0);
+        var dto = new SueroCreateDTO(99L, 1L, List.of(new TuboInputDTO("A1", BigDecimal.valueOf(1.0))), LocalDate.now(), new BigDecimal("100"));
 
         when(pacienteRepository.findById(99L)).thenReturn(Optional.empty());
 
@@ -215,14 +218,14 @@ class SueroServiceTest {
     void deberia_actualizarSuero_cuandoDatosValidos() {
         var suero = buildSuero(1L, TipoPaciente.PROBLEMA);
         var caja = buildCaja(1L);
-        var tubosInput = List.of(new TuboInputDTO("A1", 2.0));
-        var dto = new SueroUpdateDTO(1L, tubosInput, LocalDate.now(), 2000.0);
+        var tubosInput = List.of(new TuboInputDTO("A1", BigDecimal.valueOf(2.0)));
+        var dto = new SueroUpdateDTO(1L, tubosInput, LocalDate.now(), new BigDecimal("2000"));
         var response = buildResponseDTO(1L);
 
         var tuboExistente = new Tubo();
         tuboExistente.setPosicion("A1");
-        tuboExistente.setCantidadInicial(1.0);
-        tuboExistente.setCantidadUsada(0.0);
+        tuboExistente.setCantidadInicial(BigDecimal.valueOf(1.0));
+        tuboExistente.setCantidadUsada(BigDecimal.ZERO);
 
         when(repository.findById(1L)).thenReturn(Optional.of(suero));
         when(cajaRepository.findById(1L)).thenReturn(Optional.of(caja));
@@ -243,12 +246,12 @@ class SueroServiceTest {
         var suero = buildSuero(1L, TipoPaciente.PROBLEMA);
         var caja = buildCaja(1L);
         // dto pide solo A2, pero A1 tiene volumen usado → debe fallar
-        var dto = new SueroUpdateDTO(1L, List.of(new TuboInputDTO("A2", 1.0)), LocalDate.now(), 1500.0);
+        var dto = new SueroUpdateDTO(1L, List.of(new TuboInputDTO("A2", BigDecimal.valueOf(1.0))), LocalDate.now(), new BigDecimal("1500"));
 
         var tuboConUso = new Tubo();
         tuboConUso.setPosicion("A1");
-        tuboConUso.setCantidadInicial(1.0);
-        tuboConUso.setCantidadUsada(0.3);
+        tuboConUso.setCantidadInicial(BigDecimal.valueOf(1.0));
+        tuboConUso.setCantidadUsada(BigDecimal.valueOf(0.3));
 
         when(repository.findById(1L)).thenReturn(Optional.of(suero));
         when(cajaRepository.findById(1L)).thenReturn(Optional.of(caja));
@@ -264,7 +267,7 @@ class SueroServiceTest {
 
     @Test
     void deberia_lanzarResourceNotFoundException_cuandoSueroNoExisteAlActualizar() {
-        var dto = new SueroUpdateDTO(1L, List.of(), LocalDate.now(), 1500.0);
+        var dto = new SueroUpdateDTO(1L, List.of(), LocalDate.now(), new BigDecimal("1500"));
         when(repository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.update(99L, dto))
@@ -285,6 +288,7 @@ class SueroServiceTest {
 
         assertThat(suero.isActivo()).isFalse();
         verify(repository).save(argThat(s -> !s.isActivo()));
+        verify(events).publishEvent(any(PacienteEvents.SueroEliminadoEvent.class));
     }
 
     @Test
@@ -306,8 +310,8 @@ class SueroServiceTest {
         var tuboAgotado = new Tubo();
         tuboAgotado.setId(1L);
         tuboAgotado.setSuero(sueroAgotado);
-        tuboAgotado.setCantidadInicial(1.0);
-        tuboAgotado.setCantidadUsada(1.0);
+        tuboAgotado.setCantidadInicial(BigDecimal.valueOf(1.0));
+        tuboAgotado.setCantidadUsada(BigDecimal.valueOf(1.0));
 
         var sueroDisponible = buildSuero(2L, TipoPaciente.PROBLEMA);
         sueroDisponible.setRango(1);
@@ -315,8 +319,8 @@ class SueroServiceTest {
         var tuboDisponible = new Tubo();
         tuboDisponible.setId(2L);
         tuboDisponible.setSuero(sueroDisponible);
-        tuboDisponible.setCantidadInicial(1.0);
-        tuboDisponible.setCantidadUsada(0.5);
+        tuboDisponible.setCantidadInicial(BigDecimal.valueOf(1.0));
+        tuboDisponible.setCantidadUsada(BigDecimal.valueOf(0.5));
 
         when(tuboRepository.findBySueroActivoTrue()).thenReturn(List.of(tuboAgotado, tuboDisponible));
 
@@ -326,7 +330,7 @@ class SueroServiceTest {
         var disp = result.getFirst();
         assertThat(disp.rango()).isEqualTo(1);
         assertThat(disp.cantidadSueros()).isEqualTo(1L);
-        assertThat(disp.mlDisponibles()).isEqualTo(0.5);
+        assertThat(disp.mlDisponibles()).isEqualByComparingTo("0.5");
         assertThat(disp.ratonesPosibles()).isEqualTo(2);
     }
 
@@ -339,13 +343,13 @@ class SueroServiceTest {
 
         var tubo1 = new Tubo();
         tubo1.setSuero(suero1);
-        tubo1.setCantidadInicial(0.6);
-        tubo1.setCantidadUsada(0.2);
+        tubo1.setCantidadInicial(BigDecimal.valueOf(0.6));
+        tubo1.setCantidadUsada(BigDecimal.valueOf(0.2));
 
         var tubo2 = new Tubo();
         tubo2.setSuero(suero2);
-        tubo2.setCantidadInicial(0.5);
-        tubo2.setCantidadUsada(0.1);
+        tubo2.setCantidadInicial(BigDecimal.valueOf(0.5));
+        tubo2.setCantidadUsada(BigDecimal.valueOf(0.1));
 
         when(tuboRepository.findBySueroActivoTrue()).thenReturn(List.of(tubo1, tubo2));
 
@@ -410,17 +414,17 @@ class SueroServiceTest {
     }
 
     private SueroListDTO buildListDTO(Long id) {
-        // Long id, Long pacienteId, String codigoNumerico, Double valorAnticuerpos,
-        // Integer rango, SueroUso uso, Double cantidadRestante, Double cantidadTotal, LocalDate fechaExtraccion
-        return new SueroListDTO(id, id, "PAC-001", 1500.0, 1, SueroUso.PROBLEMA, 1.0, 1.0, LocalDate.now());
+        // Long id, Long pacienteId, String codigoNumerico, BigDecimal valorAnticuerpos,
+        // Integer rango, SueroUso uso, BigDecimal cantidadRestante, BigDecimal cantidadTotal, LocalDate fechaExtraccion
+        return new SueroListDTO(id, id, "PAC-001", new BigDecimal("1500"), 1, SueroUso.PROBLEMA, BigDecimal.valueOf(1.0), BigDecimal.valueOf(1.0), LocalDate.now());
     }
 
     private SueroResponseDTO buildResponseDTO(Long id) {
         // Long id, Long pacienteId, String codigoNumerico, Long cajaId, String freezer,
         // Integer cajon, Integer cajaNumero, List<TuboDTO> tubos, LocalDate fechaExtraccion,
-        // Double cantidadTotal, Double cantidadRestante, Double valorAnticuerpos,
+        // BigDecimal cantidadTotal, BigDecimal cantidadRestante, BigDecimal valorAnticuerpos,
         // Integer rango, SueroUso uso, boolean activo, LocalDateTime createdAt
         return new SueroResponseDTO(id, id, "PAC-001", 1L, "A", 1, 1, List.of(),
-                LocalDate.now(), 1.0, 1.0, 1500.0, 1, SueroUso.PROBLEMA, true, null);
+                LocalDate.now(), BigDecimal.valueOf(1.0), BigDecimal.valueOf(1.0), new BigDecimal("1500"), 1, SueroUso.PROBLEMA, true, null);
     }
 }

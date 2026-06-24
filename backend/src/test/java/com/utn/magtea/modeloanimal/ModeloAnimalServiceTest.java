@@ -27,6 +27,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -89,7 +90,7 @@ class ModeloAnimalServiceTest {
     void deberia_calcularNecesitaVocalizaciones_cuandoDia5YSinVocalizaciones() {
         var hoy = LocalDate.now(FIXED_CLOCK);
         var m = buildBaseModelo();
-        m.setFechaNacimiento(hoy.minusDays(5));
+        m.getCamada().setFechaNacimiento(hoy.minusDays(5));
         m.setVocalizaciones(null);
 
         when(repository.findById(1L)).thenReturn(Optional.of(m));
@@ -103,7 +104,7 @@ class ModeloAnimalServiceTest {
     void deberia_noNecesitarVocalizaciones_cuandoYaRegistradas() {
         var hoy = LocalDate.now(FIXED_CLOCK);
         var m = buildBaseModelo();
-        m.setFechaNacimiento(hoy.minusDays(5));
+        m.getCamada().setFechaNacimiento(hoy.minusDays(5));
         m.setVocalizaciones(new VocalizacionesUltrasonicas());
 
         when(repository.findById(1L)).thenReturn(Optional.of(m));
@@ -117,7 +118,7 @@ class ModeloAnimalServiceTest {
     void deberia_noNecesitarVocalizaciones_cuandoDiaNoCorrecto() {
         var hoy = LocalDate.now(FIXED_CLOCK);
         var m = buildBaseModelo();
-        m.setFechaNacimiento(hoy.minusDays(3));
+        m.getCamada().setFechaNacimiento(hoy.minusDays(3));
         m.setVocalizaciones(null);
 
         when(repository.findById(1L)).thenReturn(Optional.of(m));
@@ -131,7 +132,7 @@ class ModeloAnimalServiceTest {
     void deberia_calcularNecesitaTresCamaras_cuandoDia19YSinEstudio() {
         var hoy = LocalDate.now(FIXED_CLOCK);
         var m = buildBaseModelo();
-        m.setFechaNacimiento(hoy.minusDays(19));
+        m.getCamada().setFechaNacimiento(hoy.minusDays(19));
         m.setTresCamaras(null);
 
         when(repository.findById(1L)).thenReturn(Optional.of(m));
@@ -154,9 +155,7 @@ class ModeloAnimalServiceTest {
 
     @Test
     void deberia_crearModeloAnimal_cuandoDatosValidos() {
-        var dto = new ModeloAnimalCreateDTO("M-2", 10L, 20L,
-                LocalDate.now(FIXED_CLOCK), SexoRaton.HEMBRA,
-                LocalDate.now(FIXED_CLOCK), List.of());
+        var dto = new ModeloAnimalCreateDTO(10L, 20L, SexoRaton.HEMBRA, List.of());
 
         var pool = buildPool(10L);
         var camada = buildCamada(20L);
@@ -165,6 +164,7 @@ class ModeloAnimalServiceTest {
 
         when(poolRepository.findById(10L)).thenReturn(Optional.of(pool));
         when(camadaRepository.findById(20L)).thenReturn(Optional.of(camada));
+        when(repository.countByPool_Id(10L)).thenReturn(0L);
         when(repository.save(any(ModeloAnimal.class))).thenReturn(m);
         when(repository.findById(2L)).thenReturn(Optional.of(m));
 
@@ -176,11 +176,68 @@ class ModeloAnimalServiceTest {
     }
 
     @Test
+    void deberia_generarIdentificadorAutomatico_cuandoEsPrimerRatonDelPool() {
+        var dto = new ModeloAnimalCreateDTO(10L, 20L, SexoRaton.HEMBRA, null);
+
+        var pool = buildPool(10L);
+        pool.setCodigo("ABC123");
+        var camada = buildCamada(20L);
+        var saved = buildBaseModelo();
+        saved.setId(5L);
+
+        when(poolRepository.findById(10L)).thenReturn(Optional.of(pool));
+        when(camadaRepository.findById(20L)).thenReturn(Optional.of(camada));
+        when(repository.countByPool_Id(10L)).thenReturn(0L);
+        when(repository.save(any(ModeloAnimal.class))).thenReturn(saved);
+        when(repository.findById(5L)).thenReturn(Optional.of(saved));
+
+        service.create(dto);
+
+        verify(repository).save(argThat(ma -> "ABC123-A".equals(ma.getIdentificador())));
+    }
+
+    @Test
+    void deberia_generarIdentificadorConSufijoCorrecto_cuandoYaHayRatonesEnElPool() {
+        var dto = new ModeloAnimalCreateDTO(10L, 20L, SexoRaton.MACHO, null);
+
+        var pool = buildPool(10L);
+        pool.setCodigo("ABC123");
+        var camada = buildCamada(20L);
+        var saved = buildBaseModelo();
+        saved.setId(6L);
+
+        when(poolRepository.findById(10L)).thenReturn(Optional.of(pool));
+        when(camadaRepository.findById(20L)).thenReturn(Optional.of(camada));
+        when(repository.countByPool_Id(10L)).thenReturn(2L);
+        when(repository.save(any(ModeloAnimal.class))).thenReturn(saved);
+        when(repository.findById(6L)).thenReturn(Optional.of(saved));
+
+        service.create(dto);
+
+        verify(repository).save(argThat(ma -> "ABC123-C".equals(ma.getIdentificador())));
+    }
+
+    @Test
+    void deberia_lanzarBusinessRuleException_cuandoPoolYaTiene26Ratones() {
+        var dto = new ModeloAnimalCreateDTO(10L, 20L, SexoRaton.HEMBRA, null);
+
+        var pool = buildPool(10L);
+        pool.setCodigo("ABC123");
+        var camada = buildCamada(20L);
+
+        when(poolRepository.findById(10L)).thenReturn(Optional.of(pool));
+        when(camadaRepository.findById(20L)).thenReturn(Optional.of(camada));
+        when(repository.countByPool_Id(10L)).thenReturn(26L);
+
+        assertThatThrownBy(() -> service.create(dto))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("máximo");
+    }
+
+    @Test
     void deberia_crearModeloAnimal_cuandoTieneAportes() {
-        var aporte = new ModeloAnimalPoolAporteInputDTO(100L, 0.1, 1);
-        var dto = new ModeloAnimalCreateDTO("M-3", 10L, 20L,
-                LocalDate.now(FIXED_CLOCK), SexoRaton.MACHO,
-                LocalDate.now(FIXED_CLOCK), List.of(aporte));
+        var aporte = new ModeloAnimalPoolAporteInputDTO(100L, BigDecimal.valueOf(0.1), 1);
+        var dto = new ModeloAnimalCreateDTO(10L, 20L, SexoRaton.MACHO, List.of(aporte));
 
         var pool = buildPool(10L);
         var camada = buildCamada(20L);
@@ -191,11 +248,12 @@ class ModeloAnimalServiceTest {
         tuboPool.setId(100L);
         tuboPool.setTipo(TipoTubo.POOL);
         tuboPool.setPool(pool);
-        tuboPool.setCantidadInicial(1.0);
-        tuboPool.setCantidadUsada(0.0);
+        tuboPool.setCantidadInicial(BigDecimal.valueOf(1.0));
+        tuboPool.setCantidadUsada(BigDecimal.ZERO);
 
         when(poolRepository.findById(10L)).thenReturn(Optional.of(pool));
         when(camadaRepository.findById(20L)).thenReturn(Optional.of(camada));
+        when(repository.countByPool_Id(10L)).thenReturn(0L);
         when(repository.save(any(ModeloAnimal.class))).thenReturn(m);
         when(tuboRepository.findById(100L)).thenReturn(Optional.of(tuboPool));
         when(repository.findById(3L)).thenReturn(Optional.of(m));
@@ -209,9 +267,7 @@ class ModeloAnimalServiceTest {
 
     @Test
     void deberia_lanzarResourceNotFoundException_cuandoPoolNoExisteAlCrear() {
-        var dto = new ModeloAnimalCreateDTO("M-X", 99L, 20L,
-                LocalDate.now(FIXED_CLOCK), SexoRaton.MACHO,
-                LocalDate.now(FIXED_CLOCK), null);
+        var dto = new ModeloAnimalCreateDTO(99L, 20L, SexoRaton.MACHO, null);
 
         when(poolRepository.findById(99L)).thenReturn(Optional.empty());
 
@@ -222,9 +278,7 @@ class ModeloAnimalServiceTest {
 
     @Test
     void deberia_lanzarResourceNotFoundException_cuandoCamadaNoExisteAlCrear() {
-        var dto = new ModeloAnimalCreateDTO("M-X", 10L, 99L,
-                LocalDate.now(FIXED_CLOCK), SexoRaton.MACHO,
-                LocalDate.now(FIXED_CLOCK), null);
+        var dto = new ModeloAnimalCreateDTO(10L, 99L, SexoRaton.MACHO, null);
 
         var pool = buildPool(10L);
         when(poolRepository.findById(10L)).thenReturn(Optional.of(pool));
@@ -237,10 +291,8 @@ class ModeloAnimalServiceTest {
 
     @Test
     void deberia_lanzarBusinessRuleException_cuandoTuboAporteNoEsDePool() {
-        var aporte = new ModeloAnimalPoolAporteInputDTO(100L, 0.1, 1);
-        var dto = new ModeloAnimalCreateDTO("M-X", 10L, 20L,
-                LocalDate.now(FIXED_CLOCK), SexoRaton.MACHO,
-                LocalDate.now(FIXED_CLOCK), List.of(aporte));
+        var aporte = new ModeloAnimalPoolAporteInputDTO(100L, BigDecimal.valueOf(0.1), 1);
+        var dto = new ModeloAnimalCreateDTO(10L, 20L, SexoRaton.MACHO, List.of(aporte));
 
         var pool = buildPool(10L);
         var camada = buildCamada(20L);
@@ -248,11 +300,12 @@ class ModeloAnimalServiceTest {
 
         var tuboSuero = new Tubo();
         tuboSuero.setId(100L);
-        tuboSuero.setTipo(TipoTubo.SUERO); // no es POOL
+        tuboSuero.setTipo(TipoTubo.SUERO);
         tuboSuero.setPosicion("A1");
 
         when(poolRepository.findById(10L)).thenReturn(Optional.of(pool));
         when(camadaRepository.findById(20L)).thenReturn(Optional.of(camada));
+        when(repository.countByPool_Id(10L)).thenReturn(0L);
         when(repository.save(any(ModeloAnimal.class))).thenReturn(m);
         when(tuboRepository.findById(100L)).thenReturn(Optional.of(tuboSuero));
 
@@ -268,9 +321,7 @@ class ModeloAnimalServiceTest {
         var m = buildBaseModelo();
         var pool = buildPool(10L);
         var camada = buildCamada(20L);
-        var dto = new ModeloAnimalCreateDTO("M-1-Editado", 10L, 20L,
-                LocalDate.now(FIXED_CLOCK), SexoRaton.HEMBRA,
-                LocalDate.now(FIXED_CLOCK), null);
+        var dto = new ModeloAnimalCreateDTO(10L, 20L, SexoRaton.HEMBRA, null);
 
         when(repository.findById(1L)).thenReturn(Optional.of(m));
         when(poolRepository.findById(10L)).thenReturn(Optional.of(pool));
@@ -280,16 +331,13 @@ class ModeloAnimalServiceTest {
         var result = service.update(1L, dto);
 
         assertThat(result).isNotNull();
-        assertThat(m.getIdentificador()).isEqualTo("M-1-Editado");
         assertThat(m.getSexo()).isEqualTo(SexoRaton.HEMBRA);
         verify(repository).save(m);
     }
 
     @Test
     void deberia_lanzarResourceNotFoundException_cuandoModeloNoExisteAlActualizar() {
-        var dto = new ModeloAnimalCreateDTO("M-X", 10L, 20L,
-                LocalDate.now(FIXED_CLOCK), SexoRaton.MACHO,
-                LocalDate.now(FIXED_CLOCK), null);
+        var dto = new ModeloAnimalCreateDTO(10L, 20L, SexoRaton.MACHO, null);
 
         when(repository.findById(99L)).thenReturn(Optional.empty());
 
@@ -468,9 +516,7 @@ class ModeloAnimalServiceTest {
         m.setId(1L);
         m.setIdentificador("M-1");
         m.setActivo(true);
-        m.setFechaNacimiento(LocalDate.now(FIXED_CLOCK));
         m.setSexo(SexoRaton.MACHO);
-        m.setFechaDia1Inoculacion(LocalDate.now(FIXED_CLOCK));
 
         var pool = buildPool(10L);
         m.setPool(pool);
@@ -486,6 +532,7 @@ class ModeloAnimalServiceTest {
         pool.setId(id);
         pool.setActivo(true);
         pool.setRango(1);
+        pool.setCodigo("XY1234");
         return pool;
     }
 
@@ -494,6 +541,7 @@ class ModeloAnimalServiceTest {
         camada.setId(id);
         camada.setNombre("C-1");
         camada.setActivo(true);
+        camada.setFechaNacimiento(LocalDate.now(FIXED_CLOCK));
         return camada;
     }
 }

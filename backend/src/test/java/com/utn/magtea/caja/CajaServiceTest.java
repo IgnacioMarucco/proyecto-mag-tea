@@ -13,6 +13,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -194,14 +195,14 @@ class CajaServiceTest {
         var t1 = new Tubo();
         t1.setSuero(sueroEntidad);
         t1.setPosicion("A1");
-        t1.setCantidadInicial(1.0);
-        t1.setCantidadUsada(0.0);
+        t1.setCantidadInicial(BigDecimal.valueOf(1.0));
+        t1.setCantidadUsada(BigDecimal.ZERO);
 
         var t2 = new Tubo();
         t2.setSuero(sueroEntidad);
         t2.setPosicion("A2");
-        t2.setCantidadInicial(1.0);
-        t2.setCantidadUsada(0.0);
+        t2.setCantidadInicial(BigDecimal.valueOf(1.0));
+        t2.setCantidadUsada(BigDecimal.ZERO);
 
         var poolEntidad = new com.utn.magtea.pool.Pool();
         poolEntidad.setId(1L);
@@ -210,8 +211,8 @@ class CajaServiceTest {
         var t3 = new Tubo();
         t3.setPool(poolEntidad);
         t3.setPosicion("B3");
-        t3.setCantidadInicial(1.0);
-        t3.setCantidadUsada(0.0);
+        t3.setCantidadInicial(BigDecimal.valueOf(1.0));
+        t3.setCantidadUsada(BigDecimal.ZERO);
 
         when(repository.findById(1L)).thenReturn(Optional.of(caja));
         when(tuboRepository.findByCajaIdAndSueroActivoTrue(1L)).thenReturn(List.of(t1, t2));
@@ -235,8 +236,8 @@ class CajaServiceTest {
         var tuboExcluido = new Tubo();
         tuboExcluido.setSuero(sueroExcluido);
         tuboExcluido.setPosicion("C1");
-        tuboExcluido.setCantidadInicial(1.0);
-        tuboExcluido.setCantidadUsada(0.0);
+        tuboExcluido.setCantidadInicial(BigDecimal.valueOf(1.0));
+        tuboExcluido.setCantidadUsada(BigDecimal.ZERO);
 
         when(repository.findById(1L)).thenReturn(Optional.of(caja));
         when(tuboRepository.findByCajaIdAndSueroActivoTrue(1L)).thenReturn(List.of(tuboExcluido));

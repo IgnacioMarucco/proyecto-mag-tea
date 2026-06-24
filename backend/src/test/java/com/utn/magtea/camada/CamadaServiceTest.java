@@ -2,6 +2,7 @@ package com.utn.magtea.camada;
 
 import com.utn.magtea.common.exception.DuplicateResourceException;
 import com.utn.magtea.common.exception.ResourceNotFoundException;
+import com.utn.magtea.modeloanimal.ModeloAnimalRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -11,6 +12,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,6 +25,7 @@ class CamadaServiceTest {
 
     @Mock private CamadaRepository repository;
     @Mock private CamadaMapper mapper;
+    @Mock private ModeloAnimalRepository modeloAnimalRepository;
 
     @InjectMocks private CamadaService service;
 
@@ -33,7 +36,7 @@ class CamadaServiceTest {
         camada.setNombre("Camada-A");
         camada.setActivo(true);
 
-        var listDTO = new CamadaListDTO(1L, "Camada-A");
+        var listDTO = new CamadaListDTO(1L, "Camada-A", null);
         var page = new PageImpl<>(List.of(camada));
 
         when(repository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
@@ -65,7 +68,7 @@ class CamadaServiceTest {
         camada.setNombre("Camada-A");
         camada.setActivo(true);
 
-        var response = new CamadaResponseDTO(1L, "Camada-A", true, null);
+        var response = new CamadaResponseDTO(1L, "Camada-A", null, true, null);
 
         when(repository.findById(1L)).thenReturn(Optional.of(camada));
         when(mapper.toDTO(camada)).thenReturn(response);
@@ -102,12 +105,12 @@ class CamadaServiceTest {
 
     @Test
     void deberia_crearCamada_cuandoDatosValidos() {
-        var dto = new CamadaCreateDTO("Camada-B");
+        var dto = new CamadaCreateDTO("Camada-B", LocalDate.of(2026, 1, 15));
         var camada = new Camada();
         camada.setId(2L);
         camada.setNombre("Camada-B");
         camada.setActivo(true);
-        var response = new CamadaResponseDTO(2L, "Camada-B", true, null);
+        var response = new CamadaResponseDTO(2L, "Camada-B", null, true, null);
 
         when(repository.existsByNombreAndActivoTrue("Camada-B")).thenReturn(false);
         when(mapper.toEntity(dto)).thenReturn(camada);
@@ -124,7 +127,7 @@ class CamadaServiceTest {
 
     @Test
     void deberia_lanzarDuplicateResourceException_cuandoNombreDuplicadoAlCrear() {
-        var dto = new CamadaCreateDTO("Camada-A");
+        var dto = new CamadaCreateDTO("Camada-A", LocalDate.of(2026, 1, 15));
         when(repository.existsByNombreAndActivoTrue("Camada-A")).thenReturn(true);
 
         assertThatThrownBy(() -> service.create(dto))
@@ -139,8 +142,8 @@ class CamadaServiceTest {
         camada.setNombre("Camada-A");
         camada.setActivo(true);
 
-        var dto = new CamadaCreateDTO("Camada-A-Editada");
-        var response = new CamadaResponseDTO(1L, "Camada-A-Editada", true, null);
+        var dto = new CamadaCreateDTO("Camada-A-Editada", LocalDate.of(2026, 2, 10));
+        var response = new CamadaResponseDTO(1L, "Camada-A-Editada", LocalDate.of(2026, 2, 10), true, null);
 
         when(repository.findById(1L)).thenReturn(Optional.of(camada));
         when(repository.existsByNombreAndActivoTrueAndIdNot("Camada-A-Editada", 1L)).thenReturn(false);
@@ -161,7 +164,7 @@ class CamadaServiceTest {
         camada.setNombre("Camada-A");
         camada.setActivo(true);
 
-        var dto = new CamadaCreateDTO("Camada-B");
+        var dto = new CamadaCreateDTO("Camada-B", LocalDate.of(2026, 1, 15));
 
         when(repository.findById(1L)).thenReturn(Optional.of(camada));
         when(repository.existsByNombreAndActivoTrueAndIdNot("Camada-B", 1L)).thenReturn(true);
@@ -175,7 +178,7 @@ class CamadaServiceTest {
     void deberia_lanzarResourceNotFoundException_cuandoCamadaNoExisteAlActualizar() {
         when(repository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.update(99L, new CamadaCreateDTO("Camada-X")))
+        assertThatThrownBy(() -> service.update(99L, new CamadaCreateDTO("Camada-X", LocalDate.of(2026, 1, 1))))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Camada con id 99 no existe");
     }
@@ -187,6 +190,7 @@ class CamadaServiceTest {
         camada.setActivo(true);
 
         when(repository.findById(1L)).thenReturn(Optional.of(camada));
+        when(modeloAnimalRepository.existsByCamada_IdAndActivoTrue(1L)).thenReturn(false);
         when(repository.save(camada)).thenReturn(camada);
 
         service.delete(1L);

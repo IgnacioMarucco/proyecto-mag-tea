@@ -1,29 +1,36 @@
 package com.utn.magtea.paciente;
 
-import com.utn.magtea.common.MailService;
 import com.utn.magtea.common.exception.BusinessRuleException;
 import com.utn.magtea.common.exception.ResourceNotFoundException;
 import com.utn.magtea.formulariointeres.ComoConocioProyecto;
 import com.utn.magtea.formulariointeres.FormularioInteres;
 import com.utn.magtea.formulariointeres.FormularioInteresService;
 import com.utn.magtea.paciente.cars.CarsDTO;
+import com.utn.magtea.paciente.cars.CarsService;
+import com.utn.magtea.paciente.criterios.CriteriosAptitud;
 import com.utn.magtea.paciente.criterios.CriteriosDTO;
 import com.utn.magtea.paciente.mchat.MchatEstado;
+import com.utn.magtea.paciente.mchat.MchatEvents;
 import com.utn.magtea.paciente.mchat.MchatFamilia;
-import com.utn.magtea.paciente.mchat.MchatResultadoFinal;
+import com.utn.magtea.paciente.mchat.MchatService;
+import com.utn.magtea.paciente.PacienteEvents;
 import com.utn.magtea.paciente.mchat.MchatSeguimiento;
 import com.utn.magtea.paciente.mchat.MchatSeguimientoDTO;
+import com.utn.magtea.paciente.mchat.MchatTokenService;
 import com.utn.magtea.paciente.vineland.VinelandDTO;
+import com.utn.magtea.suero.SueroRepository;
+import com.utn.magtea.tubo.TuboRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -41,62 +48,72 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class PacienteServiceTest {
 
-    private static final Instant AHORA = Instant.parse("2026-06-10T12:00:00Z");
-    private static final Clock FIXED_CLOCK = Clock.fixed(AHORA, ZoneId.of("UTC"));
-
     @Mock private PacienteRepository repository;
     @Mock private PacienteMapper mapper;
     @Mock private FormularioInteresService formularioService;
-    @Mock private MailService mailService;
-    @Mock private Clock clock;
+    @Mock private MchatTokenService mchatTokenService;
+    @Mock private MchatService mchatService;
+    @Mock private CarsService carsService;
+    @Mock private ApplicationEventPublisher events;
+    @Mock private SueroRepository sueroRepository;
+    @Mock private TuboRepository tuboRepository;
+    @Spy  private Clock clock = Clock.fixed(Instant.parse("2026-06-23T10:00:00Z"), ZoneId.of("America/Argentina/Cordoba"));
 
     @InjectMocks private PacienteService service;
 
     @BeforeEach
     void setUp() {
-        lenient().when(clock.instant()).thenReturn(FIXED_CLOCK.instant());
-        lenient().when(clock.getZone()).thenReturn(FIXED_CLOCK.getZone());
-        ReflectionTestUtils.setField(service, "tokenExpiryDays", 30);
+        lenient().when(mapper.calcularCriteriosAptitud(any())).thenReturn(CriteriosAptitud.APTO);
+        lenient().when(mapper.toDTO(any(Paciente.class), any(MchatEstado.class))).thenReturn(null);
     }
 
     // ─── create ───────────────────────────────────────────────────────────────
 
     @Test
-    void deberia_crearPaciente_problema_enviaMchatYGeneraToken() {
+    void deberia_crearPaciente_problema_generaTokenYPublicaEvento() {
         var dto = createDTO(TipoPaciente.PROBLEMA);
         var entidad = new Paciente();
         var response = buildResponse(1L);
 
+        doAnswer(inv -> {
+            Paciente p = inv.getArgument(0);
+            p.setMchatToken("token-test");
+            p.setMchatTokenExpiry(LocalDateTime.now().plusDays(30));
+            return null;
+        }).when(mchatTokenService).generarToken(any(Paciente.class));
+
         when(mapper.toEntity(dto)).thenReturn(entidad);
         when(repository.existsByCodigoNumerico(anyString())).thenReturn(false);
         when(repository.save(entidad)).thenReturn(entidad);
-        when(mapper.toDTO(entidad)).thenReturn(response);
+        when(mapper.toDTO(eq(entidad), any(MchatEstado.class))).thenReturn(response);
 
         var result = service.create(dto);
 
         assertThat(result).isEqualTo(response);
         assertThat(entidad.getCodigoNumerico()).isNotBlank();
-        assertThat(entidad.getMchatToken()).isNotBlank();
+        assertThat(entidad.getMchatToken()).isEqualTo("token-test");
         assertThat(entidad.getMchatTokenExpiry()).isNotNull();
         assertThat(entidad.getEstadoClinico()).isEqualTo(PacienteEstado.ADMITIDO);
-        verify(mailService).enviarLinkMchat(any(), any(), any(), any(), any());
+        verify(mchatTokenService).generarToken(entidad);
+        verify(events).publishEvent(any(MchatEvents.MchatEnviadoEvent.class));
     }
 
     @Test
-    void deberia_crearPaciente_control_noEnviaMchatNiGeneraToken() {
+    void deberia_crearPaciente_control_noGeneraTokenNiPublicaEvento() {
         var dto = createDTO(TipoPaciente.CONTROL);
         var entidad = new Paciente();
 
         when(mapper.toEntity(dto)).thenReturn(entidad);
         when(repository.existsByCodigoNumerico(anyString())).thenReturn(false);
         when(repository.save(entidad)).thenReturn(entidad);
-        when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
+        when(mapper.toDTO(eq(entidad), any(MchatEstado.class))).thenReturn(buildResponse(1L));
 
         service.create(dto);
 
         assertThat(entidad.getMchatToken()).isNull();
         assertThat(entidad.getMchatTokenExpiry()).isNull();
-        verify(mailService, never()).enviarLinkMchat(any(), any(), any(), any(), any());
+        verify(mchatTokenService, never()).generarToken(any());
+        verify(events, never()).publishEvent(any());
     }
 
     @Test
@@ -112,7 +129,7 @@ class PacienteServiceTest {
         when(mapper.toEntity(dto)).thenReturn(entidad);
         when(repository.existsByCodigoNumerico(anyString())).thenReturn(false);
         when(repository.save(entidad)).thenReturn(entidad);
-        when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
+        when(mapper.toDTO(eq(entidad), any(MchatEstado.class))).thenReturn(buildResponse(1L));
 
         service.create(dto);
 
@@ -137,7 +154,7 @@ class PacienteServiceTest {
         when(repository.existsByCodigoNumerico(anyString())).thenReturn(false);
         when(formularioService.admitir(5L)).thenReturn(formulario);
         when(repository.save(entidad)).thenReturn(entidad);
-        when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
+        when(mapper.toDTO(eq(entidad), any(MchatEstado.class))).thenReturn(buildResponse(1L));
 
         service.create(dto);
 
@@ -147,19 +164,6 @@ class PacienteServiceTest {
         verify(formularioService).admitir(5L);
     }
 
-    @Test
-    void deberia_crearPaciente_continuaAunqueFalleElMail() {
-        var dto = createDTO(TipoPaciente.PROBLEMA);
-        var entidad = new Paciente();
-
-        when(mapper.toEntity(dto)).thenReturn(entidad);
-        when(repository.existsByCodigoNumerico(anyString())).thenReturn(false);
-        when(repository.save(entidad)).thenReturn(entidad);
-        when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
-        doThrow(new RuntimeException("SMTP error")).when(mailService).enviarLinkMchat(any(), any(), any(), any(), any());
-
-        assertThatCode(() -> service.create(dto)).doesNotThrowAnyException();
-    }
 
     // ─── findById ─────────────────────────────────────────────────────────────
 
@@ -169,7 +173,7 @@ class PacienteServiceTest {
         var response = buildResponse(1L);
 
         when(repository.findById(1L)).thenReturn(Optional.of(entidad));
-        when(mapper.toDTO(entidad)).thenReturn(response);
+        when(mapper.toDTO(eq(entidad), any(MchatEstado.class))).thenReturn(response);
 
         assertThat(service.findById(1L)).isEqualTo(response);
     }
@@ -228,7 +232,7 @@ class PacienteServiceTest {
 
         when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
         when(repository.save(entidad)).thenReturn(entidad);
-        when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
+        when(mapper.toDTO(eq(entidad), any(MchatEstado.class))).thenReturn(buildResponse(1L));
 
         service.updateCriterios("TST00001", dto);
 
@@ -244,7 +248,7 @@ class PacienteServiceTest {
 
         when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
         when(repository.save(entidad)).thenReturn(entidad);
-        when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
+        when(mapper.toDTO(eq(entidad), any(MchatEstado.class))).thenReturn(buildResponse(1L));
 
         service.updateCriterios("TST00001", dto);
 
@@ -255,7 +259,7 @@ class PacienteServiceTest {
     // ─── updateMchatSeguimiento ───────────────────────────────────────────────
 
     @Test
-    void deberia_actualizarSeguimiento_cuandoScoreEnRango() {
+    void deberia_actualizarSeguimiento_cuandoScoreEnRango_delegaAMchatService() {
         var entidad = pacienteActivo(1L);
         var familia = new MchatFamilia();
         familia.setScoreTotal(5);
@@ -264,30 +268,12 @@ class PacienteServiceTest {
 
         when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
         when(repository.save(entidad)).thenReturn(entidad);
-        when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
+        when(mapper.toDTO(eq(entidad), any(MchatEstado.class))).thenReturn(buildResponse(1L));
 
         service.updateMchatSeguimiento("TST00001", dto);
 
-        assertThat(entidad.getMchatSeguimiento()).isNotNull();
-        assertThat(entidad.getMchatSeguimiento().getFallas()).isEqualTo(2);
-        assertThat(familia.getResultadoFinal()).isEqualTo(MchatResultadoFinal.POSITIVA);
-    }
-
-    @Test
-    void deberia_actualizarSeguimiento_cuandoUnaSolaFalla_resultadoNegativo() {
-        var entidad = pacienteActivo(1L);
-        var familia = new MchatFamilia();
-        familia.setScoreTotal(4);
-        entidad.setMchatFamilia(familia);
-        var dto = seguimientoConFallas(1);
-
-        when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
-        when(repository.save(entidad)).thenReturn(entidad);
-        when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
-
-        service.updateMchatSeguimiento("TST00001", dto);
-
-        assertThat(familia.getResultadoFinal()).isEqualTo(MchatResultadoFinal.NEGATIVA);
+        verify(mchatService).aplicarSeguimiento(entidad, dto);
+        verify(repository).save(entidad);
     }
 
     @Test
@@ -330,30 +316,26 @@ class PacienteServiceTest {
     // ─── updateCars ───────────────────────────────────────────────────────────
 
     @Test
-    void deberia_actualizarCars_cuandoValoresValidos() {
+    void deberia_actualizarCars_cuandoValoresValidos_delegaACarsService() {
         var entidad = pacienteActivo(1L);
         var dto = carsDTO(2.0);
 
         when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
         when(repository.save(entidad)).thenReturn(entidad);
-        when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
+        when(mapper.toDTO(eq(entidad), any(MchatEstado.class))).thenReturn(buildResponse(1L));
 
         service.updateCars("TST00001", dto);
 
-        assertThat(entidad.getEvaluacionCars()).isNotNull();
-        assertThat(entidad.getEvaluacionCars().getRawScore()).isEqualByComparingTo(new BigDecimal("30.0"));
+        verify(carsService).validarItems(dto);
+        verify(carsService).aplicar(entidad, dto);
+        verify(repository).save(entidad);
     }
 
     @Test
     void deberia_lanzarExcepcion_alActualizarCars_cuandoValorInvalido() {
-        var dto = new CarsDTO(
-                new BigDecimal("1.0"), new BigDecimal("1.5"), new BigDecimal("2.0"),
-                new BigDecimal("2.5"), new BigDecimal("3.0"), new BigDecimal("3.5"),
-                new BigDecimal("4.0"), new BigDecimal("1.0"), new BigDecimal("1.5"),
-                new BigDecimal("2.0"), new BigDecimal("2.5"), new BigDecimal("3.0"),
-                new BigDecimal("3.5"), new BigDecimal("4.0"), new BigDecimal("5.0"),
-                null, null, null, null, null, null, null, null, null, null,
-                null, null, null, null, null, null, null);
+        var dto = carsDTO(2.0);
+        doThrow(new BusinessRuleException("Valor inválido en ítem 15 de CARS-2: 5.0"))
+                .when(carsService).validarItems(dto);
 
         assertThatThrownBy(() -> service.updateCars("TST00001", dto))
                 .isInstanceOf(BusinessRuleException.class)
@@ -394,6 +376,7 @@ class PacienteServiceTest {
         var entidad = pacienteActivo(1L);
 
         when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
+        when(sueroRepository.findByPacienteCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.empty());
 
         service.delete("TST00001");
 
@@ -405,11 +388,8 @@ class PacienteServiceTest {
 
     @Test
     void deberia_validarTokenMchat_cuandoTokenValido() {
-        var entidad = pacienteActivo(1L);
-        entidad.setMchatToken("token-abc");
-        entidad.setMchatTokenExpiry(LocalDateTime.now(FIXED_CLOCK).plusDays(10));
-
-        when(repository.findByMchatToken("token-abc")).thenReturn(Optional.of(entidad));
+        var info = new com.utn.magtea.paciente.mchat.MchatInfoDTO(1L, "Nombre", "Niño");
+        when(mchatTokenService.validarToken("token-abc")).thenReturn(info);
 
         var result = service.validarTokenMchat("token-abc");
 
@@ -418,11 +398,8 @@ class PacienteServiceTest {
 
     @Test
     void deberia_lanzarExcepcion_cuandoTokenExpirado() {
-        var entidad = pacienteActivo(1L);
-        entidad.setMchatToken("token-viejo");
-        entidad.setMchatTokenExpiry(LocalDateTime.now(FIXED_CLOCK).minusDays(1));
-
-        when(repository.findByMchatToken("token-viejo")).thenReturn(Optional.of(entidad));
+        when(mchatTokenService.validarToken("token-viejo"))
+                .thenThrow(new ResourceNotFoundException("El enlace no es válido o ha expirado"));
 
         assertThatThrownBy(() -> service.validarTokenMchat("token-viejo"))
                 .isInstanceOf(ResourceNotFoundException.class)
@@ -431,26 +408,27 @@ class PacienteServiceTest {
 
     @Test
     void deberia_lanzarExcepcion_cuandoTokenNoExiste() {
-        when(repository.findByMchatToken("token-inexistente")).thenReturn(Optional.empty());
+        when(mchatTokenService.validarToken("token-inexistente"))
+                .thenThrow(new ResourceNotFoundException("El enlace no es válido o ha expirado"));
 
         assertThatThrownBy(() -> service.validarTokenMchat("token-inexistente"))
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
-    // ─── procesarMchatPublico ─────────────────────────────────────────────────
+    // ─── onMchatFamiliaGuardada ───────────────────────────────────────────────
 
     @Test
-    void deberia_procesarMchatPublico_limpiaToken_yActualizaEstado() {
+    void deberia_onMchatFamiliaGuardada_limpiaToken_yActualizaEstado() {
         var entidad = pacienteActivo(1L);
         entidad.setMchatToken("token-abc");
-        entidad.setMchatTokenExpiry(LocalDateTime.now(FIXED_CLOCK).plusDays(10));
+        entidad.setMchatTokenExpiry(LocalDateTime.now().plusDays(10));
         var familia = new MchatFamilia();
         familia.setScoreTotal(12);
         entidad.setMchatFamilia(familia);
 
         when(repository.findById(1L)).thenReturn(Optional.of(entidad));
 
-        service.procesarMchatPublico(1L);
+        service.onMchatFamiliaGuardada(new MchatEvents.MchatFamiliaGuardadaEvent(1L));
 
         assertThat(entidad.getMchatToken()).isNull();
         assertThat(entidad.getMchatTokenExpiry()).isNull();
@@ -459,22 +437,22 @@ class PacienteServiceTest {
     }
 
     @Test
-    void deberia_procesarMchatPublico_cuandoSinFamilia_quedaEnAdmitido() {
+    void deberia_onMchatFamiliaGuardada_cuandoSinFamilia_quedaEnAdmitido() {
         var entidad = pacienteActivo(1L);
         entidad.setMchatToken("token-abc");
 
         when(repository.findById(1L)).thenReturn(Optional.of(entidad));
 
-        service.procesarMchatPublico(1L);
+        service.onMchatFamiliaGuardada(new MchatEvents.MchatFamiliaGuardadaEvent(1L));
 
         assertThat(entidad.getMchatToken()).isNull();
         assertThat(entidad.getEstadoClinico()).isEqualTo(PacienteEstado.ADMITIDO);
     }
 
-    // ─── actualizarMchatInterno ───────────────────────────────────────────────
+    // ─── onMchatFamiliaActualizada ────────────────────────────────────────────
 
     @Test
-    void deberia_actualizarMchatInterno_cuandoScoreEnRango_noLimpiaSeguimiento() {
+    void deberia_onMchatFamiliaActualizada_cuandoScoreEnRango_noLimpiaSeguimiento() {
         var entidad = pacienteActivo(1L);
         var familia = new MchatFamilia();
         familia.setScoreTotal(5);
@@ -486,14 +464,14 @@ class PacienteServiceTest {
 
         when(repository.findById(1L)).thenReturn(Optional.of(entidad));
 
-        service.actualizarMchatInterno(1L);
+        service.onMchatFamiliaActualizada(new MchatEvents.MchatFamiliaActualizadaEvent(1L));
 
         assertThat(entidad.getMchatSeguimiento()).isNotNull();
         assertThat(entidad.getMchatSeguimiento().isItem1()).isTrue();
     }
 
     @Test
-    void deberia_actualizarMchatInterno_cuandoScoreFueraDeRango_limpiaSeguimiento() {
+    void deberia_onMchatFamiliaActualizada_cuandoScoreFueraDeRango_limpiaSeguimiento() {
         var entidad = pacienteActivo(1L);
         var familia = new MchatFamilia();
         familia.setScoreTotal(1);
@@ -505,13 +483,41 @@ class PacienteServiceTest {
 
         when(repository.findById(1L)).thenReturn(Optional.of(entidad));
 
-        service.actualizarMchatInterno(1L);
+        service.onMchatFamiliaActualizada(new MchatEvents.MchatFamiliaActualizadaEvent(1L));
 
         assertThat(entidad.getMchatSeguimiento()).isNull();
     }
 
+    // ─── onSueroRegistrado / onSueroEliminado ─────────────────────────────────
+
     @Test
-    void deberia_actualizarMchatInterno_cuandoScoreAlto_limpiaSeguimiento() {
+    void deberia_onSueroRegistrado_marcaExtraccionRealizada() {
+        var entidad = pacienteActivo(1L);
+        entidad.setEstadoClinico(PacienteEstado.ADMITIDO);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+
+        service.onSueroRegistrado(new PacienteEvents.SueroRegistradoEvent(1L));
+
+        assertThat(entidad.getEstadoClinico()).isEqualTo(PacienteEstado.EXTRACCION_REALIZADA);
+        verify(repository).save(entidad);
+    }
+
+    @Test
+    void deberia_onSueroEliminado_marcaExtraccionPendiente() {
+        var entidad = pacienteActivo(1L);
+        entidad.setEstadoClinico(PacienteEstado.EXTRACCION_REALIZADA);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+
+        service.onSueroEliminado(new PacienteEvents.SueroEliminadoEvent(1L));
+
+        assertThat(entidad.getEstadoClinico()).isEqualTo(PacienteEstado.EXTRACCION_PENDIENTE);
+        verify(repository).save(entidad);
+    }
+
+    @Test
+    void deberia_onMchatFamiliaActualizada_cuandoScoreAlto_limpiaSeguimiento() {
         var entidad = pacienteActivo(1L);
         var familia = new MchatFamilia();
         familia.setScoreTotal(15);
@@ -522,7 +528,7 @@ class PacienteServiceTest {
 
         when(repository.findById(1L)).thenReturn(Optional.of(entidad));
 
-        service.actualizarMchatInterno(1L);
+        service.onMchatFamiliaActualizada(new MchatEvents.MchatFamiliaActualizadaEvent(1L));
 
         assertThat(entidad.getMchatSeguimiento()).isNull();
     }
@@ -538,7 +544,7 @@ class PacienteServiceTest {
 
         when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
         when(repository.save(entidad)).thenReturn(entidad);
-        when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
+        when(mapper.toDTO(eq(entidad), any(MchatEstado.class))).thenReturn(buildResponse(1L));
 
         service.update("TST00001", dto);
 
@@ -560,7 +566,7 @@ class PacienteServiceTest {
 
         when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
         when(repository.save(entidad)).thenReturn(entidad);
-        when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
+        when(mapper.toDTO(eq(entidad), any(MchatEstado.class))).thenReturn(buildResponse(1L));
 
         service.updatePrimeraVisita("TST00001", dto);
 
@@ -574,7 +580,7 @@ class PacienteServiceTest {
 
         when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
         when(repository.save(entidad)).thenReturn(entidad);
-        when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
+        when(mapper.toDTO(eq(entidad), any(MchatEstado.class))).thenReturn(buildResponse(1L));
 
         service.updateConsentimiento("TST00001", dto);
 
@@ -589,11 +595,11 @@ class PacienteServiceTest {
 
         when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
         when(repository.save(entidad)).thenReturn(entidad);
-        when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
+        when(mapper.toDTO(eq(entidad), any(MchatEstado.class))).thenReturn(buildResponse(1L));
 
         service.updateSegundaVisita("TST00001", dto);
 
-        assertThat(entidad.getFechaExtraccion()).isEqualTo(fecha);
+        assertThat(entidad.getFechaTurnoExtraccion()).isEqualTo(fecha);
         assertThat(entidad.getEstadoClinico()).isEqualTo(PacienteEstado.EXTRACCION_PENDIENTE);
     }
 
@@ -602,15 +608,23 @@ class PacienteServiceTest {
         var entidad = pacienteActivo(1L);
         entidad.setTipoPaciente(TipoPaciente.PROBLEMA);
 
+        doAnswer(inv -> {
+            Paciente p = inv.getArgument(0);
+            p.setMchatToken("token-reenvio");
+            p.setMchatTokenExpiry(LocalDateTime.now().plusDays(30));
+            return null;
+        }).when(mchatTokenService).generarToken(any(Paciente.class));
+
         when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
         when(repository.save(entidad)).thenReturn(entidad);
-        when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
+        when(mapper.toDTO(eq(entidad), any(MchatEstado.class))).thenReturn(buildResponse(1L));
 
         service.reenviarMchat("TST00001");
 
-        assertThat(entidad.getMchatToken()).isNotBlank();
+        assertThat(entidad.getMchatToken()).isEqualTo("token-reenvio");
         assertThat(entidad.getMchatTokenExpiry()).isNotNull();
-        verify(mailService).enviarLinkMchat(any(), any(), any(), any(), any());
+        verify(mchatTokenService).generarToken(entidad);
+        verify(events).publishEvent(any(MchatEvents.MchatEnviadoEvent.class));
     }
 
     @Test
@@ -633,7 +647,7 @@ class PacienteServiceTest {
 
         when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
         when(repository.save(entidad)).thenReturn(entidad);
-        when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L));
+        when(mapper.toDTO(eq(entidad), any(MchatEstado.class))).thenReturn(buildResponse(1L));
 
         service.updateVineland("TST00001", dto);
 
