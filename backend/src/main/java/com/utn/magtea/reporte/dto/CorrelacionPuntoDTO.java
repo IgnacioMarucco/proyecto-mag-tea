@@ -1,3 +1,3 @@
 package com.utn.magtea.reporte.dto;
 
-public record CorrelacionPuntoDTO(double x, double y, String codigoNumerico) {}
+public record CorrelacionPuntoDTO(double x, double y, String codigoNumerico, String tipoPaciente) {}

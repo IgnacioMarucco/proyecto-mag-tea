@@ -6,5 +6,7 @@ public record DashboardAnaliticaDTO(
         DemograficoDTO demografico,
         MchatAnaliticaDTO mchat,
         CarsAnaliticaDTO cars,
-        VinelandAnaliticaDTO vineland
+        VinelandAnaliticaDTO vineland,
+        AnticuerposDTO anticuerpos,
+        ComparacionGruposDTO comparacion
 ) {}

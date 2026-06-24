@@ -1,7 +1,7 @@
 package com.utn.magtea.reporte;
 
 import com.utn.magtea.common.ApiConstants;
-import com.utn.magtea.reporte.dto.CorrelacionPuntoDTO;
+import com.utn.magtea.reporte.dto.CorrelacionResponseDTO;
 import com.utn.magtea.reporte.dto.DashboardAnaliticaDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -34,9 +34,9 @@ public class ReporteController {
     }
 
     @GetMapping("/correlaciones")
-    @Operation(summary = "Datos de scatter para un par de ejes seleccionado")
+    @Operation(summary = "Datos de scatter para un par de ejes seleccionado, con coeficiente de Pearson")
     @ApiResponse(responseCode = "200", description = "OK")
-    public List<CorrelacionPuntoDTO> getCorrelaciones(
+    public CorrelacionResponseDTO getCorrelaciones(
             @RequestParam(defaultValue = "MCHAT_SCORE") String ejeX,
             @RequestParam(defaultValue = "CARS_RAW")    String ejeY,
             @RequestParam(required = false) String tipoPaciente,
