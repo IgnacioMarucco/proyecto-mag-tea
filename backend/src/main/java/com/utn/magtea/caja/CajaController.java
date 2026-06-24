@@ -16,13 +16,12 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 @RequestMapping(ApiConstants.V1 + "/cajas")
 @Tag(name = "Cajas")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL')")
 public class CajaController {
 
     private final CajaService service;
 
-    @GetMapping
-    @PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Listar cajas activas (paginado, filtro por freezer)")
+    @GetMapping    @Operation(summary = "Listar cajas activas (paginado, filtro por freezer)")
     public PageResponse<CajaListDTO> findAll(
             @RequestParam(defaultValue = "0")       int page,
             @RequestParam(defaultValue = "20")      int size,
@@ -33,16 +32,12 @@ public class CajaController {
         return service.findAll(page, size, q, freezer, sortBy, sortDir);
     }
 
-    @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Obtener caja por id")
+    @GetMapping("/{id}")    @Operation(summary = "Obtener caja por id")
     public CajaResponseDTO findById(@PathVariable Long id) {
         return service.findById(id);
     }
 
-    @PostMapping
-    @PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Crear caja")
+    @PostMapping    @Operation(summary = "Crear caja")
     public ResponseEntity<CajaResponseDTO> create(@RequestBody @Valid CajaCreateDTO dto) {
         CajaResponseDTO created = service.create(dto);
         var location = ServletUriComponentsBuilder.fromCurrentRequest()
@@ -50,25 +45,19 @@ public class CajaController {
         return ResponseEntity.created(location).body(created);
     }
 
-    @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Actualizar caja")
+    @PutMapping("/{id}")    @Operation(summary = "Actualizar caja")
     public CajaResponseDTO update(@PathVariable Long id,
                                   @RequestBody @Valid CajaCreateDTO dto) {
         return service.update(id, dto);
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Dar de baja caja (baja lógica)")
+    @ResponseStatus(HttpStatus.NO_CONTENT)    @Operation(summary = "Dar de baja caja (baja lógica)")
     public void delete(@PathVariable Long id) {
         service.delete(id);
     }
 
-    @GetMapping("/{id}/ocupacion")
-    @PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Consultar posiciones ocupadas en la caja")
+    @GetMapping("/{id}/ocupacion")    @Operation(summary = "Consultar posiciones ocupadas en la caja")
     public CajaOcupacionDTO getOcupacion(@PathVariable Long id,
                                           @RequestParam(required = false) Long excludeSueroId) {
         return service.getOcupacion(id, excludeSueroId);

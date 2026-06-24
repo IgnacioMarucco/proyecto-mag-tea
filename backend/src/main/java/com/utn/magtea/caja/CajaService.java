@@ -1,6 +1,8 @@
 package com.utn.magtea.caja;
 
 import com.utn.magtea.common.PageResponse;
+import com.utn.magtea.common.SpecificationUtils;
+import com.utn.magtea.common.exception.BusinessRuleException;
 import com.utn.magtea.common.exception.DuplicateResourceException;
 import com.utn.magtea.common.exception.ResourceNotFoundException;
 import com.utn.magtea.tubo.Tubo;
@@ -13,6 +15,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -31,7 +34,7 @@ public class CajaService {
     @Transactional(readOnly = true)
     public PageResponse<CajaListDTO> findAll(int page, int size, String q, String freezer,
                                               String sortBy, String sortDir) {
-        Sort sort = buildSort(sortBy, sortDir, "freezer");
+        Sort sort = SpecificationUtils.buildSort(sortBy, sortDir, "freezer", SORT_FIELDS_VALIDOS);
         Page<Caja> result = repository.findAll(
                 buildSpec(q, freezer),
                 PageRequest.of(page, size, sort));
@@ -76,6 +79,13 @@ public class CajaService {
     @Transactional
     public void delete(Long id) {
         Caja caja = findActiveById(id);
+        boolean tieneContenidoActivo =
+            tuboRepository.findByCajaIdAndSueroActivoTrue(id).stream().anyMatch(t -> t.getCantidadRestante().compareTo(BigDecimal.ZERO) > 0) ||
+            tuboRepository.findByCajaIdAndPoolActivoTrue(id).stream().anyMatch(t -> t.getCantidadRestante().compareTo(BigDecimal.ZERO) > 0);
+        if (tieneContenidoActivo) {
+            throw new BusinessRuleException(
+                "No se puede eliminar la caja porque tiene muestras activas. Liberá la grilla primero.");
+        }
         caja.setActivo(false);
         repository.save(caja);
     }
@@ -86,11 +96,11 @@ public class CajaService {
 
         Stream<String> tubosSueros = tuboRepository.findByCajaIdAndSueroActivoTrue(id).stream()
                 .filter(t -> excludeSueroId == null || !t.getSuero().getId().equals(excludeSueroId))
-                .filter(t -> t.getCantidadRestante() > 0)
+                .filter(t -> t.getCantidadRestante().compareTo(BigDecimal.ZERO) > 0)
                 .map(Tubo::getPosicion);
 
         Stream<String> tubosPools = tuboRepository.findByCajaIdAndPoolActivoTrue(id).stream()
-                .filter(t -> t.getCantidadRestante() > 0)
+                .filter(t -> t.getCantidadRestante().compareTo(BigDecimal.ZERO) > 0)
                 .map(Tubo::getPosicion);
 
         List<String> ocupadas = Stream.concat(tubosSueros, tubosPools)
@@ -119,12 +129,6 @@ public class CajaService {
 
     private Specification<Caja> freezerEquals(String freezer) {
         return (root, query, cb) -> cb.equal(cb.upper(root.get("freezer")), freezer.toUpperCase());
-    }
-
-    private Sort buildSort(String sortBy, String sortDir, String defaultField) {
-        String field = SORT_FIELDS_VALIDOS.contains(sortBy) ? sortBy : defaultField;
-        Sort.Direction dir = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        return Sort.by(dir, field);
     }
 
     private Caja findActiveById(Long id) {
