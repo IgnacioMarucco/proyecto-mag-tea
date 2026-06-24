@@ -2,14 +2,19 @@ package com.utn.magtea.pool;
 
 import com.utn.magtea.caja.Caja;
 import com.utn.magtea.caja.CajaRepository;
+import com.utn.magtea.common.DomainConstants;
 import com.utn.magtea.common.PageResponse;
+import com.utn.magtea.common.SpecificationUtils;
 import com.utn.magtea.common.exception.BusinessRuleException;
 import com.utn.magtea.common.exception.ResourceNotFoundException;
+import com.utn.magtea.modeloanimal.ModeloAnimal;
 import com.utn.magtea.suero.SueroUso;
 import com.utn.magtea.tubo.Tubo;
 import com.utn.magtea.tubo.TipoTubo;
 import com.utn.magtea.tubo.TuboInputDTO;
 import com.utn.magtea.tubo.TuboRepository;
+import com.utn.magtea.tubo.TuboService;
+import com.utn.magtea.tubo.VaciarTuboRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -18,11 +23,13 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-import java.util.UUID;
+import com.utn.magtea.common.CodigoUtil;
 import java.util.stream.Collectors;
 
 @Service
@@ -30,19 +37,19 @@ import java.util.stream.Collectors;
 public class PoolService {
 
     private static final Set<String> SORT_FIELDS_VALIDOS = Set.of("createdAt", "fechaCreacion", "rango");
-    private static final double ML_POR_RATON = 0.2;
 
     private final PoolRepository repository;
     private final PoolMapper mapper;
     private final TuboRepository tuboRepository;
     private final PoolSueroAporteRepository poolSueroAporteRepository;
     private final CajaRepository cajaRepository;
+    private final TuboService tuboService;
 
     @Transactional(readOnly = true)
-    public PageResponse<PoolListDTO> findAll(int page, int size, List<Integer> rangos, List<SueroUso> usos,
+    public PageResponse<PoolListDTO> findAll(int page, int size, String q, List<Integer> rangos, List<SueroUso> usos,
                                              String sortBy, String sortDir) {
-        Sort sort = buildSort(sortBy, sortDir, "createdAt");
-        Page<Pool> result = repository.findAll(buildSpec(rangos, usos), PageRequest.of(page, size, sort));
+        Sort sort = SpecificationUtils.buildSort(sortBy, sortDir, "createdAt", SORT_FIELDS_VALIDOS);
+        Page<Pool> result = repository.findAll(buildSpec(q, rangos, usos), PageRequest.of(page, size, sort));
         return new PageResponse<>(
                 result.map(mapper::toListDTO).getContent(),
                 result.getTotalElements(),
@@ -54,6 +61,13 @@ public class PoolService {
     @Transactional(readOnly = true)
     public PoolResponseDTO findById(Long id) {
         return mapper.toDTO(findActiveById(id));
+    }
+
+    @Transactional(readOnly = true)
+    public PoolResponseDTO findByCodigo(String codigo) {
+        Pool pool = repository.findByCodigoAndActivoTrue(codigo)
+                .orElseThrow(() -> new ResourceNotFoundException("Pool con código " + codigo + " no existe"));
+        return mapper.toDTO(pool);
     }
 
     @Transactional
@@ -99,7 +113,7 @@ public class PoolService {
                 .collect(Collectors.toMap(Tubo::getId, st -> st));
         for (SueroTuboAporteInputDTO a : dto.aportes()) {
             Tubo st = tuboById.get(a.sueroTuboId());
-            if (a.cantidadAportada() > st.getCantidadRestante()) {
+            if (a.cantidadAportada().compareTo(st.getCantidadRestante()) > 0) {
                 throw new BusinessRuleException(
                         "El tubo " + st.getPosicion() + " no tiene suficiente volumen disponible. "
                         + "Disponible: " + st.getCantidadRestante() + " mL, solicitado: " + a.cantidadAportada() + " mL");
@@ -107,29 +121,52 @@ public class PoolService {
         }
 
         // Validate invariant: Σ(aportes) == Σ(pool tubos)
-        double totalAportes = dto.aportes().stream().mapToDouble(SueroTuboAporteInputDTO::cantidadAportada).sum();
-        double totalPoolTubos = dto.tubos().stream().mapToDouble(TuboInputDTO::cantidadInicial).sum();
-        if (Math.abs(totalAportes - totalPoolTubos) > 0.001) {
+        BigDecimal totalAportes = dto.aportes().stream()
+                .map(SueroTuboAporteInputDTO::cantidadAportada)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalPoolTubos = dto.tubos().stream()
+                .map(TuboInputDTO::cantidadInicial)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        if (totalAportes.compareTo(totalPoolTubos) != 0) {
             throw new BusinessRuleException(
                     "La suma de aportes (" + totalAportes + " mL) debe ser igual a la suma de los tubos del pool ("
                     + totalPoolTubos + " mL)");
         }
 
-        if (totalPoolTubos < ML_POR_RATON) {
+        if (totalPoolTubos.compareTo(DomainConstants.ML_POR_RATON) < 0) {
             throw new BusinessRuleException(
-                    "El pool debe tener al menos " + ML_POR_RATON + " mL (mínimo para un ratón)");
+                    "El pool debe tener al menos " + DomainConstants.ML_POR_RATON + " mL (mínimo para un ratón)");
         }
 
-        validarPosicionesPoolTubos(dto.cajaId(), dto.tubos(), null);
+        Set<Long> sueroTubosAgotados = dto.aportes().stream()
+                .filter(a -> {
+                    Tubo st = tuboById.get(a.sueroTuboId());
+                    return st != null && a.cantidadAportada().compareTo(st.getCantidadRestante()) == 0;
+                })
+                .map(SueroTuboAporteInputDTO::sueroTuboId)
+                .collect(Collectors.toSet());
+        tuboService.validarPosicionesSinConflicto(dto.cajaId(), dto.tubos(), null, null, sueroTubosAgotados);
 
         // Create pool
         Pool pool = new Pool();
         pool.setCodigo(generarCodigo());
         pool.setCaja(caja);
-        pool.setFechaCreacion(dto.fechaCreacion());
+        pool.setFechaCreacion(LocalDate.now());
         pool.setRango(rango);
         pool.setUso(uso);
         Pool saved = repository.save(pool);
+
+        // El constraint UNIQUE(caja_id, posicion) se evalúa por statement en PostgreSQL;
+        // hay que vaciar las posiciones liberadas antes de insertar los tubos del pool.
+        List<Tubo> tubosALiberar = sueroTubosAgotados.stream()
+                .map(tuboById::get)
+                .filter(Objects::nonNull)
+                .peek(st -> st.setPosicion(null))
+                .toList();
+        if (!tubosALiberar.isEmpty()) {
+            tuboRepository.saveAll(tubosALiberar);
+            tuboRepository.flush();
+        }
 
         // Create pool tubos
         for (TuboInputDTO t : dto.tubos()) {
@@ -152,7 +189,7 @@ public class PoolService {
             aporte.setCantidadAportada(a.cantidadAportada());
             poolSueroAporteRepository.save(aporte);
 
-            st.setCantidadUsada(st.getCantidadUsada() + a.cantidadAportada());
+            st.setCantidadUsada(st.getCantidadUsada().add(a.cantidadAportada()));
             tuboRepository.save(st);
         }
 
@@ -167,7 +204,7 @@ public class PoolService {
                 .filter(Caja::isActivo)
                 .orElseThrow(() -> new ResourceNotFoundException("Caja con id " + dto.cajaId() + " no existe"));
 
-        validarPosicionesPoolTubos(dto.cajaId(), dto.tubos(), id);
+        tuboService.validarPosicionesSinConflicto(dto.cajaId(), dto.tubos(), null, id, Set.of());
 
         Map<String, Tubo> existingByPosicion = tuboRepository.findByPoolId(id).stream()
                 .collect(Collectors.toMap(Tubo::getPosicion, t -> t));
@@ -176,7 +213,7 @@ public class PoolService {
                 .collect(Collectors.toSet());
 
         for (Tubo t : existingByPosicion.values()) {
-            if (!newPosiciones.contains(t.getPosicion()) && t.getCantidadUsada() > 0) {
+            if (!newPosiciones.contains(t.getPosicion()) && t.getCantidadUsada().compareTo(BigDecimal.ZERO) > 0) {
                 throw new BusinessRuleException(
                         "El tubo " + t.getPosicion() + " tiene " + t.getCantidadUsada()
                         + " mL usados y no puede eliminarse");
@@ -185,7 +222,7 @@ public class PoolService {
 
         for (TuboInputDTO t : dto.tubos()) {
             Tubo existing = existingByPosicion.get(t.posicion());
-            if (existing != null && t.cantidadInicial() < existing.getCantidadUsada()) {
+            if (existing != null && t.cantidadInicial().compareTo(existing.getCantidadUsada()) < 0) {
                 throw new BusinessRuleException(
                         "El tubo " + t.posicion() + " ya tiene " + existing.getCantidadUsada()
                         + " mL usados; la nueva cantidad inicial no puede ser menor");
@@ -194,13 +231,14 @@ public class PoolService {
 
         for (Tubo t : existingByPosicion.values()) {
             if (!newPosiciones.contains(t.getPosicion())) {
-                tuboRepository.delete(t);
+                pool.getTubos().remove(t);
             }
         }
 
         for (TuboInputDTO t : dto.tubos()) {
             Tubo existing = existingByPosicion.get(t.posicion());
             if (existing != null) {
+                existing.setCaja(caja);
                 existing.setCantidadInicial(t.cantidadInicial());
                 tuboRepository.save(existing);
             } else {
@@ -211,6 +249,7 @@ public class PoolService {
                 newTubo.setPosicion(t.posicion());
                 newTubo.setCantidadInicial(t.cantidadInicial());
                 tuboRepository.save(newTubo);
+                pool.getTubos().add(newTubo);
             }
         }
 
@@ -223,50 +262,36 @@ public class PoolService {
     @Transactional
     public void delete(Long id) {
         Pool pool = findActiveById(id);
+        long modelosActivos = pool.getModelosAnimales().stream()
+                .filter(ModeloAnimal::isActivo).count();
+        if (modelosActivos > 0)
+            throw new BusinessRuleException(
+                    "El pool tiene " + modelosActivos + " modelo(s) animal(es) activo(s) y no puede darse de baja");
+        for (Tubo tubo : pool.getTubos()) {
+            tubo.setPosicion(null);
+            tuboRepository.save(tubo);
+        }
         pool.setActivo(false);
         repository.save(pool);
     }
 
-    private void validarPosicionesPoolTubos(Long cajaId, List<TuboInputDTO> nuevos, Long excludePoolId) {
-        Set<String> nuevasPos = nuevos.stream()
-                .map(TuboInputDTO::posicion)
-                .collect(Collectors.toSet());
-
-        Set<String> ocupadasPool = tuboRepository.findByCajaIdAndPoolActivoTrue(cajaId).stream()
-                .filter(t -> excludePoolId == null || !t.getPool().getId().equals(excludePoolId))
-                .filter(t -> t.getCantidadRestante() > 0)
-                .map(Tubo::getPosicion)
-                .collect(Collectors.toSet());
-
-        Set<String> conflictoPool = new HashSet<>(nuevasPos);
-        conflictoPool.retainAll(ocupadasPool);
-        if (!conflictoPool.isEmpty()) {
-            throw new BusinessRuleException(
-                    "Las posiciones " + String.join(", ", conflictoPool) + " ya están ocupadas en esta caja");
-        }
-
-        Set<String> ocupadasSuero = tuboRepository.findByCajaIdAndSueroActivoTrue(cajaId).stream()
-                .filter(t -> t.getCantidadRestante() > 0)
-                .map(Tubo::getPosicion)
-                .collect(Collectors.toSet());
-
-        Set<String> conflictoSuero = new HashSet<>(nuevasPos);
-        conflictoSuero.retainAll(ocupadasSuero);
-        if (!conflictoSuero.isEmpty()) {
-            throw new BusinessRuleException(
-                    "Las posiciones " + String.join(", ", conflictoSuero) + " ya están ocupadas por un suero en esta caja");
-        }
+    @Transactional
+    public PoolResponseDTO liberarGrilla(Long id, VaciarTuboRequest req) {
+        Pool pool = findActiveById(id);
+        pool.getTubos().forEach(tubo -> tuboService.vaciar(tubo.getId(), req));
+        return mapper.toDTO(repository.findById(id).orElseThrow());
     }
 
-    private Specification<Pool> buildSpec(List<Integer> rangos, List<SueroUso> usos) {
-        Specification<Pool> spec = activoTrue();
-        if (rangos != null && !rangos.isEmpty()) spec = spec.and(rangoIn(rangos));
-        if (usos   != null && !usos.isEmpty())   spec = spec.and(usoIn(usos));
+    private Specification<Pool> buildSpec(String q, List<Integer> rangos, List<SueroUso> usos) {
+        Specification<Pool> spec = SpecificationUtils.activoTrue();
+        if (q      != null && !q.isBlank())       spec = spec.and(searchText(q));
+        if (rangos != null && !rangos.isEmpty())   spec = spec.and(rangoIn(rangos));
+        if (usos   != null && !usos.isEmpty())     spec = spec.and(usoIn(usos));
         return spec;
     }
 
-    private Specification<Pool> activoTrue() {
-        return (root, query, cb) -> cb.isTrue(root.get("activo"));
+    private Specification<Pool> searchText(String q) {
+        return (root, query, cb) -> cb.like(cb.lower(root.get("codigo")), "%" + q.toLowerCase() + "%");
     }
 
     private Specification<Pool> rangoIn(List<Integer> rangos) {
@@ -277,18 +302,8 @@ public class PoolService {
         return (root, query, cb) -> root.get("uso").in(usos);
     }
 
-    private Sort buildSort(String sortBy, String sortDir, String defaultField) {
-        String field = SORT_FIELDS_VALIDOS.contains(sortBy) ? sortBy : defaultField;
-        Sort.Direction dir = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        return Sort.by(dir, field);
-    }
-
     private String generarCodigo() {
-        String codigo;
-        do {
-            codigo = UUID.randomUUID().toString().replace("-", "").substring(0, 6).toUpperCase();
-        } while (repository.existsByCodigo(codigo));
-        return codigo;
+        return CodigoUtil.generarCodigo(repository::existsByCodigo);
     }
 
     private Pool findActiveById(Long id) {

@@ -1,41 +1,65 @@
 package com.utn.magtea.pool;
 
+import com.utn.magtea.common.MapperHelper;
+import com.utn.magtea.suero.Suero;
 import com.utn.magtea.tubo.Tubo;
 import com.utn.magtea.tubo.TuboDTO;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring")
+import java.math.BigDecimal;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Mapper(componentModel = "spring", uses = {MapperHelper.class})
 public interface PoolMapper {
 
-    @Mapping(target = "cantidadTotal",
-             expression = "java(pool.getTubos().stream().mapToDouble(t -> t.getCantidadInicial()).sum())")
-    @Mapping(target = "cantidadRestante",
-             expression = "java(pool.getTubos().stream().mapToDouble(t -> t.getCantidadRestante()).sum())")
+    @Mapping(target = "cantidadTotal",    source = "tubos", qualifiedByName = "sumCantidadInicial")
+    @Mapping(target = "cantidadRestante", source = "tubos", qualifiedByName = "sumCantidadRestante")
     @Mapping(target = "cantidadAportes",
-             expression = "java(pool.getAportes().size())")
+             expression = "java((int) pool.getAportes().stream().map(a -> a.getTubo().getSuero().getId()).distinct().count())")
     @Mapping(target = "cajaDescripcion",
              expression = "java(\"Freezer \" + pool.getCaja().getFreezer() + \" › C\" + pool.getCaja().getCajon() + \" › Caja \" + pool.getCaja().getNumero())")
     @Mapping(target = "modelosAnimalesCount",
              expression = "java(pool.getModelosAnimales() != null ? pool.getModelosAnimales().size() : 0)")
     PoolListDTO toListDTO(Pool pool);
 
-    @Mapping(target = "cajaId", source = "caja.id")
-    @Mapping(target = "cantidadTotal",
-             expression = "java(pool.getTubos().stream().mapToDouble(t -> t.getCantidadInicial()).sum())")
-    @Mapping(target = "cantidadRestante",
-             expression = "java(pool.getTubos().stream().mapToDouble(t -> t.getCantidadRestante()).sum())")
+    @Mapping(target = "cajaId",      source = "caja.id")
+    @Mapping(target = "freezer",     source = "caja.freezer")
+    @Mapping(target = "cajon",       source = "caja.cajon")
+    @Mapping(target = "cajaNumero",  source = "caja.numero")
+    @Mapping(target = "cantidadTotal",    source = "tubos", qualifiedByName = "sumCantidadInicial")
+    @Mapping(target = "cantidadRestante", source = "tubos", qualifiedByName = "sumCantidadRestante")
+    @Mapping(target = "aportes", expression = "java(toAporteDTOs(pool.getAportes()))")
     PoolResponseDTO toDTO(Pool pool);
 
     TuboDTO toTuboDTO(Tubo tubo);
 
-    @Mapping(target = "sueroTuboId",    source = "tubo.id")
-    @Mapping(target = "posicion",       source = "tubo.posicion")
-    @Mapping(target = "codigoSuero",
-             expression = "java(aporte.getTubo().getSuero().getPaciente().getCodigoNumerico())")
-    @Mapping(target = "codigoPaciente",
-             expression = "java(aporte.getTubo().getSuero().getPaciente().getCodigoNumerico())")
-    PoolSueroAporteDTO toAporteDTO(PoolSueroAporte aporte);
+    default List<PoolSueroAporteDTO> toAporteDTOs(List<PoolSueroAporte> aportes) {
+        if (aportes == null) return List.of();
+        return aportes.stream()
+            .collect(Collectors.groupingBy(
+                a -> a.getTubo().getSuero().getId(),
+                LinkedHashMap::new,
+                Collectors.toList()
+            ))
+            .entrySet().stream()
+            .map(e -> {
+                PoolSueroAporte first = e.getValue().get(0);
+                Suero suero = first.getTubo().getSuero();
+                BigDecimal total = e.getValue().stream()
+                    .map(PoolSueroAporte::getCantidadAportada)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                return new PoolSueroAporteDTO(
+                    suero.getId(),
+                    suero.getPaciente().getCodigoNumerico(),
+                    suero.getPaciente().getCodigoNumerico(),
+                    total
+                );
+            })
+            .toList();
+    }
 
     @Mapping(target = "id",             ignore = true)
     @Mapping(target = "codigo",         ignore = true)
@@ -46,5 +70,6 @@ public interface PoolMapper {
     @Mapping(target = "caja",           ignore = true)
     @Mapping(target = "rango",          ignore = true)
     @Mapping(target = "uso",            ignore = true)
+    @Mapping(target = "fechaCreacion",  ignore = true)
     Pool toEntity(PoolCreateDTO dto);
 }

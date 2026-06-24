@@ -1,9 +1,10 @@
 package com.utn.magtea.pool;
 
+import java.math.BigDecimal;
+
 public record PoolSueroAporteDTO(
-        Long sueroTuboId,
-        String posicion,
+        Long sueroId,
         String codigoSuero,
         String codigoPaciente,
-        double cantidadAportada
+        BigDecimal cantidadAportada
 ) {}

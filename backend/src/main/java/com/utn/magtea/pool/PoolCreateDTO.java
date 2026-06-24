@@ -5,12 +5,10 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
-import java.time.LocalDate;
 import java.util.List;
 
 public record PoolCreateDTO(
         @NotNull(message = "La caja es obligatoria") Long cajaId,
-        @NotNull(message = "La fecha de creación es obligatoria") LocalDate fechaCreacion,
         @NotNull @NotEmpty(message = "Debe incluir al menos un aporte de suero")
         @Valid List<SueroTuboAporteInputDTO> aportes,
         @NotNull @NotEmpty(message = "Debe incluir al menos un tubo del pool")

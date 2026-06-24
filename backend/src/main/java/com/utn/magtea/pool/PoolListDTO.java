@@ -2,6 +2,7 @@ package com.utn.magtea.pool;
 
 import com.utn.magtea.suero.SueroUso;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 
 public record PoolListDTO(
@@ -9,8 +10,8 @@ public record PoolListDTO(
         String codigo,
         Integer rango,
         SueroUso uso,
-        Double cantidadTotal,
-        Double cantidadRestante,
+        BigDecimal cantidadTotal,
+        BigDecimal cantidadRestante,
         LocalDate fechaCreacion,
         int cantidadAportes,
         String cajaDescripcion,
