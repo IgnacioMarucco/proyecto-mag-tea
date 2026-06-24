@@ -30,9 +30,9 @@ public class TresCamaras extends Auditable {
     @Column(nullable = false)
     private Double m1TiempoObjetoNovedoso;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Double m2TiempoRatonDesconocido;
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private Double m2TiempoRatonFamiliar;
 }

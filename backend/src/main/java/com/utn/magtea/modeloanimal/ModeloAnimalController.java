@@ -18,13 +18,12 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 @RequestMapping(ApiConstants.V1 + "/modelos-animales")
 @Tag(name = "Modelos Animales")
 @RequiredArgsConstructor
+@PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL')")
 public class ModeloAnimalController {
 
     private final ModeloAnimalService service;
 
-    @GetMapping
-    @PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Listar modelos animales activos (filtro por pool y sexo)")
+    @GetMapping    @Operation(summary = "Listar modelos animales activos (filtro por pool y sexo)")
     public PageResponse<ModeloAnimalListDTO> findAll(
             @RequestParam(defaultValue = "0")        int page,
             @RequestParam(defaultValue = "20")       int size,
@@ -35,16 +34,17 @@ public class ModeloAnimalController {
         return service.findAll(page, size, poolId, sexo, sortBy, sortDir);
     }
 
-    @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Obtener modelo animal por id con alertas calculadas")
+    @GetMapping("/by-code/{identificador}")    @Operation(summary = "Obtener modelo animal por identificador alfanumérico")
+    public ModeloAnimalResponseDTO findByIdentificador(@PathVariable String identificador) {
+        return service.findByIdentificador(identificador);
+    }
+
+    @GetMapping("/{id}")    @Operation(summary = "Obtener modelo animal por id con alertas calculadas")
     public ModeloAnimalResponseDTO findById(@PathVariable Long id) {
         return service.findById(id);
     }
 
-    @PostMapping
-    @PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Registrar modelo animal")
+    @PostMapping    @Operation(summary = "Registrar modelo animal")
     public ResponseEntity<ModeloAnimalResponseDTO> create(@RequestBody @Valid ModeloAnimalCreateDTO dto) {
         ModeloAnimalResponseDTO created = service.create(dto);
         var location = ServletUriComponentsBuilder.fromCurrentRequest()
@@ -52,42 +52,38 @@ public class ModeloAnimalController {
         return ResponseEntity.created(location).body(created);
     }
 
-    @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Actualizar datos principales del modelo animal")
+    @PutMapping("/{id}")    @Operation(summary = "Actualizar datos principales del modelo animal")
     public ModeloAnimalResponseDTO update(@PathVariable Long id,
                                           @RequestBody @Valid ModeloAnimalCreateDTO dto) {
         return service.update(id, dto);
     }
 
-    @PatchMapping("/{id}/vocalizaciones")
-    @PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Registrar vocalizaciones ultrasónicas (VUS)")
+    @PatchMapping("/{id}/inoculacion")    @Operation(summary = "Registrar fecha día 1 de inoculación y aportes de tubos")
+    public ModeloAnimalResponseDTO registrarInoculacion(@PathVariable Long id,
+                                                         @RequestBody @Valid ModeloAnimalInoculacionDTO dto) {
+        return service.registrarInoculacion(id, dto);
+    }
+
+    @PatchMapping("/{id}/vocalizaciones")    @Operation(summary = "Registrar vocalizaciones ultrasónicas (VUS)")
     public ModeloAnimalResponseDTO registrarVocalizaciones(@PathVariable Long id,
                                                            @RequestBody @Valid VocalizacionesDTO dto) {
         return service.registrarVocalizaciones(id, dto);
     }
 
-    @PatchMapping("/{id}/tres-camaras")
-    @PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Registrar estudio tres cámaras")
+    @PatchMapping("/{id}/tres-camaras")    @Operation(summary = "Registrar estudio tres cámaras")
     public ModeloAnimalResponseDTO registrarTresCamaras(@PathVariable Long id,
                                                          @RequestBody @Valid TresCamarasDTO dto) {
         return service.registrarTresCamaras(id, dto);
     }
 
-    @PatchMapping("/{id}/microscopia")
-    @PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Registrar datos de microscopía")
+    @PatchMapping("/{id}/microscopia")    @Operation(summary = "Registrar datos de microscopía")
     public ModeloAnimalResponseDTO registrarMicroscopia(@PathVariable Long id,
                                                          @RequestBody @Valid ModeloAnimalMicroscopiaDTO dto) {
         return service.registrarMicroscopia(id, dto);
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasAnyRole('CUERPO_TECNICO', 'INVESTIGADOR_PRINCIPAL')")
-    @Operation(summary = "Dar de baja modelo animal (baja lógica)")
+    @ResponseStatus(HttpStatus.NO_CONTENT)    @Operation(summary = "Dar de baja modelo animal (baja lógica)")
     public void delete(@PathVariable Long id) {
         service.delete(id);
     }

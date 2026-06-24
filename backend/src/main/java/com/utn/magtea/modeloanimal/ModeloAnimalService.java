@@ -3,6 +3,7 @@ package com.utn.magtea.modeloanimal;
 import com.utn.magtea.camada.Camada;
 import com.utn.magtea.camada.CamadaRepository;
 import com.utn.magtea.common.PageResponse;
+import com.utn.magtea.common.SpecificationUtils;
 import com.utn.magtea.common.exception.BusinessRuleException;
 import com.utn.magtea.common.exception.ResourceNotFoundException;
 import com.utn.magtea.modeloanimal.estudios.TresCamaras;
@@ -22,6 +23,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
@@ -31,8 +33,7 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class ModeloAnimalService {
 
-    private static final Set<String> SORT_FIELDS_VALIDOS = Set.of("createdAt", "fechaNacimiento", "identificador");
-
+    private static final Set<String> SORT_FIELDS_VALIDOS = Set.of("createdAt", "identificador");
     private final ModeloAnimalRepository repository;
     private final ModeloAnimalMapper mapper;
     private final PoolRepository poolRepository;
@@ -44,7 +45,7 @@ public class ModeloAnimalService {
     @Transactional(readOnly = true)
     public PageResponse<ModeloAnimalListDTO> findAll(int page, int size, Long poolId,
                                                      SexoRaton sexo, String sortBy, String sortDir) {
-        Sort sort = buildSort(sortBy, sortDir, "createdAt");
+        Sort sort = SpecificationUtils.buildSort(sortBy, sortDir, "createdAt", SORT_FIELDS_VALIDOS);
         Page<ModeloAnimal> result = repository.findAll(
                 buildSpec(poolId, sexo), PageRequest.of(page, size, sort));
         LocalDate hoy = LocalDate.now(clock);
@@ -55,6 +56,18 @@ public class ModeloAnimalService {
                 .toList();
         return new PageResponse<>(content, result.getTotalElements(),
                 result.getTotalPages(), result.getNumber(), result.getSize());
+    }
+
+    @Transactional(readOnly = true)
+    public ModeloAnimalResponseDTO findByIdentificador(String identificador) {
+        ModeloAnimal m = repository.findByIdentificadorAndActivoTrue(identificador)
+                .orElseThrow(() -> new ResourceNotFoundException("Modelo animal " + identificador + " no existe"));
+        LocalDate hoy = LocalDate.now(clock);
+        VocalizacionesDTO vusDTO = m.getVocalizaciones() != null
+                ? mapper.toVocalizacionesDTO(m.getVocalizaciones()) : null;
+        TresCamarasDTO tcDTO = m.getTresCamaras() != null
+                ? mapper.toTresCamarasDTO(m.getTresCamaras()) : null;
+        return mapper.toDTO(m, calcularNecesitaVocalizaciones(m, hoy), calcularNecesitaTresCamaras(m, hoy), vusDTO, tcDTO);
     }
 
     @Transactional(readOnly = true)
@@ -73,7 +86,7 @@ public class ModeloAnimalService {
 
     @Transactional
     public ModeloAnimalResponseDTO create(ModeloAnimalCreateDTO dto) {
-        Pool pool = poolRepository.findById(dto.poolId())
+        Pool pool = poolRepository.findByIdForUpdate(dto.poolId())
                 .filter(Pool::isActivo)
                 .orElseThrow(() -> new ResourceNotFoundException("Pool con id " + dto.poolId() + " no existe"));
 
@@ -81,7 +94,11 @@ public class ModeloAnimalService {
                 .filter(Camada::isActivo)
                 .orElseThrow(() -> new ResourceNotFoundException("Camada con id " + dto.camadaId() + " no existe"));
 
+        long countTotal = repository.countByPool_Id(dto.poolId());
+        String identificador = pool.getCodigo() + "-" + (countTotal + 1);
+
         ModeloAnimal m = mapper.toEntity(dto);
+        m.setIdentificador(identificador);
         m.setPool(pool);
         m.setCamada(camada);
         ModeloAnimal saved = repository.save(m);
@@ -110,7 +127,16 @@ public class ModeloAnimalService {
                 modeloAnimalPoolAporteRepository.save(aporte);
 
                 if (a.cantidadConsumida() != null) {
-                    tubo.setCantidadUsada(tubo.getCantidadUsada() + a.cantidadConsumida());
+                    if (a.cantidadConsumida().compareTo(tubo.getCantidadRestante()) > 0) {
+                        throw new BusinessRuleException(
+                                "El tubo en posición " + tubo.getPosicion()
+                                + " no tiene suficiente volumen. Disponible: " + tubo.getCantidadRestante()
+                                + " mL, solicitado: " + a.cantidadConsumida() + " mL");
+                    }
+                    tubo.setCantidadUsada(tubo.getCantidadUsada().add(a.cantidadConsumida()));
+                    if (tubo.getCantidadRestante().compareTo(BigDecimal.ZERO) == 0) {
+                        tubo.setPosicion(null);
+                    }
                     tuboRepository.save(tubo);
                 }
             }
@@ -128,6 +154,11 @@ public class ModeloAnimalService {
     public ModeloAnimalResponseDTO update(Long id, ModeloAnimalCreateDTO dto) {
         ModeloAnimal m = findActiveById(id);
 
+        if (!m.getPool().getId().equals(dto.poolId())) {
+            throw new BusinessRuleException(
+                "No se puede cambiar el pool de un modelo animal. El identificador está ligado al pool de origen.");
+        }
+
         Pool pool = poolRepository.findById(dto.poolId())
                 .filter(Pool::isActivo)
                 .orElseThrow(() -> new ResourceNotFoundException("Pool con id " + dto.poolId() + " no existe"));
@@ -136,12 +167,9 @@ public class ModeloAnimalService {
                 .filter(Camada::isActivo)
                 .orElseThrow(() -> new ResourceNotFoundException("Camada con id " + dto.camadaId() + " no existe"));
 
-        m.setIdentificador(dto.identificador());
         m.setPool(pool);
         m.setCamada(camada);
-        m.setFechaNacimiento(dto.fechaNacimiento());
         m.setSexo(dto.sexo());
-        m.setFechaDia1Inoculacion(dto.fechaDia1Inoculacion());
 
         LocalDate hoy = LocalDate.now(clock);
         ModeloAnimal saved = repository.save(m);
@@ -185,10 +213,14 @@ public class ModeloAnimalService {
                 ? m.getTresCamaras()
                 : new TresCamaras();
         tc.setModeloAnimal(m);
-        tc.setM1TiempoRatonNovedad(dto.m1TiempoRatonNovedad());
-        tc.setM1TiempoObjetoNovedoso(dto.m1TiempoObjetoNovedoso());
-        tc.setM2TiempoRatonDesconocido(dto.m2TiempoRatonDesconocido());
-        tc.setM2TiempoRatonFamiliar(dto.m2TiempoRatonFamiliar());
+        if (dto.m1TiempoRatonNovedad() != null) {
+            tc.setM1TiempoRatonNovedad(dto.m1TiempoRatonNovedad());
+            tc.setM1TiempoObjetoNovedoso(dto.m1TiempoObjetoNovedoso());
+        }
+        if (dto.m2TiempoRatonDesconocido() != null) {
+            tc.setM2TiempoRatonDesconocido(dto.m2TiempoRatonDesconocido());
+            tc.setM2TiempoRatonFamiliar(dto.m2TiempoRatonFamiliar());
+        }
         m.setTresCamaras(tc);
 
         LocalDate hoy = LocalDate.now(clock);
@@ -220,6 +252,66 @@ public class ModeloAnimalService {
     }
 
     @Transactional
+    public ModeloAnimalResponseDTO registrarInoculacion(Long id, ModeloAnimalInoculacionDTO dto) {
+        ModeloAnimal m = findActiveById(id);
+        m.setFechaDia1Inoculacion(dto.fechaDia1Inoculacion());
+        if (dto.aportes() != null) {
+            for (ModeloAnimalPoolAporteInputDTO a : dto.aportes()) {
+                Tubo tubo = tuboRepository.findById(a.poolTuboId())
+                        .orElseThrow(() -> new ResourceNotFoundException("Tubo con id " + a.poolTuboId() + " no existe"));
+                if (tubo.getTipo() != TipoTubo.POOL) {
+                    throw new BusinessRuleException(
+                            "El tubo en posición " + tubo.getPosicion() + " no es un tubo de pool");
+                }
+                if (!tubo.getPool().getId().equals(m.getPool().getId())) {
+                    throw new BusinessRuleException(
+                            "El tubo " + tubo.getPosicion() + " no pertenece al pool de este modelo animal");
+                }
+                // Upsert por día: si ya existe, revertir su volumen del tubo antes de reemplazarlo
+                modeloAnimalPoolAporteRepository.findByModeloAnimal_IdAndDia(m.getId(), a.dia())
+                        .ifPresent(prev -> {
+                            if (prev.getCantidadConsumida() != null) {
+                                Tubo tuboAnterior = prev.getTubo();
+                                tuboAnterior.setCantidadUsada(tuboAnterior.getCantidadUsada().subtract(prev.getCantidadConsumida()));
+                                tuboRepository.save(tuboAnterior);
+                            }
+                            modeloAnimalPoolAporteRepository.delete(prev);
+                        });
+                ModeloAnimalPoolAporte aporte = new ModeloAnimalPoolAporte();
+                aporte.setModeloAnimal(m);
+                aporte.setTubo(tubo);
+                aporte.setCantidadConsumida(a.cantidadConsumida());
+                aporte.setDia(a.dia());
+                modeloAnimalPoolAporteRepository.save(aporte);
+                if (a.cantidadConsumida() != null) {
+                    if (a.cantidadConsumida().compareTo(tubo.getCantidadRestante()) > 0) {
+                        throw new BusinessRuleException(
+                                "El tubo en posición " + tubo.getPosicion()
+                                + " no tiene suficiente volumen. Disponible: " + tubo.getCantidadRestante()
+                                + " mL, solicitado: " + a.cantidadConsumida() + " mL");
+                    }
+                    tubo.setCantidadUsada(tubo.getCantidadUsada().add(a.cantidadConsumida()));
+                    if (tubo.getCantidadRestante().compareTo(BigDecimal.ZERO) == 0) {
+                        tubo.setPosicion(null);
+                    }
+                    tuboRepository.save(tubo);
+                }
+            }
+        }
+        repository.save(m);
+        LocalDate hoy = LocalDate.now(clock);
+        ModeloAnimal refreshed = repository.findById(m.getId()).orElseThrow();
+        VocalizacionesDTO vusDTO = refreshed.getVocalizaciones() != null
+                ? mapper.toVocalizacionesDTO(refreshed.getVocalizaciones()) : null;
+        TresCamarasDTO tcDTO = refreshed.getTresCamaras() != null
+                ? mapper.toTresCamarasDTO(refreshed.getTresCamaras()) : null;
+        return mapper.toDTO(refreshed,
+                calcularNecesitaVocalizaciones(refreshed, hoy),
+                calcularNecesitaTresCamaras(refreshed, hoy),
+                vusDTO, tcDTO);
+    }
+
+    @Transactional
     public void delete(Long id) {
         ModeloAnimal m = findActiveById(id);
         m.setActivo(false);
@@ -227,26 +319,24 @@ public class ModeloAnimalService {
     }
 
     private boolean calcularNecesitaVocalizaciones(ModeloAnimal m, LocalDate hoy) {
+        LocalDate fn = m.getCamada() != null ? m.getCamada().getFechaNacimiento() : null;
         return m.getVocalizaciones() == null
-                && m.getFechaNacimiento() != null
-                && m.getFechaNacimiento().plusDays(5).equals(hoy);
+                && fn != null
+                && fn.plusDays(5).equals(hoy);
     }
 
     private boolean calcularNecesitaTresCamaras(ModeloAnimal m, LocalDate hoy) {
+        LocalDate fn = m.getCamada() != null ? m.getCamada().getFechaNacimiento() : null;
         return m.getTresCamaras() == null
-                && m.getFechaNacimiento() != null
-                && m.getFechaNacimiento().plusDays(19).equals(hoy);
+                && fn != null
+                && fn.plusDays(19).equals(hoy);
     }
 
     private Specification<ModeloAnimal> buildSpec(Long poolId, SexoRaton sexo) {
-        Specification<ModeloAnimal> spec = activoTrue();
+        Specification<ModeloAnimal> spec = SpecificationUtils.activoTrue();
         if (poolId != null) spec = spec.and(poolEquals(poolId));
         if (sexo != null) spec = spec.and(sexoEquals(sexo));
         return spec;
-    }
-
-    private Specification<ModeloAnimal> activoTrue() {
-        return (root, query, cb) -> cb.isTrue(root.get("activo"));
     }
 
     private Specification<ModeloAnimal> poolEquals(Long poolId) {
@@ -255,12 +345,6 @@ public class ModeloAnimalService {
 
     private Specification<ModeloAnimal> sexoEquals(SexoRaton sexo) {
         return (root, query, cb) -> cb.equal(root.get("sexo"), sexo);
-    }
-
-    private Sort buildSort(String sortBy, String sortDir, String defaultField) {
-        String field = SORT_FIELDS_VALIDOS.contains(sortBy) ? sortBy : defaultField;
-        Sort.Direction dir = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        return Sort.by(dir, field);
     }
 
     private ModeloAnimal findActiveById(Long id) {

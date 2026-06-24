@@ -2,6 +2,7 @@ package com.utn.magtea.modeloanimal;
 
 import com.utn.magtea.modeloanimal.estudios.TresCamarasDTO;
 import com.utn.magtea.modeloanimal.estudios.VocalizacionesDTO;
+import com.utn.magtea.suero.SueroUso;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -13,6 +14,7 @@ public record ModeloAnimalResponseDTO(
         Long poolId,
         Integer poolRango,
         String poolCodigo,
+        SueroUso poolUso,
         Long camadaId,
         String camadaNombre,
         LocalDate fechaNacimiento,

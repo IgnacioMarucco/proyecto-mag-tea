@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.envers.Audited;
 
+import java.math.BigDecimal;
+
 @Audited
 @Entity
 @Table(name = "modelo_animal_pool_aportes")
@@ -28,7 +30,8 @@ public class ModeloAnimalPoolAporte extends Auditable {
     @JoinColumn(name = "tubo_id", nullable = false)
     private Tubo tubo;
 
-    private Double cantidadConsumida;
+    @Column(precision = 10, scale = 2)
+    private BigDecimal cantidadConsumida;
 
     private Integer dia;
 }

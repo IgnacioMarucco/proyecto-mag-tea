@@ -27,7 +27,7 @@ public class ModeloAnimal extends Auditable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(unique = true)
     private String identificador;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -38,14 +38,10 @@ public class ModeloAnimal extends Auditable {
     @JoinColumn(name = "camada_id", nullable = false)
     private Camada camada;
 
-    @Column(nullable = false)
-    private LocalDate fechaNacimiento;
-
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private SexoRaton sexo;
 
-    @Column(nullable = false)
     private LocalDate fechaDia1Inoculacion;
 
     private Integer numCelulasGanglionares;
