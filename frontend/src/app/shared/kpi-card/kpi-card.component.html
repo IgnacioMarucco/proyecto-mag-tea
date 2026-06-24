@@ -1,0 +1,13 @@
+<div class="flex-1 flex flex-col justify-between rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+  <p class="text-xs font-medium uppercase tracking-wide text-slate-500">{{ label() }}</p>
+  <div class="mt-2">
+    @if (value() !== null && value() !== undefined) {
+      <p class="text-3xl font-bold text-slate-800 leading-none">{{ value() }}</p>
+    } @else {
+      <div class="h-8 w-20 animate-pulse rounded bg-slate-100"></div>
+    }
+    @if (subtext()) {
+      <p class="mt-1 text-xs text-slate-400">{{ subtext() }}</p>
+    }
+  </div>
+</div>

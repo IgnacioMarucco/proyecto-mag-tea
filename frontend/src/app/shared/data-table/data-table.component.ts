@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
-import { SortState } from '../sort.utils';
+import { SortState } from '../utils/sort.utils';
 import { IconComponent } from '../icon/icon.component';
 
 export interface TableColumn {
