@@ -13,12 +13,12 @@ import com.utn.magtea.common.PageResponse;
 @RequestMapping(ApiConstants.V1 + "/donaciones")
 @Tag(name = "Donaciones")
 @RequiredArgsConstructor
+@PreAuthorize("hasRole('INVESTIGADOR_PRINCIPAL')")
 public class DonacionController {
 
     private final DonacionService service;
 
     @GetMapping
-    @PreAuthorize("hasRole('INVESTIGADOR_PRINCIPAL')")
     @Operation(summary = "Listar donaciones (requiere rol INVESTIGADOR_PRINCIPAL)")
     public PageResponse<DonacionResponseDTO> findAll(
             @RequestParam(defaultValue = "0")  int page,
