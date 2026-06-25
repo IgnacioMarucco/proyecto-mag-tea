@@ -5,6 +5,7 @@ import { PageResponse, PageParams } from '../models/page-response.model';
 import {
   ModeloAnimalListItem,
   ModeloAnimalResponse,
+  ModeloAnimalReporte,
   ModeloAnimalCreate,
   ModeloAnimalUpdate,
   ModeloAnimalInoculacionCreate,
@@ -76,5 +77,9 @@ export class ModeloAnimalService {
 
   patchMicroscopia(id: number, dto: MicroscopiaCreate): Observable<ModeloAnimalResponse> {
     return this.http.patch<ModeloAnimalResponse>(`${this.base}/${id}/microscopia`, dto);
+  }
+
+  getReporte(identificador: string): Observable<ModeloAnimalReporte> {
+    return this.http.get<ModeloAnimalReporte>(`${this.base}/by-code/${identificador}/reporte`);
   }
 }

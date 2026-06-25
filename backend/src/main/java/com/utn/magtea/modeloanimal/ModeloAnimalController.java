@@ -43,6 +43,11 @@ public class ModeloAnimalController {
         return service.findByIdentificador(identificador);
     }
 
+    @GetMapping("/by-code/{identificador}/reporte")    @Operation(summary = "Obtener datos completos del modelo animal para reporte PDF (proveniencia)")
+    public ModeloAnimalReporteDTO getReporte(@PathVariable String identificador) {
+        return service.getReporte(identificador);
+    }
+
     @GetMapping("/{id}")    @Operation(summary = "Obtener modelo animal por id con alertas calculadas")
     public ModeloAnimalResponseDTO findById(@PathVariable Long id) {
         return service.findById(id);

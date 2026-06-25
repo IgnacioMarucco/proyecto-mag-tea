@@ -11,6 +11,15 @@ import com.utn.magtea.modeloanimal.estudios.TresCamaras;
 import com.utn.magtea.modeloanimal.estudios.TresCamarasDTO;
 import com.utn.magtea.modeloanimal.estudios.VocalizacionesDTO;
 import com.utn.magtea.modeloanimal.estudios.VocalizacionesUltrasonicas;
+import com.utn.magtea.paciente.Paciente;
+import com.utn.magtea.paciente.cars.CarsItemsResponseDTO;
+import com.utn.magtea.paciente.cars.CarsResultado;
+import com.utn.magtea.paciente.cars.EvaluacionCars;
+import com.utn.magtea.paciente.mchat.MchatFamilia;
+import com.utn.magtea.paciente.mchat.MchatRiesgo;
+import com.utn.magtea.paciente.mchat.MchatSeguimiento;
+import com.utn.magtea.paciente.vineland.EvaluacionVineland;
+import com.utn.magtea.suero.Suero;
 import com.utn.magtea.pool.Pool;
 import com.utn.magtea.pool.PoolRepository;
 import com.utn.magtea.tubo.Tubo;
@@ -27,9 +36,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -316,6 +329,133 @@ public class ModeloAnimalService {
                 calcularNecesitaVocalizaciones(refreshed, hoy),
                 calcularNecesitaTresCamaras(refreshed, hoy),
                 vusDTO, tcDTO);
+    }
+
+    @Transactional(readOnly = true)
+    public ModeloAnimalReporteDTO getReporte(String identificador) {
+        ModeloAnimal m = repository.findByIdentificadorForReporte(identificador)
+                .orElseThrow(() -> new ResourceNotFoundException("Modelo animal " + identificador + " no existe"));
+
+        Pool pool = m.getPool();
+        ModeloAnimalReporteDTO.PoolReporteDTO poolDTO = new ModeloAnimalReporteDTO.PoolReporteDTO(
+                pool.getCodigo(),
+                pool.getRango(),
+                pool.getUso(),
+                pool.getFechaCreacion(),
+                pool.getCaja().getFreezer(),
+                pool.getCaja().getCajon(),
+                pool.getCaja().getNumero()
+        );
+
+        List<ModeloAnimalReporteDTO.InoculacionReporteDTO> inoculaciones = m.getAportes().stream()
+                .filter(a -> a.getDia() != null)
+                .sorted(Comparator.comparing(ModeloAnimalPoolAporte::getDia))
+                .map(a -> {
+                    LocalDate fecha = m.getFechaDia1Inoculacion() != null
+                            ? m.getFechaDia1Inoculacion().plusDays(a.getDia() - 1)
+                            : null;
+                    return new ModeloAnimalReporteDTO.InoculacionReporteDTO(a.getDia(), fecha, a.getCantidadConsumida());
+                })
+                .toList();
+
+        List<ModeloAnimalReporteDTO.SueroReporteDTO> sueros = pool.getAportes().stream()
+                .map(a -> a.getTubo().getSuero())
+                .filter(Objects::nonNull)
+                .collect(Collectors.toMap(
+                        Suero::getId,
+                        s -> s,
+                        (a, b) -> a,
+                        LinkedHashMap::new
+                ))
+                .values().stream()
+                .map(this::toSueroReporteDTO)
+                .toList();
+
+        VocalizacionesDTO vusDTO = m.getVocalizaciones() != null
+                ? mapper.toVocalizacionesDTO(m.getVocalizaciones()) : null;
+        TresCamarasDTO tcDTO = m.getTresCamaras() != null
+                ? mapper.toTresCamarasDTO(m.getTresCamaras()) : null;
+
+        return new ModeloAnimalReporteDTO(
+                m.getId(),
+                m.getIdentificador(),
+                m.getSexo(),
+                m.getCamada().getNombre(),
+                m.getCamada().getFechaNacimiento(),
+                m.getFechaDia1Inoculacion(),
+                inoculaciones,
+                poolDTO,
+                sueros,
+                vusDTO,
+                tcDTO,
+                m.getNumCelulasGanglionares(),
+                m.getNumCelulasPurkinje(),
+                m.getCreatedAt()
+        );
+    }
+
+    private ModeloAnimalReporteDTO.SueroReporteDTO toSueroReporteDTO(Suero s) {
+        return new ModeloAnimalReporteDTO.SueroReporteDTO(
+                s.getValorAnticuerpos(),
+                s.getRango(),
+                s.getFechaExtraccion(),
+                s.getPaciente() != null ? toPacienteReporteDTO(s.getPaciente()) : null
+        );
+    }
+
+    private ModeloAnimalReporteDTO.PacienteReporteDTO toPacienteReporteDTO(Paciente p) {
+        MchatFamilia mchat   = p.getMchatFamilia();
+        MchatSeguimiento seg = p.getMchatSeguimiento();
+        EvaluacionCars cars  = p.getEvaluacionCars();
+        EvaluacionVineland v = p.getEvaluacionVineland();
+
+        List<Boolean> familiaItems = mchat != null ? List.of(
+            mchat.isP1(),  mchat.isP2(),  mchat.isP3(),  mchat.isP4(),  mchat.isP5(),
+            mchat.isP6(),  mchat.isP7(),  mchat.isP8(),  mchat.isP9(),  mchat.isP10(),
+            mchat.isP11(), mchat.isP12(), mchat.isP13(), mchat.isP14(), mchat.isP15(),
+            mchat.isP16(), mchat.isP17(), mchat.isP18(), mchat.isP19(), mchat.isP20()
+        ) : null;
+
+        List<Boolean> seguimientoItems = seg != null ? List.of(
+            seg.isItem1(),  seg.isItem2(),  seg.isItem3(),  seg.isItem4(),  seg.isItem5(),
+            seg.isItem6(),  seg.isItem7(),  seg.isItem8(),  seg.isItem9(),  seg.isItem10(),
+            seg.isItem11(), seg.isItem12(), seg.isItem13(), seg.isItem14(), seg.isItem15(),
+            seg.isItem16(), seg.isItem17(), seg.isItem18(), seg.isItem19(), seg.isItem20()
+        ) : null;
+
+        CarsItemsResponseDTO carsItems = cars != null ? new CarsItemsResponseDTO(
+            cars.getItem1(),  cars.getItem2(),  cars.getItem3(),  cars.getItem4(),  cars.getItem5(),
+            cars.getItem6(),  cars.getItem7(),  cars.getItem8(),  cars.getItem9(),  cars.getItem10(),
+            cars.getItem11(), cars.getItem12(), cars.getItem13(), cars.getItem14(), cars.getItem15(),
+            cars.getObs1(),  cars.getObs2(),  cars.getObs3(),  cars.getObs4(),  cars.getObs5(),
+            cars.getObs6(),  cars.getObs7(),  cars.getObs8(),  cars.getObs9(),  cars.getObs10(),
+            cars.getObs11(), cars.getObs12(), cars.getObs13(), cars.getObs14(), cars.getObs15()
+        ) : null;
+
+        return new ModeloAnimalReporteDTO.PacienteReporteDTO(
+                p.getCodigoNumerico(),
+                p.getTipoPaciente(),
+                p.getFechaPrimeraVisita(),
+                familiaItems,
+                mchat != null ? mchat.getScoreTotal() : null,
+                mchat != null ? MchatRiesgo.from(mchat.getScoreTotal()) : null,
+                mchat != null ? mchat.getResultadoFinal() : null,
+                seguimientoItems,
+                seg != null ? seg.getFallas() : null,
+                carsItems,
+                cars != null ? cars.getRawScore() : null,
+                cars != null ? cars.getTScore() : null,
+                cars != null ? cars.getPercentil() : null,
+                cars != null ? CarsResultado.from(cars.getRawScore()) : null,
+                v != null ? v.getComunicacion() : null,
+                v != null ? v.getAutovalimiento() : null,
+                v != null ? v.getSocial() : null,
+                v != null ? v.getMotor() : null,
+                v != null ? v.getCocienteFinal() : null,
+                v != null ? v.getConductaDesadaptativa() : null,
+                v != null ? v.getInternalizante() : null,
+                v != null ? v.getExternalizante() : null
+        );
     }
 
     @Transactional

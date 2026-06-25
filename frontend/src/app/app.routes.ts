@@ -241,6 +241,14 @@ export const routes: Routes = [
     ],
   },
   {
+    path: 'reporte/modelos-animales/:identificador',
+    canActivate: [appSubdomainGuard, authGuard],
+    loadComponent: () =>
+      import('./internal/modelos-animales/modelo-animal-reporte/modelo-animal-reporte.component').then(
+        m => m.ModeloAnimalReporteComponent
+      ),
+  },
+  {
     path: 'mchat/:token',
     loadComponent: () =>
       import('./public/mchat/mchat-form.component').then(m => m.MchatFormComponent),

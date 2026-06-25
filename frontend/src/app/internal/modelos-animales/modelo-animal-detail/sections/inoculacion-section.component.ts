@@ -129,12 +129,16 @@ export class InoculacionSectionComponent implements OnInit {
         this.toast.show('Inoculación guardada');
         this.updated.emit(ma);
         this.savingDia.set(null);
-        // Limpiar estado local del día guardado
         this.perDiaState.update(arr => {
           const next = [...arr];
           next[dia - 1] = { tuboId: null, cantidad: null };
           return next;
         });
+        this.poolService.findById(ma.poolId)
+          .pipe(catchError(() => of(null)))
+          .subscribe(pool => {
+            if (pool) this.tubosPools.set(pool.tubos.filter(t => t.cantidadRestante > 0));
+          });
       },
       error: err => {
         this.saveError.set(extractErrorMessage(err, 'Error al guardar'));
