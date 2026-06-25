@@ -112,7 +112,7 @@ class PoolServiceTest {
     void deberia_crearPool_cuandoDatosValidos() {
         var aportes = List.of(new SueroTuboAporteInputDTO(1L, BigDecimal.valueOf(0.15)), new SueroTuboAporteInputDTO(2L, BigDecimal.valueOf(0.15)));
         var tubos = List.of(new TuboInputDTO("P1", BigDecimal.valueOf(0.3)));
-        var dto = new PoolCreateDTO(1L, LocalDate.now(), aportes, tubos);
+        var dto = new PoolCreateDTO(1L, aportes, tubos);
 
         var caja = buildCaja(1L);
         var st1 = buildSueroTubo(1L, 1, SueroUso.PROBLEMA, "A1", 1.0, 0.0);
@@ -123,8 +123,6 @@ class PoolServiceTest {
         when(cajaRepository.findById(1L)).thenReturn(Optional.of(caja));
         when(tuboRepository.findById(1L)).thenReturn(Optional.of(st1));
         when(tuboRepository.findById(2L)).thenReturn(Optional.of(st2));
-        when(tuboRepository.findByCajaIdAndPoolActivoTrue(1L)).thenReturn(List.of());
-        when(tuboRepository.findByCajaIdAndSueroActivoTrue(1L)).thenReturn(List.of());
         when(repository.save(any(Pool.class))).thenReturn(pool);
         when(repository.findById(1L)).thenReturn(Optional.of(pool));
         when(mapper.toDTO(pool)).thenReturn(response);
@@ -140,7 +138,7 @@ class PoolServiceTest {
     void deberia_lanzarBusinessRuleException_cuandoSuerosDeDistintoRango() {
         var aportes = List.of(new SueroTuboAporteInputDTO(1L, BigDecimal.valueOf(0.15)), new SueroTuboAporteInputDTO(2L, BigDecimal.valueOf(0.15)));
         var tubos = List.of(new TuboInputDTO("P1", BigDecimal.valueOf(0.3)));
-        var dto = new PoolCreateDTO(1L, LocalDate.now(), aportes, tubos);
+        var dto = new PoolCreateDTO(1L, aportes, tubos);
 
         var caja = buildCaja(1L);
         var st1 = buildSueroTubo(1L, 1, SueroUso.PROBLEMA, "A1", 1.0, 0.0);
@@ -159,7 +157,7 @@ class PoolServiceTest {
     void deberia_lanzarBusinessRuleException_cuandoSuerosDeDistintoTipo() {
         var aportes = List.of(new SueroTuboAporteInputDTO(1L, BigDecimal.valueOf(0.15)), new SueroTuboAporteInputDTO(2L, BigDecimal.valueOf(0.15)));
         var tubos = List.of(new TuboInputDTO("P1", BigDecimal.valueOf(0.3)));
-        var dto = new PoolCreateDTO(1L, LocalDate.now(), aportes, tubos);
+        var dto = new PoolCreateDTO(1L, aportes, tubos);
 
         var caja = buildCaja(1L);
         var st1 = buildSueroTubo(1L, 1, SueroUso.PROBLEMA, "A1", 1.0, 0.0);
@@ -178,7 +176,7 @@ class PoolServiceTest {
     void deberia_lanzarBusinessRuleException_cuandoCantidadTotalMenorA200uL() {
         var aportes = List.of(new SueroTuboAporteInputDTO(1L, BigDecimal.valueOf(0.1)));
         var tubos = List.of(new TuboInputDTO("P1", BigDecimal.valueOf(0.1)));
-        var dto = new PoolCreateDTO(1L, LocalDate.now(), aportes, tubos);
+        var dto = new PoolCreateDTO(1L, aportes, tubos);
 
         var caja = buildCaja(1L);
         var st1 = buildSueroTubo(1L, 2, SueroUso.PROBLEMA, "A1", 1.0, 0.0);
@@ -195,7 +193,7 @@ class PoolServiceTest {
     void deberia_lanzarBusinessRuleException_cuandoSueroSinVolumenSuficiente() {
         var aportes = List.of(new SueroTuboAporteInputDTO(1L, BigDecimal.valueOf(0.5)));
         var tubos = List.of(new TuboInputDTO("P1", BigDecimal.valueOf(0.5)));
-        var dto = new PoolCreateDTO(1L, LocalDate.now(), aportes, tubos);
+        var dto = new PoolCreateDTO(1L, aportes, tubos);
 
         var caja = buildCaja(1L);
         var st = buildSueroTubo(1L, 1, SueroUso.PROBLEMA, "A1", 0.5, 0.4); // restante = 0.1
@@ -212,7 +210,7 @@ class PoolServiceTest {
     void deberia_lanzarResourceNotFoundException_cuandoTuboNoExiste() {
         var aportes = List.of(new SueroTuboAporteInputDTO(99L, BigDecimal.valueOf(0.3)));
         var tubos = List.of(new TuboInputDTO("P1", BigDecimal.valueOf(0.3)));
-        var dto = new PoolCreateDTO(1L, LocalDate.now(), aportes, tubos);
+        var dto = new PoolCreateDTO(1L, aportes, tubos);
 
         var caja = buildCaja(1L);
 
@@ -243,8 +241,6 @@ class PoolServiceTest {
 
         when(repository.findById(1L)).thenReturn(Optional.of(pool));
         when(cajaRepository.findById(1L)).thenReturn(Optional.of(caja));
-        when(tuboRepository.findByCajaIdAndPoolActivoTrue(1L)).thenReturn(List.of());
-        when(tuboRepository.findByCajaIdAndSueroActivoTrue(1L)).thenReturn(List.of());
         when(tuboRepository.findByPoolId(1L)).thenReturn(List.of(tuboExistente));
         when(repository.save(pool)).thenReturn(pool);
         when(mapper.toDTO(pool)).thenReturn(response);
@@ -271,8 +267,6 @@ class PoolServiceTest {
 
         when(repository.findById(1L)).thenReturn(Optional.of(pool));
         when(cajaRepository.findById(1L)).thenReturn(Optional.of(caja));
-        when(tuboRepository.findByCajaIdAndPoolActivoTrue(1L)).thenReturn(List.of());
-        when(tuboRepository.findByCajaIdAndSueroActivoTrue(1L)).thenReturn(List.of());
         when(tuboRepository.findByPoolId(1L)).thenReturn(List.of(tuboConUso));
 
         assertThatThrownBy(() -> service.update(1L, dto))

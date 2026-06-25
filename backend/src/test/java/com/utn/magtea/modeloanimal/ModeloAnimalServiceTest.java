@@ -67,7 +67,7 @@ class ModeloAnimalServiceTest {
 
         when(repository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
-        var result = service.findAll(0, 10, null, null, "createdAt", "desc");
+        var result = service.findAll(0, 10, null, null, null, null, null, "createdAt", "desc");
 
         assertThat(result.content()).hasSize(1);
         assertThat(result.content().getFirst().id()).isEqualTo(1L);
@@ -79,7 +79,7 @@ class ModeloAnimalServiceTest {
 
         when(repository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
-        var result = service.findAll(0, 10, 10L, SexoRaton.MACHO, "identificador", "asc");
+        var result = service.findAll(0, 10, null, 10L, SexoRaton.MACHO, null, null, "identificador", "asc");
 
         assertThat(result.content()).isEmpty();
     }
@@ -162,7 +162,7 @@ class ModeloAnimalServiceTest {
         var m = buildBaseModelo();
         m.setId(2L);
 
-        when(poolRepository.findById(10L)).thenReturn(Optional.of(pool));
+        when(poolRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(pool));
         when(camadaRepository.findById(20L)).thenReturn(Optional.of(camada));
         when(repository.countByPool_Id(10L)).thenReturn(0L);
         when(repository.save(any(ModeloAnimal.class))).thenReturn(m);
@@ -185,7 +185,7 @@ class ModeloAnimalServiceTest {
         var saved = buildBaseModelo();
         saved.setId(5L);
 
-        when(poolRepository.findById(10L)).thenReturn(Optional.of(pool));
+        when(poolRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(pool));
         when(camadaRepository.findById(20L)).thenReturn(Optional.of(camada));
         when(repository.countByPool_Id(10L)).thenReturn(0L);
         when(repository.save(any(ModeloAnimal.class))).thenReturn(saved);
@@ -193,7 +193,7 @@ class ModeloAnimalServiceTest {
 
         service.create(dto);
 
-        verify(repository).save(argThat(ma -> "ABC123-A".equals(ma.getIdentificador())));
+        verify(repository).save(argThat(ma -> "ABC123-1".equals(ma.getIdentificador())));
     }
 
     @Test
@@ -206,7 +206,7 @@ class ModeloAnimalServiceTest {
         var saved = buildBaseModelo();
         saved.setId(6L);
 
-        when(poolRepository.findById(10L)).thenReturn(Optional.of(pool));
+        when(poolRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(pool));
         when(camadaRepository.findById(20L)).thenReturn(Optional.of(camada));
         when(repository.countByPool_Id(10L)).thenReturn(2L);
         when(repository.save(any(ModeloAnimal.class))).thenReturn(saved);
@@ -214,24 +214,28 @@ class ModeloAnimalServiceTest {
 
         service.create(dto);
 
-        verify(repository).save(argThat(ma -> "ABC123-C".equals(ma.getIdentificador())));
+        verify(repository).save(argThat(ma -> "ABC123-3".equals(ma.getIdentificador())));
     }
 
     @Test
-    void deberia_lanzarBusinessRuleException_cuandoPoolYaTiene26Ratones() {
+    void deberia_generarIdentificadorNumerico_cuandoHayMasDe26Ratones() {
         var dto = new ModeloAnimalCreateDTO(10L, 20L, SexoRaton.HEMBRA, null);
 
         var pool = buildPool(10L);
         pool.setCodigo("ABC123");
         var camada = buildCamada(20L);
+        var saved = buildBaseModelo();
+        saved.setId(27L);
 
-        when(poolRepository.findById(10L)).thenReturn(Optional.of(pool));
+        when(poolRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(pool));
         when(camadaRepository.findById(20L)).thenReturn(Optional.of(camada));
         when(repository.countByPool_Id(10L)).thenReturn(26L);
+        when(repository.save(any(ModeloAnimal.class))).thenReturn(saved);
+        when(repository.findById(27L)).thenReturn(Optional.of(saved));
 
-        assertThatThrownBy(() -> service.create(dto))
-                .isInstanceOf(BusinessRuleException.class)
-                .hasMessageContaining("máximo");
+        service.create(dto);
+
+        verify(repository).save(argThat(ma -> "ABC123-27".equals(ma.getIdentificador())));
     }
 
     @Test
@@ -251,7 +255,7 @@ class ModeloAnimalServiceTest {
         tuboPool.setCantidadInicial(BigDecimal.valueOf(1.0));
         tuboPool.setCantidadUsada(BigDecimal.ZERO);
 
-        when(poolRepository.findById(10L)).thenReturn(Optional.of(pool));
+        when(poolRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(pool));
         when(camadaRepository.findById(20L)).thenReturn(Optional.of(camada));
         when(repository.countByPool_Id(10L)).thenReturn(0L);
         when(repository.save(any(ModeloAnimal.class))).thenReturn(m);
@@ -269,7 +273,7 @@ class ModeloAnimalServiceTest {
     void deberia_lanzarResourceNotFoundException_cuandoPoolNoExisteAlCrear() {
         var dto = new ModeloAnimalCreateDTO(99L, 20L, SexoRaton.MACHO, null);
 
-        when(poolRepository.findById(99L)).thenReturn(Optional.empty());
+        when(poolRepository.findByIdForUpdate(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.create(dto))
                 .isInstanceOf(ResourceNotFoundException.class)
@@ -281,7 +285,7 @@ class ModeloAnimalServiceTest {
         var dto = new ModeloAnimalCreateDTO(10L, 99L, SexoRaton.MACHO, null);
 
         var pool = buildPool(10L);
-        when(poolRepository.findById(10L)).thenReturn(Optional.of(pool));
+        when(poolRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(pool));
         when(camadaRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.create(dto))
@@ -303,7 +307,7 @@ class ModeloAnimalServiceTest {
         tuboSuero.setTipo(TipoTubo.SUERO);
         tuboSuero.setPosicion("A1");
 
-        when(poolRepository.findById(10L)).thenReturn(Optional.of(pool));
+        when(poolRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(pool));
         when(camadaRepository.findById(20L)).thenReturn(Optional.of(camada));
         when(repository.countByPool_Id(10L)).thenReturn(0L);
         when(repository.save(any(ModeloAnimal.class))).thenReturn(m);

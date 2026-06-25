@@ -3,6 +3,7 @@ package com.utn.magtea.paciente.mchat;
 import com.utn.magtea.common.exception.BusinessRuleException;
 import com.utn.magtea.common.exception.ResourceNotFoundException;
 import com.utn.magtea.paciente.Paciente;
+import com.utn.magtea.paciente.TipoPaciente;
 import jakarta.persistence.EntityManager;
 import com.utn.magtea.paciente.mchat.MchatResultadoFinal;
 import com.utn.magtea.paciente.mchat.MchatSeguimiento;
@@ -133,8 +134,11 @@ class MchatServiceTest {
         var dto = todosCorrectos();
         var response = mock(MchatFamiliaResponseDTO.class);
         var pacienteMock = mock(Paciente.class);
+        when(pacienteMock.isActivo()).thenReturn(true);
+        when(pacienteMock.getTipoPaciente()).thenReturn(TipoPaciente.PROBLEMA);
 
         when(familiaRepository.findByPaciente_Id(1L)).thenReturn(Optional.empty());
+        when(em.find(Paciente.class, 1L)).thenReturn(pacienteMock);
         when(em.getReference(Paciente.class, 1L)).thenReturn(pacienteMock);
         when(familiaRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(mapper.toDTO(any(MchatFamilia.class))).thenReturn(response);
@@ -151,8 +155,12 @@ class MchatServiceTest {
         var dto = todosCorrectos();
         var familiaExistente = new MchatFamilia();
         var response = mock(MchatFamiliaResponseDTO.class);
+        var pacienteMock = mock(Paciente.class);
+        when(pacienteMock.isActivo()).thenReturn(true);
+        when(pacienteMock.getTipoPaciente()).thenReturn(TipoPaciente.PROBLEMA);
 
         when(familiaRepository.findByPaciente_Id(1L)).thenReturn(Optional.of(familiaExistente));
+        when(em.find(Paciente.class, 1L)).thenReturn(pacienteMock);
         when(familiaRepository.save(familiaExistente)).thenReturn(familiaExistente);
         when(mapper.toDTO(familiaExistente)).thenReturn(response);
 

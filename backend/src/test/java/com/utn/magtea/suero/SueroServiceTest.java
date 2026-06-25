@@ -149,8 +149,6 @@ class SueroServiceTest {
         when(pacienteRepository.findById(1L)).thenReturn(Optional.of(paciente));
         when(repository.existsByPacienteIdAndActivoTrue(1L)).thenReturn(false);
         when(cajaRepository.findById(1L)).thenReturn(Optional.of(caja));
-        when(tuboRepository.findByCajaIdAndSueroActivoTrue(1L)).thenReturn(List.of());
-        when(tuboRepository.findByCajaIdAndPoolActivoTrue(1L)).thenReturn(List.of());
         when(repository.save(any(Suero.class))).thenReturn(suero);
         when(repository.findById(1L)).thenReturn(Optional.of(suero));
         when(mapper.toDTO(suero)).thenReturn(response);
@@ -176,8 +174,6 @@ class SueroServiceTest {
         when(pacienteRepository.findById(1L)).thenReturn(Optional.of(paciente));
         when(repository.existsByPacienteIdAndActivoTrue(1L)).thenReturn(false);
         when(cajaRepository.findById(1L)).thenReturn(Optional.of(caja));
-        when(tuboRepository.findByCajaIdAndSueroActivoTrue(1L)).thenReturn(List.of());
-        when(tuboRepository.findByCajaIdAndPoolActivoTrue(1L)).thenReturn(List.of());
         when(repository.save(any(Suero.class))).thenReturn(suero);
         when(repository.findById(1L)).thenReturn(Optional.of(suero));
         when(mapper.toDTO(suero)).thenReturn(response);
@@ -229,8 +225,6 @@ class SueroServiceTest {
 
         when(repository.findById(1L)).thenReturn(Optional.of(suero));
         when(cajaRepository.findById(1L)).thenReturn(Optional.of(caja));
-        when(tuboRepository.findByCajaIdAndSueroActivoTrue(1L)).thenReturn(List.of());
-        when(tuboRepository.findByCajaIdAndPoolActivoTrue(1L)).thenReturn(List.of());
         when(tuboRepository.findBySueroId(1L)).thenReturn(List.of(tuboExistente));
         when(repository.save(suero)).thenReturn(suero);
         when(mapper.toDTO(suero)).thenReturn(response);
@@ -255,8 +249,6 @@ class SueroServiceTest {
 
         when(repository.findById(1L)).thenReturn(Optional.of(suero));
         when(cajaRepository.findById(1L)).thenReturn(Optional.of(caja));
-        when(tuboRepository.findByCajaIdAndSueroActivoTrue(1L)).thenReturn(List.of());
-        when(tuboRepository.findByCajaIdAndPoolActivoTrue(1L)).thenReturn(List.of());
         when(tuboRepository.findBySueroId(1L)).thenReturn(List.of(tuboConUso));
 
         assertThatThrownBy(() -> service.update(1L, dto))
@@ -362,25 +354,25 @@ class SueroServiceTest {
 
     @Test
     void deberia_calcularRango0_cuandoBTUMenorOIgual1313() {
-        assertThat(SueroRangoUtil.calcularRango(0.0)).isEqualTo(0);
-        assertThat(SueroRangoUtil.calcularRango(1313.0)).isEqualTo(0);
+        assertThat(SueroRangoUtil.calcularRango(BigDecimal.valueOf(0.0))).isEqualTo(0);
+        assertThat(SueroRangoUtil.calcularRango(BigDecimal.valueOf(1313.0))).isEqualTo(0);
     }
 
     @Test
     void deberia_calcularRango1_cuandoBTUEntre1314y2500() {
-        assertThat(SueroRangoUtil.calcularRango(1314.0)).isEqualTo(1);
-        assertThat(SueroRangoUtil.calcularRango(2500.0)).isEqualTo(1);
+        assertThat(SueroRangoUtil.calcularRango(BigDecimal.valueOf(1314.0))).isEqualTo(1);
+        assertThat(SueroRangoUtil.calcularRango(BigDecimal.valueOf(2500.0))).isEqualTo(1);
     }
 
     @Test
     void deberia_calcularRango2_cuandoBTUEntre2501y8000() {
-        assertThat(SueroRangoUtil.calcularRango(2501.0)).isEqualTo(2);
-        assertThat(SueroRangoUtil.calcularRango(8000.0)).isEqualTo(2);
+        assertThat(SueroRangoUtil.calcularRango(BigDecimal.valueOf(2501.0))).isEqualTo(2);
+        assertThat(SueroRangoUtil.calcularRango(BigDecimal.valueOf(8000.0))).isEqualTo(2);
     }
 
     @Test
     void deberia_calcularRango3_cuandoBTUMayorA8000() {
-        assertThat(SueroRangoUtil.calcularRango(8001.0)).isEqualTo(3);
+        assertThat(SueroRangoUtil.calcularRango(BigDecimal.valueOf(8001.0))).isEqualTo(3);
     }
 
     // --- Helpers ---
@@ -392,7 +384,7 @@ class SueroServiceTest {
         suero.setActivo(true);
         suero.setPaciente(paciente);
         suero.setFechaExtraccion(LocalDate.now());
-        suero.setValorAnticuerpos(1500.0);
+        suero.setValorAnticuerpos(BigDecimal.valueOf(1500.0));
         suero.setRango(1);
         suero.setUso(tipo == TipoPaciente.CONTROL ? SueroUso.CONTROL : SueroUso.PROBLEMA);
         return suero;

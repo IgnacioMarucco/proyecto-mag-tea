@@ -102,6 +102,7 @@ class PacienteServiceTest {
     void deberia_crearPaciente_control_noGeneraTokenNiPublicaEvento() {
         var dto = createDTO(TipoPaciente.CONTROL);
         var entidad = new Paciente();
+        entidad.setTipoPaciente(TipoPaciente.CONTROL);
 
         when(mapper.toEntity(dto)).thenReturn(entidad);
         when(repository.existsByCodigoNumerico(anyString())).thenReturn(false);
@@ -540,7 +541,7 @@ class PacienteServiceTest {
         var entidad = pacienteActivo(1L);
         var dto = new PacienteUpdateDTO("TutorAp", "TutorNom", "tutor@mail.com", "12345",
                 "NinoAp", "NinoNom", LocalDate.now().minusYears(3), Sexo.FEMENINO, "Nuevas notas",
-                LocalDateTime.now(), LocalDate.now());
+                LocalDateTime.now(), LocalDateTime.now());
 
         when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
         when(repository.save(entidad)).thenReturn(entidad);
@@ -590,7 +591,7 @@ class PacienteServiceTest {
     @Test
     void deberia_actualizarSegundaVisita_cuandoDatosValidos() {
         var entidad = pacienteActivo(1L);
-        var fecha = LocalDate.now();
+        var fecha = LocalDateTime.now();
         var dto = new PacienteSegundaVisitaDTO(fecha);
 
         when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
@@ -712,10 +713,13 @@ class PacienteServiceTest {
     }
 
     private PacienteCreateDTO createDTO(TipoPaciente tipo) {
+        boolean tea = tipo == TipoPaciente.PROBLEMA;
+        boolean tgd = tipo == TipoPaciente.PROBLEMA;
+        boolean edad = true;
         return new PacienteCreateDTO(null, "García", "Ana", "ana@test.com", null,
                 "Niño", "Nombre", null, Sexo.MASCULINO, LocalDateTime.now(), null,
                 tipo,
-                false, false, false,
+                tea, tgd, edad,
                 false, false, false, false, false, false, false, false, false, false,
                 false);
     }
@@ -755,7 +759,7 @@ class PacienteServiceTest {
 
     private static PacienteListDTO buildListDTO(Long id) {
         return new PacienteListDTO(id, "TST00001", "García", "Ana", "Niño", "Nombre",
-                null, TipoPaciente.PROBLEMA, PacienteEstado.ADMITIDO, null, null);
+                null, TipoPaciente.PROBLEMA, PacienteEstado.ADMITIDO, null, null, null);
     }
 
     private static PacienteResponseDTO buildResponse(Long id) {
