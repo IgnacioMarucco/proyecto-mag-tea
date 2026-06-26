@@ -45,6 +45,13 @@ mp:
   back-url-base: ${MP_BACK_URL_BASE:http://localhost:4200}
   notification-url: ${MP_NOTIFICATION_URL:}
 
+minio:
+  url: ${MINIO_URL:http://localhost:9000}
+  public-url: ${MINIO_PUBLIC_URL:http://localhost:9000}
+  access-key: ${MINIO_ACCESS_KEY:minioadmin}
+  secret-key: ${MINIO_SECRET_KEY:minioadmin}
+  presigned-expiry-minutes: 5
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
