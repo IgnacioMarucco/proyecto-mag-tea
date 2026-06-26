@@ -32,6 +32,8 @@ public record PacienteResponseDTO(
         TipoPaciente tipoPaciente,
         LocalDateTime fechaPrimeraVisita,
         boolean consentimientoFirmado,
+        Long documentoConsentimientoId,
+        String documentoConsentimientoNombre,
         String notas,
         // Estado calculado del paciente en el protocolo
         PacienteEstado pacienteEstado,

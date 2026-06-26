@@ -8,6 +8,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+
 public record ModeloAnimalResponseDTO(
         Long id,
         String identificador,
@@ -25,8 +26,11 @@ public record ModeloAnimalResponseDTO(
         VocalizacionesDTO vocalizaciones,
         TresCamarasDTO tresCamaras,
         List<ModeloAnimalPoolAporteDTO> aportes,
+        List<ImagenMicroscopiaDTO> imagenesMicroscopia,
         boolean necesitaVocalizaciones,
         boolean necesitaTresCamaras,
+        EstadoProtocolo estadoProtocolo,
+        LocalDate fechaProximoEvento,
         boolean activo,
         LocalDateTime createdAt
 ) {}

@@ -16,5 +16,7 @@ public record ModeloAnimalListDTO(
         SexoRaton sexo,
         int aportesCount,
         boolean necesitaVocalizaciones,
-        boolean necesitaTresCamaras
+        boolean necesitaTresCamaras,
+        EstadoProtocolo estadoProtocolo,
+        LocalDate fechaProximoEvento
 ) {}

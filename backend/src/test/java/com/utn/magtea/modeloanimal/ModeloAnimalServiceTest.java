@@ -10,6 +10,7 @@ import com.utn.magtea.modeloanimal.estudios.VocalizacionesDTO;
 import com.utn.magtea.modeloanimal.estudios.VocalizacionesUltrasonicas;
 import com.utn.magtea.pool.Pool;
 import com.utn.magtea.pool.PoolRepository;
+import com.utn.magtea.storage.DocumentoRepository;
 import com.utn.magtea.tubo.Tubo;
 import com.utn.magtea.tubo.TipoTubo;
 import com.utn.magtea.tubo.TuboRepository;
@@ -49,6 +50,8 @@ class ModeloAnimalServiceTest {
     @Mock private ModeloAnimalPoolAporteRepository modeloAnimalPoolAporteRepository;
     @Mock private CamadaRepository camadaRepository;
     @Mock private Clock clock;
+    @Mock private DocumentoRepository documentoRepository;
+    @Mock private ImagenMicroscopiaRepository imagenMicroscopiaRepository;
 
     @InjectMocks private ModeloAnimalService service;
 
@@ -67,7 +70,7 @@ class ModeloAnimalServiceTest {
 
         when(repository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
-        var result = service.findAll(0, 10, null, null, null, null, null, "createdAt", "desc");
+        var result = service.findAll(0, 10, null, null, null, null, null, null, "createdAt", "desc");
 
         assertThat(result.content()).hasSize(1);
         assertThat(result.content().getFirst().id()).isEqualTo(1L);
@@ -79,7 +82,7 @@ class ModeloAnimalServiceTest {
 
         when(repository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
-        var result = service.findAll(0, 10, null, 10L, SexoRaton.MACHO, null, null, "identificador", "asc");
+        var result = service.findAll(0, 10, null, 10L, SexoRaton.MACHO, null, null, null, "identificador", "asc");
 
         assertThat(result.content()).isEmpty();
     }

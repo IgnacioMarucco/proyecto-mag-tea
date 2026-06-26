@@ -17,6 +17,7 @@ import com.utn.magtea.paciente.criterios.CriteriosDTO;
 import com.utn.magtea.paciente.mchat.MchatSeguimientoDTO;
 import com.utn.magtea.paciente.vineland.VinelandDTO;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -36,8 +37,10 @@ public class PacienteController {
             @RequestParam(required = false)            List<PacienteEstado> estados,
             @RequestParam(required = false)            List<TipoPaciente> tipos,
             @RequestParam(defaultValue = "proximaFechaEvento")  String sortBy,
-            @RequestParam(defaultValue = "asc")                  String sortDir) {
-        return service.findAll(page, size, q, estados, tipos, sortBy, sortDir);
+            @RequestParam(defaultValue = "asc")                  String sortDir,
+            @RequestParam(required = false)            LocalDate fechaEvento,
+            @RequestParam(required = false)            String categoriaAgenda) {
+        return service.findAll(page, size, q, estados, tipos, sortBy, sortDir, fechaEvento, categoriaAgenda);
     }
 
     @GetMapping("/{codigo}")    @Operation(summary = "Obtener paciente por código alfanumérico")

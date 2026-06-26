@@ -24,7 +24,7 @@ public class ModeloAnimalController {
 
     private final ModeloAnimalService service;
 
-    @GetMapping    @Operation(summary = "Listar modelos animales activos (filtro por pool, sexo, tipo, rango y búsqueda por camada)")
+    @GetMapping    @Operation(summary = "Listar modelos animales activos (filtro por pool, sexo, tipo, rango, estado y búsqueda por camada)")
     public PageResponse<ModeloAnimalListDTO> findAll(
             @RequestParam(defaultValue = "0")             int page,
             @RequestParam(defaultValue = "20")            int size,
@@ -33,9 +33,10 @@ public class ModeloAnimalController {
             @RequestParam(required = false)               SexoRaton sexo,
             @RequestParam(required = false)               SueroUso uso,
             @RequestParam(required = false)               Integer rango,
+            @RequestParam(required = false)               EstadoProtocolo estado,
             @RequestParam(defaultValue = "fechaNacimiento") String sortBy,
             @RequestParam(defaultValue = "desc")          String sortDir) {
-        return service.findAll(page, size, q, poolId, sexo, uso, rango, sortBy, sortDir);
+        return service.findAll(page, size, q, poolId, sexo, uso, rango, estado, sortBy, sortDir);
     }
 
     @GetMapping("/by-code/{identificador}")    @Operation(summary = "Obtener modelo animal por identificador alfanumérico")
@@ -89,6 +90,20 @@ public class ModeloAnimalController {
     public ModeloAnimalResponseDTO registrarMicroscopia(@PathVariable Long id,
                                                          @RequestBody @Valid ModeloAnimalMicroscopiaDTO dto) {
         return service.registrarMicroscopia(id, dto);
+    }
+
+    @PostMapping("/{id}/imagenes-microscopia")
+    @Operation(summary = "Agregar imagen de microscopía al modelo animal")
+    public ImagenMicroscopiaDTO agregarImagen(@PathVariable Long id,
+                                              @RequestBody @Valid ImagenMicroscopiaCreateDTO dto) {
+        return service.agregarImagen(id, dto);
+    }
+
+    @DeleteMapping("/{id}/imagenes-microscopia/{imagenId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Eliminar imagen de microscopía del modelo animal")
+    public void eliminarImagen(@PathVariable Long id, @PathVariable Long imagenId) {
+        service.eliminarImagen(id, imagenId);
     }
 
     @DeleteMapping("/{id}")

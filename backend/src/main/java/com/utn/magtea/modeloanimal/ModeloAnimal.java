@@ -57,6 +57,17 @@ public class ModeloAnimal extends Auditable {
     @OneToMany(mappedBy = "modeloAnimal", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ModeloAnimalPoolAporte> aportes = new ArrayList<>();
 
+    @org.hibernate.envers.NotAudited
+    @OneToMany(mappedBy = "modeloAnimal", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("createdAt ASC")
+    private List<ImagenMicroscopia> imagenesMicroscopia = new ArrayList<>();
+
+    private LocalDate fechaProximoEvento;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private EstadoProtocolo estadoProtocolo = EstadoProtocolo.PENDIENTE_INOCULACION;
+
     @Column(nullable = false)
     private boolean activo = true;
 }

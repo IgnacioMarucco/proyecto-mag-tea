@@ -1,0 +1,10 @@
+package com.utn.magtea.modeloanimal;
+
+public enum EstadoProtocolo {
+    PENDIENTE_INOCULACION,
+    INOCULACION_EN_CURSO,
+    PENDIENTE_VOCALIZACIONES,
+    PENDIENTE_TRES_CAMARAS,
+    PENDIENTE_MICROSCOPIA,
+    COMPLETO
+}

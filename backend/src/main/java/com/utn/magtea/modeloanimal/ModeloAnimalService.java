@@ -22,6 +22,8 @@ import com.utn.magtea.paciente.vineland.EvaluacionVineland;
 import com.utn.magtea.suero.Suero;
 import com.utn.magtea.pool.Pool;
 import com.utn.magtea.pool.PoolRepository;
+import com.utn.magtea.storage.Documento;
+import com.utn.magtea.storage.DocumentoRepository;
 import com.utn.magtea.tubo.Tubo;
 import com.utn.magtea.tubo.TipoTubo;
 import com.utn.magtea.tubo.TuboRepository;
@@ -48,7 +50,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ModeloAnimalService {
 
-    private static final Set<String> SORT_FIELDS_VALIDOS = Set.of("createdAt", "identificador", "fechaNacimiento", "camadaNombre");
+    private static final Set<String> SORT_FIELDS_VALIDOS = Set.of("createdAt", "identificador", "fechaNacimiento", "camadaNombre", "fechaProximoEvento");
     private static final Map<String, String> SORT_ALIASES = Map.of(
             "fechaNacimiento", "camada.fechaNacimiento",
             "camadaNombre",    "camada.nombre"
@@ -60,14 +62,17 @@ public class ModeloAnimalService {
     private final ModeloAnimalPoolAporteRepository modeloAnimalPoolAporteRepository;
     private final CamadaRepository camadaRepository;
     private final Clock clock;
+    private final DocumentoRepository documentoRepository;
+    private final ImagenMicroscopiaRepository imagenMicroscopiaRepository;
 
     @Transactional(readOnly = true)
     public PageResponse<ModeloAnimalListDTO> findAll(int page, int size, String q, Long poolId,
                                                      SexoRaton sexo, SueroUso uso, Integer rango,
+                                                     EstadoProtocolo estado,
                                                      String sortBy, String sortDir) {
         Sort sort = SpecificationUtils.buildSort(sortBy, sortDir, "fechaNacimiento", SORT_FIELDS_VALIDOS, SORT_ALIASES);
         Page<ModeloAnimal> result = repository.findAll(
-                buildSpec(q, poolId, sexo, uso, rango), PageRequest.of(page, size, sort));
+                buildSpec(q, poolId, sexo, uso, rango, estado), PageRequest.of(page, size, sort));
         LocalDate hoy = LocalDate.now(clock);
         List<ModeloAnimalListDTO> content = result.getContent().stream()
                 .map(m -> mapper.toListDTO(m,
@@ -164,6 +169,9 @@ public class ModeloAnimalService {
 
         LocalDate hoy = LocalDate.now(clock);
         ModeloAnimal refreshed = repository.findById(saved.getId()).orElseThrow();
+        refreshed.setEstadoProtocolo(calcularEstado(refreshed));
+        refreshed.setFechaProximoEvento(calcularFechaProximoEvento(refreshed));
+        repository.save(refreshed);
         return mapper.toDTO(refreshed,
                 calcularNecesitaVocalizaciones(refreshed, hoy),
                 calcularNecesitaTresCamaras(refreshed, hoy),
@@ -214,6 +222,8 @@ public class ModeloAnimalService {
         vus.setMuestra1Khz(dto.muestra1Khz());
         vus.setMuestra2Khz(dto.muestra2Khz());
         m.setVocalizaciones(vus);
+        m.setEstadoProtocolo(calcularEstado(m));
+        m.setFechaProximoEvento(calcularFechaProximoEvento(m));
 
         LocalDate hoy = LocalDate.now(clock);
         ModeloAnimal saved = repository.save(m);
@@ -242,6 +252,8 @@ public class ModeloAnimalService {
             tc.setM2TiempoRatonFamiliar(dto.m2TiempoRatonFamiliar());
         }
         m.setTresCamaras(tc);
+        m.setEstadoProtocolo(calcularEstado(m));
+        m.setFechaProximoEvento(calcularFechaProximoEvento(m));
 
         LocalDate hoy = LocalDate.now(clock);
         ModeloAnimal saved = repository.save(m);
@@ -258,6 +270,8 @@ public class ModeloAnimalService {
         ModeloAnimal m = findActiveById(id);
         m.setNumCelulasGanglionares(dto.numCelulasGanglionares());
         m.setNumCelulasPurkinje(dto.numCelulasPurkinje());
+        m.setEstadoProtocolo(calcularEstado(m));
+        m.setFechaProximoEvento(calcularFechaProximoEvento(m));
 
         LocalDate hoy = LocalDate.now(clock);
         ModeloAnimal saved = repository.save(m);
@@ -321,6 +335,9 @@ public class ModeloAnimalService {
         repository.save(m);
         LocalDate hoy = LocalDate.now(clock);
         ModeloAnimal refreshed = repository.findById(m.getId()).orElseThrow();
+        refreshed.setEstadoProtocolo(calcularEstado(refreshed));
+        refreshed.setFechaProximoEvento(calcularFechaProximoEvento(refreshed));
+        repository.save(refreshed);
         VocalizacionesDTO vusDTO = refreshed.getVocalizaciones() != null
                 ? mapper.toVocalizacionesDTO(refreshed.getVocalizaciones()) : null;
         TresCamarasDTO tcDTO = refreshed.getTresCamaras() != null
@@ -465,6 +482,26 @@ public class ModeloAnimalService {
         repository.save(m);
     }
 
+    private EstadoProtocolo calcularEstado(ModeloAnimal m) {
+        if (m.getFechaDia1Inoculacion() == null)   return EstadoProtocolo.PENDIENTE_INOCULACION;
+        if (m.getAportes().size() < 4)             return EstadoProtocolo.INOCULACION_EN_CURSO;
+        if (m.getVocalizaciones() == null)         return EstadoProtocolo.PENDIENTE_VOCALIZACIONES;
+        if (m.getTresCamaras() == null)            return EstadoProtocolo.PENDIENTE_TRES_CAMARAS;
+        if (m.getNumCelulasGanglionares() == null) return EstadoProtocolo.PENDIENTE_MICROSCOPIA;
+        return EstadoProtocolo.COMPLETO;
+    }
+
+    private LocalDate calcularFechaProximoEvento(ModeloAnimal m) {
+        LocalDate fn = m.getCamada() != null ? m.getCamada().getFechaNacimiento() : null;
+        return switch (calcularEstado(m)) {
+            case INOCULACION_EN_CURSO     -> m.getFechaDia1Inoculacion().plusDays(m.getAportes().size());
+            case PENDIENTE_VOCALIZACIONES -> fn != null ? fn.plusDays(5)  : null;
+            case PENDIENTE_TRES_CAMARAS   -> fn != null ? fn.plusDays(19) : null;
+            case PENDIENTE_MICROSCOPIA    -> fn != null ? fn.plusDays(19) : null;
+            default                       -> null;
+        };
+    }
+
     private boolean calcularNecesitaVocalizaciones(ModeloAnimal m, LocalDate hoy) {
         LocalDate fn = m.getCamada() != null ? m.getCamada().getFechaNacimiento() : null;
         return m.getVocalizaciones() == null
@@ -479,13 +516,14 @@ public class ModeloAnimalService {
                 && fn.plusDays(19).equals(hoy);
     }
 
-    private Specification<ModeloAnimal> buildSpec(String q, Long poolId, SexoRaton sexo, SueroUso uso, Integer rango) {
+    private Specification<ModeloAnimal> buildSpec(String q, Long poolId, SexoRaton sexo, SueroUso uso, Integer rango, EstadoProtocolo estado) {
         Specification<ModeloAnimal> spec = SpecificationUtils.activoTrue();
         if (q      != null && !q.isBlank()) spec = spec.and(searchCamada(q));
         if (poolId != null) spec = spec.and(poolEquals(poolId));
         if (sexo   != null) spec = spec.and(sexoEquals(sexo));
         if (uso    != null) spec = spec.and(usoEquals(uso));
         if (rango  != null) spec = spec.and(rangoEquals(rango));
+        if (estado != null) spec = spec.and(estadoEquals(estado));
         return spec;
     }
 
@@ -511,6 +549,48 @@ public class ModeloAnimalService {
 
     private Specification<ModeloAnimal> rangoEquals(Integer rango) {
         return (root, query, cb) -> cb.equal(root.get("pool").get("rango"), rango);
+    }
+
+    private Specification<ModeloAnimal> estadoEquals(EstadoProtocolo estado) {
+        return (root, query, cb) -> cb.equal(root.get("estadoProtocolo"), estado);
+    }
+
+    @Transactional
+    public ImagenMicroscopiaDTO agregarImagen(Long id, ImagenMicroscopiaCreateDTO dto) {
+        ModeloAnimal modelo = findActiveById(id);
+
+        boolean tieneDocumento = dto.documentoId() != null;
+        boolean tieneUrlExterna = dto.urlExterna() != null && !dto.urlExterna().isBlank();
+        if (!tieneDocumento && !tieneUrlExterna) {
+            throw new BusinessRuleException("Debe proporcionar un documento subido o una URL externa");
+        }
+
+        ImagenMicroscopia imagen = new ImagenMicroscopia();
+        imagen.setModeloAnimal(modelo);
+        imagen.setTipo(dto.tipo());
+        imagen.setUrlExterna(dto.urlExterna());
+        imagen.setDescripcion(dto.descripcion());
+
+        if (tieneDocumento) {
+            Documento doc = documentoRepository.findById(dto.documentoId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Documento con id " + dto.documentoId() + " no existe"));
+            imagen.setDocumento(doc);
+        }
+
+        return mapper.toImagenDTO(imagenMicroscopiaRepository.save(imagen));
+    }
+
+    @Transactional
+    public void eliminarImagen(Long modeloId, Long imagenId) {
+        findActiveById(modeloId);
+        ImagenMicroscopia imagen = imagenMicroscopiaRepository.findById(imagenId)
+                .orElseThrow(() -> new ResourceNotFoundException("Imagen con id " + imagenId + " no existe"));
+
+        if (!imagen.getModeloAnimal().getId().equals(modeloId)) {
+            throw new BusinessRuleException("La imagen no pertenece al modelo animal indicado");
+        }
+
+        imagenMicroscopiaRepository.delete(imagen);
     }
 
     private ModeloAnimal findActiveById(Long id) {

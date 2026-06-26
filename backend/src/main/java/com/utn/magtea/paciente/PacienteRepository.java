@@ -7,11 +7,16 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 public interface PacienteRepository extends JpaRepository<Paciente, Long>, JpaSpecificationExecutor<Paciente> {
     boolean existsByCodigoNumerico(String codigoNumerico);
+
+    List<Paciente> findByFechaPrimeraVisitaBetweenAndActivoTrue(LocalDateTime desde, LocalDateTime hasta);
+
+    List<Paciente> findByFechaTurnoExtraccionBetweenAndActivoTrue(LocalDateTime desde, LocalDateTime hasta);
     Optional<Paciente> findByCodigoNumericoAndActivoTrue(String codigoNumerico);
 
     @EntityGraph(attributePaths = {
@@ -61,4 +66,14 @@ public interface PacienteRepository extends JpaRepository<Paciente, Long>, JpaSp
            "WHERE p.activo = true AND p.tipoPaciente = 'PROBLEMA' " +
            "AND p.estadoClinico = 'EXTRACCION_REALIZADA'")
     long countExtraccionRealizada();
+
+    @Query("""
+        SELECT DISTINCT p FROM Paciente p
+        LEFT JOIN FETCH p.mchatFamilia
+        LEFT JOIN FETCH p.mchatSeguimiento
+        LEFT JOIN FETCH p.evaluacionCars
+        LEFT JOIN FETCH p.evaluacionVineland
+        WHERE p.activo = true
+    """)
+    List<Paciente> findAllForExport();
 }

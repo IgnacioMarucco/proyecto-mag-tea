@@ -21,6 +21,8 @@ import com.utn.magtea.paciente.mchat.MchatSeguimientoDTO;
 import com.utn.magtea.paciente.vineland.EvaluacionVineland;
 import com.utn.magtea.paciente.vineland.VinelandDTO;
 import com.utn.magtea.pool.PoolSueroAporteRepository;
+import com.utn.magtea.storage.Documento;
+import com.utn.magtea.storage.DocumentoRepository;
 import com.utn.magtea.suero.Suero;
 import com.utn.magtea.suero.SueroRepository;
 import com.utn.magtea.tubo.TuboRepository;
@@ -61,16 +63,18 @@ public class PacienteService {
     private final PoolSueroAporteRepository poolSueroAporteRepository;
     private final SueroRepository sueroRepository;
     private final TuboRepository tuboRepository;
+    private final DocumentoRepository documentoRepository;
     private final Clock clock;
 
     @Transactional(readOnly = true)
     public PageResponse<PacienteListDTO> findAll(int page, int size, String q,
                                                   List<PacienteEstado> estados,
                                                   List<TipoPaciente> tipos,
-                                                  String sortBy, String sortDir) {
+                                                  String sortBy, String sortDir,
+                                                  LocalDate fechaEvento, String categoriaAgenda) {
         Sort sort = SpecificationUtils.buildSort(sortBy, sortDir, "proximaFechaEvento", SORT_FIELDS_VALIDOS);
         Page<PacienteListProjection> result = repository.findBy(
-                buildSpec(q, estados, tipos),
+                buildSpec(q, estados, tipos, fechaEvento, categoriaAgenda),
                 fq -> fq.as(PacienteListProjection.class).page(PageRequest.of(page, size, sort))
         );
         List<PacienteListDTO> content = result.getContent().stream()
@@ -198,6 +202,11 @@ public class PacienteService {
     public PacienteResponseDTO updateConsentimiento(String codigo, PacienteConsentimientoDTO dto) {
         Paciente paciente = findActiveByCodigo(codigo);
         paciente.setConsentimientoFirmado(dto.consentimientoFirmado());
+        if (dto.documentoId() != null) {
+            Documento doc = documentoRepository.findById(dto.documentoId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Documento con id " + dto.documentoId() + " no existe"));
+            paciente.setDocumentoConsentimiento(doc);
+        }
         Paciente saved = repository.save(paciente);
         return mapper.toDTO(saved, calcularMchatEstado(saved));
     }
@@ -368,12 +377,31 @@ public class PacienteService {
                         "Paciente con código " + codigo + " no existe"));
     }
 
-    private Specification<Paciente> buildSpec(String q, List<PacienteEstado> estados, List<TipoPaciente> tipos) {
+    private Specification<Paciente> buildSpec(String q, List<PacienteEstado> estados, List<TipoPaciente> tipos,
+                                               LocalDate fechaEvento, String categoriaAgenda) {
         Specification<Paciente> spec = SpecificationUtils.activoTrue();
         if (q != null && !q.isBlank()) spec = spec.and(searchText(q));
         if (estados != null && !estados.isEmpty()) spec = spec.and(estadoIn(estados));
         if (tipos   != null && !tipos.isEmpty())   spec = spec.and(tipoIn(tipos));
+        if (fechaEvento != null && categoriaAgenda != null) spec = spec.and(fechaEventoSpec(fechaEvento, categoriaAgenda));
         return spec;
+    }
+
+    private Specification<Paciente> fechaEventoSpec(LocalDate fecha, String categoria) {
+        return (root, query, cb) -> {
+            String campo = switch (categoria) {
+                case "PRIMERA_VISITA" -> "fechaPrimeraVisita";
+                case "EXTRACCION"     -> "fechaTurnoExtraccion";
+                default               -> null;
+            };
+            if (campo == null) return null;
+            LocalDateTime inicio = fecha.atStartOfDay();
+            LocalDateTime fin    = fecha.plusDays(1).atStartOfDay();
+            return cb.and(
+                    cb.greaterThanOrEqualTo(root.get(campo), inicio),
+                    cb.lessThan(root.get(campo), fin)
+            );
+        };
     }
 
     private Specification<Paciente> searchText(String q) {

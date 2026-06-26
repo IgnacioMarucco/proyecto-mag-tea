@@ -18,6 +18,8 @@ import com.utn.magtea.paciente.mchat.MchatSeguimiento;
 import com.utn.magtea.paciente.mchat.MchatSeguimientoDTO;
 import com.utn.magtea.paciente.mchat.MchatTokenService;
 import com.utn.magtea.paciente.vineland.VinelandDTO;
+import com.utn.magtea.pool.PoolSueroAporteRepository;
+import com.utn.magtea.storage.DocumentoRepository;
 import com.utn.magtea.suero.SueroRepository;
 import com.utn.magtea.tubo.TuboRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,8 +57,10 @@ class PacienteServiceTest {
     @Mock private MchatService mchatService;
     @Mock private CarsService carsService;
     @Mock private ApplicationEventPublisher events;
+    @Mock private PoolSueroAporteRepository poolSueroAporteRepository;
     @Mock private SueroRepository sueroRepository;
     @Mock private TuboRepository tuboRepository;
+    @Mock private DocumentoRepository documentoRepository;
     @Spy  private Clock clock = Clock.fixed(Instant.parse("2026-06-23T10:00:00Z"), ZoneId.of("America/Argentina/Cordoba"));
 
     @InjectMocks private PacienteService service;
@@ -767,7 +771,7 @@ class PacienteServiceTest {
                 id, null, "TST00001", LocalDate.of(2026, 1, 1),
                 "García", "Ana", "ana@test.com", null, "Niño", "Nombre",
                 null, null, null, null, null, Sexo.MASCULINO, TipoPaciente.PROBLEMA, null,
-                false, null, PacienteEstado.ADMITIDO, MchatEstado.NO_ENVIADO,
+                false, null, null, null, PacienteEstado.ADMITIDO, MchatEstado.NO_ENVIADO,
                 false, null,
                 false, false, false,
                 false, false, false, false, false, false, false, false, false, false,

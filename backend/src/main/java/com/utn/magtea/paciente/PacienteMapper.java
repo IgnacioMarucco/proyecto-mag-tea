@@ -30,9 +30,11 @@ public interface PacienteMapper {
         );
     }
 
-    @Mapping(target = "edadActual",       source = "entity.fechaNacimientoNino", qualifiedByName = "calculateAgeYears")
-    @Mapping(target = "edadMeses",        source = "entity.fechaNacimientoNino", qualifiedByName = "calculateAgeMonths")
-    @Mapping(target = "pacienteEstado",   source = "entity.estadoClinico")
+    @Mapping(target = "edadActual",                source = "entity.fechaNacimientoNino", qualifiedByName = "calculateAgeYears")
+    @Mapping(target = "edadMeses",                 source = "entity.fechaNacimientoNino", qualifiedByName = "calculateAgeMonths")
+    @Mapping(target = "pacienteEstado",            source = "entity.estadoClinico")
+    @Mapping(target = "documentoConsentimientoId",     expression = "java(entity.getDocumentoConsentimiento() != null ? entity.getDocumentoConsentimiento().getId() : null)")
+    @Mapping(target = "documentoConsentimientoNombre", expression = "java(entity.getDocumentoConsentimiento() != null ? entity.getDocumentoConsentimiento().getNombreOriginal() : null)")
     @Mapping(target = "criteriosAptitud", expression = "java(calcularCriteriosAptitud(entity))")
     @Mapping(target = "mchatEstado",      source = "mchatEstado")
     @Mapping(target = "mchatScoreTotal",    expression = "java(entity.getMchatFamilia() != null ? entity.getMchatFamilia().getScoreTotal() : null)")
@@ -103,8 +105,9 @@ public interface PacienteMapper {
     @Mapping(target = "comoConocioProyecto",   ignore = true)
     @Mapping(target = "otroComoConocio",       ignore = true)
     @Mapping(target = "fechaPrimeraVisita",    ignore = true)
-    @Mapping(target = "consentimientoFirmado", ignore = true)
-    @Mapping(target = "notas",                 ignore = true)
+    @Mapping(target = "consentimientoFirmado",    ignore = true)
+    @Mapping(target = "documentoConsentimiento",  ignore = true)
+    @Mapping(target = "notas",                    ignore = true)
     @Mapping(target = "activo",                ignore = true)
     @Mapping(target = "mchatFamilia",          ignore = true)
     @Mapping(target = "mchatToken",            ignore = true)

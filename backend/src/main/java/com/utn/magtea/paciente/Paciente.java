@@ -2,6 +2,7 @@ package com.utn.magtea.paciente;
 
 import com.utn.magtea.common.Auditable;
 import com.utn.magtea.formulariointeres.ComoConocioProyecto;
+import com.utn.magtea.storage.Documento;
 import com.utn.magtea.paciente.cars.EvaluacionCars;
 import com.utn.magtea.paciente.criterios.Criterios;
 import com.utn.magtea.paciente.mchat.MchatFamilia;
@@ -77,6 +78,11 @@ public class Paciente extends Auditable {
 
     @Column(nullable = false)
     private boolean consentimientoFirmado = false;
+
+    @org.hibernate.envers.Audited(targetAuditMode = org.hibernate.envers.RelationTargetAuditMode.NOT_AUDITED)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "documento_consentimiento_id")
+    private Documento documentoConsentimiento;
 
     @Column(columnDefinition = "TEXT")
     private String notas;

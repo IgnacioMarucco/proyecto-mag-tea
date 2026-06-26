@@ -32,7 +32,8 @@ public interface ModeloAnimalMapper {
     @Mapping(target = "necesitaTresCamaras",    source = "necesitaTresCamaras")
     @Mapping(target = "vocalizaciones", source = "vocalizacionesDTO")
     @Mapping(target = "tresCamaras",    source = "tresCamarasDTO")
-    @Mapping(target = "aportes",    source = "modeloAnimal.aportes")
+    @Mapping(target = "aportes",              source = "modeloAnimal.aportes")
+    @Mapping(target = "imagenesMicroscopia",  source = "modeloAnimal.imagenesMicroscopia")
     ModeloAnimalResponseDTO toDTO(ModeloAnimal modeloAnimal,
                                   boolean necesitaVocalizaciones,
                                   boolean necesitaTresCamaras,
@@ -51,16 +52,22 @@ public interface ModeloAnimalMapper {
     @Mapping(target = "poolTuboId", source = "tubo.id")
     ModeloAnimalPoolAporteDTO toAporteDTO(ModeloAnimalPoolAporte aporte);
 
-    @Mapping(target = "id",                  ignore = true)
-    @Mapping(target = "activo",              ignore = true)
-    @Mapping(target = "identificador",       ignore = true)
-    @Mapping(target = "pool",                ignore = true)
-    @Mapping(target = "camada",              ignore = true)
-    @Mapping(target = "fechaDia1Inoculacion", ignore = true)
-    @Mapping(target = "vocalizaciones",      ignore = true)
-    @Mapping(target = "tresCamaras",         ignore = true)
-    @Mapping(target = "aportes",             ignore = true)
+    @Mapping(target = "documentoId", source = "imagen.documento.id")
+    ImagenMicroscopiaDTO toImagenDTO(ImagenMicroscopia imagen);
+
+    @Mapping(target = "id",                     ignore = true)
+    @Mapping(target = "activo",                 ignore = true)
+    @Mapping(target = "identificador",          ignore = true)
+    @Mapping(target = "pool",                   ignore = true)
+    @Mapping(target = "camada",                 ignore = true)
+    @Mapping(target = "fechaDia1Inoculacion",   ignore = true)
+    @Mapping(target = "vocalizaciones",         ignore = true)
+    @Mapping(target = "tresCamaras",            ignore = true)
+    @Mapping(target = "aportes",                ignore = true)
+    @Mapping(target = "imagenesMicroscopia",    ignore = true)
     @Mapping(target = "numCelulasGanglionares", ignore = true)
-    @Mapping(target = "numCelulasPurkinje",  ignore = true)
+    @Mapping(target = "numCelulasPurkinje",     ignore = true)
+    @Mapping(target = "estadoProtocolo",        ignore = true)
+    @Mapping(target = "fechaProximoEvento",     ignore = true)
     ModeloAnimal toEntity(ModeloAnimalCreateDTO dto);
 }

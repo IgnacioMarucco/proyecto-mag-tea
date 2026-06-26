@@ -21,4 +21,16 @@ public interface PoolRepository extends JpaRepository<Pool, Long>, JpaSpecificat
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM Pool p WHERE p.id = :id")
     Optional<Pool> findByIdForUpdate(@Param("id") Long id);
+
+    List<Pool> findTop3ByActivoTrueOrderByCreatedAtDesc();
+
+    @Query("""
+        SELECT DISTINCT p FROM Pool p
+        JOIN FETCH p.aportes a
+        JOIN FETCH a.tubo t
+        LEFT JOIN FETCH t.suero s
+        LEFT JOIN FETCH s.paciente pac
+        WHERE p.activo = true
+    """)
+    List<Pool> findAllForExport();
 }
