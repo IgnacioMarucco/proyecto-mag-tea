@@ -20,6 +20,8 @@ import {
 export interface PacienteListParams extends PageParams {
   estados?: string[];
   tipos?: string[];
+  fechaEvento?: string;
+  categoriaAgenda?: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -36,6 +38,8 @@ export class PacienteService {
     if (params.sortDir) p = p.set('sortDir', params.sortDir);
     params.estados?.forEach(e => { p = p.append('estados', e); });
     params.tipos?.forEach(t  => { p = p.append('tipos',   t); });
+    if (params.fechaEvento)     p = p.set('fechaEvento',     params.fechaEvento);
+    if (params.categoriaAgenda) p = p.set('categoriaAgenda', params.categoriaAgenda);
     return this.http.get<PageResponse<PacienteListItem>>(this.base, { params: p });
   }
 

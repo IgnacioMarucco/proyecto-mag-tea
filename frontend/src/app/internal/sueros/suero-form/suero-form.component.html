@@ -165,15 +165,21 @@
           <p class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-2">
             Tubos <span class="text-danger">*</span>
           </p>
-          <app-tubo-grid
-            [value]="tubosValue()"
-            [occupied]="ocupadasStr()"
-            (valueChange)="onTubosChange($event)"
-          />
-          <app-tubo-quantity-table
-            [tubos]="tubosConCantidad()"
-            (tubosChange)="onTubosConCantidadChange($event)"
-          />
+          @if (cajaSeleccionada()) {
+            <app-tubo-grid
+              [value]="tubosValue()"
+              [occupied]="ocupadasStr()"
+              (valueChange)="onTubosChange($event)"
+            />
+            <app-tubo-quantity-table
+              [tubos]="tubosConCantidad()"
+              (tubosChange)="onTubosConCantidadChange($event)"
+            />
+          } @else {
+            <p class="text-sm text-text-muted py-6 text-center border border-dashed border-border rounded-md">
+              Seleccioná freezer, cajón y caja para ver la grilla
+            </p>
+          }
         </div>
 
         <!-- Valor anticuerpos (opcional) -->

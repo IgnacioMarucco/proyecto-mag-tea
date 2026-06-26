@@ -21,7 +21,12 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./internal/layout/internal-layout.component').then(m => m.InternalLayoutComponent),
     children: [
-      { path: '', redirectTo: 'bandeja', pathMatch: 'full' },
+      { path: '', redirectTo: 'inicio', pathMatch: 'full' },
+      {
+        path: 'inicio',
+        loadComponent: () =>
+          import('./internal/inicio/inicio.component').then(m => m.InicioComponent),
+      },
       {
         path: 'bandeja',
         data: { crumbs: [{ label: 'Etapa Clínica' }, { label: 'Bandeja de formularios' }] },

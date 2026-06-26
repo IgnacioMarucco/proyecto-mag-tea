@@ -1,0 +1,81 @@
+<div class="flex flex-col gap-4">
+
+  <p class="text-sm text-text-muted">
+    Los archivos CSV usan separador <strong>;</strong> y codificación UTF-8 con BOM — compatibles con Excel (doble clic) y con PRISM (importar con separador <em>;</em>).
+  </p>
+
+  @for (exp of exports; track exp.key) {
+    <div class="bg-surface border border-border rounded-lg px-6 py-5 flex items-start justify-between gap-6">
+      <div class="flex flex-col gap-1 min-w-0">
+        <span class="font-medium text-text text-sm">{{ exp.label }}</span>
+        <span class="text-text-muted text-xs">{{ exp.desc }}</span>
+      </div>
+      <div class="flex-shrink-0 flex items-center gap-2">
+        <button
+          (click)="descargar(exp.key, exp.filename, 'csv')"
+          [disabled]="loading()[exp.key]['csv']"
+          class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors
+                 border border-primary text-primary hover:bg-primary/10 disabled:opacity-50 disabled:cursor-not-allowed">
+          @if (loading()[exp.key]['csv']) {
+            <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+            </svg>
+            Generando…
+          } @else {
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/>
+            </svg>
+            CSV
+          }
+        </button>
+        <button
+          (click)="descargar(exp.key, exp.filename, 'xlsx')"
+          [disabled]="loading()[exp.key]['xlsx']"
+          class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors
+                 bg-primary text-white hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed">
+          @if (loading()[exp.key]['xlsx']) {
+            <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+            </svg>
+            Generando…
+          } @else {
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/>
+            </svg>
+            XLSX
+          }
+        </button>
+      </div>
+    </div>
+  }
+
+  <div class="border-t border-border pt-4">
+    <div class="bg-surface border border-primary/30 rounded-lg px-6 py-5 flex items-start justify-between gap-6">
+      <div class="flex flex-col gap-1 min-w-0">
+        <span class="font-medium text-text text-sm">Exportación completa</span>
+        <span class="text-text-muted text-xs">Un único archivo Excel con las 3 sheets juntas (Ratones, Pacientes, Pool Composición). Útil para cruzar datos con VLOOKUP entre sheets.</span>
+      </div>
+      <button
+        (click)="descargar('completo', 'magtea_completo', 'xlsx')"
+        [disabled]="loading()['completo']['xlsx']"
+        class="flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors
+               bg-primary text-white hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed">
+        @if (loading()['completo']['xlsx']) {
+          <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+          </svg>
+          Generando…
+        } @else {
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/>
+          </svg>
+          XLSX
+        }
+      </button>
+    </div>
+  </div>
+
+</div>

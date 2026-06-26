@@ -100,6 +100,7 @@ export class PoolFormComponent {
   });
 
   // ── Tubos del pool ───────────────────────────────────────────────────────
+  cajaSeleccionada     = signal(false);
   tubosValue           = signal('');
   tubosPoolConCantidad = signal<PoolTuboInput[]>([]);
   ocupadas             = signal<string[]>([]);
@@ -260,6 +261,7 @@ export class PoolFormComponent {
   // ── Ubicación ─────────────────────────────────────────────────────────────
   onCajaChange(cajaId: number | null): void {
     this.form.patchValue({ cajaId });
+    this.cajaSeleccionada.set(!!cajaId);
     if (!cajaId) { this.ocupadas.set([]); return; }
     this.cajaService.getOcupacion(cajaId)
       .pipe(catchError(() => of({ ocupadas: [] as string[] })))

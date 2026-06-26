@@ -152,37 +152,19 @@
                 <th class="px-6 py-3 text-left text-xs font-medium text-text-muted">Identificador</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-text-muted hidden sm:table-cell">Sexo</th>
                 <th class="px-6 py-3 text-left text-xs font-medium text-text-muted hidden sm:table-cell">Fecha nac.</th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-text-muted">Alertas</th>
               </tr>
             </thead>
             <tbody>
               @for (ma of modelosAnimales(); track ma.id) {
                 <tr class="border-b border-border last:border-0 hover:bg-background transition-colors">
                   <td class="px-6 py-3">
-                    <a [routerLink]="['/internal/modelos-animales', ma.id]"
-                       class="text-primary font-medium font-mono hover:underline">
-                      {{ ma.identificador }}
-                    </a>
+                    <span class="font-medium font-mono text-text">{{ ma.identificador }}</span>
                   </td>
                   <td class="px-6 py-3 hidden sm:table-cell">
                     <app-status-badge [value]="ma.sexo" [labels]="sexoLabels" [colorMap]="sexoColors" />
                   </td>
                   <td class="px-6 py-3 hidden sm:table-cell text-text-muted font-mono">
                     {{ ma.fechaNacimiento | fecha }}
-                  </td>
-                  <td class="px-6 py-3">
-                    <div class="flex flex-wrap gap-1">
-                      @if (ma.necesitaVocalizaciones) {
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning/10 text-warning">
-                          VUS hoy
-                        </span>
-                      }
-                      @if (ma.necesitaTresCamaras) {
-                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-warning/10 text-warning">
-                          3C hoy
-                        </span>
-                      }
-                    </div>
                   </td>
                 </tr>
               }

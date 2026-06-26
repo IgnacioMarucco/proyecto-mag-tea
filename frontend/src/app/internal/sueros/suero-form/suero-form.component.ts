@@ -74,6 +74,7 @@ export class SueroFormComponent {
   sueroLoaded = signal<SueroResponse | null>(null);
 
   // ── Grilla y tubos ───────────────────────────────────────────────────────
+  cajaSeleccionada = signal(false);
   tubosValue       = signal('');
   tubosConCantidad = signal<SueroTuboInput[]>([]);
   ocupadas         = signal<string[]>([]);
@@ -162,6 +163,7 @@ export class SueroFormComponent {
   // ── Ubicación ─────────────────────────────────────────────────────────────
   onCajaChange(cajaId: number | null): void {
     this.form.patchValue({ cajaId });
+    this.cajaSeleccionada.set(!!cajaId);
     if (!cajaId) { this.ocupadas.set([]); return; }
     const excludeId = this.sueroLoaded()?.id;
     this.cajaService.getOcupacion(cajaId, excludeId)

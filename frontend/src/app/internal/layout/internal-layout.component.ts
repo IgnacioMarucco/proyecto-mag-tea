@@ -4,7 +4,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {
   LucideAngularModule,
   type LucideIconData,
-  Inbox, Users, Droplets, Layers, Rat, Briefcase, ChartBar, Archive, Dna,
+  Home, Inbox, Users, Droplets, Layers, Rat, Briefcase, ChartBar, Archive, Dna,
   LogOut, PanelLeftClose, PanelLeftOpen,
 } from 'lucide-angular';
 import { AuthService } from '../../core/services/auth.service';
@@ -22,6 +22,8 @@ interface NavSection {
   label: string;
   items: NavItem[];
 }
+
+export const HOME_NAV_ICON: LucideIconData = Home;
 
 const NAV_SECTIONS: NavSection[] = [
   {
@@ -111,6 +113,7 @@ export class InternalLayoutComponent {
 
   user = this.authService.currentUser;
 
+  readonly HomeIcon  = HOME_NAV_ICON;
   readonly collapsed = signal(localStorage.getItem('sidebar-collapsed') === 'true');
   readonly toggleIcon = computed(() => this.collapsed() ? PanelLeftOpen : PanelLeftClose);
   readonly LogOutIcon = LogOut;

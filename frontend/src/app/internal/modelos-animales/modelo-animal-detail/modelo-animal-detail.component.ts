@@ -13,6 +13,7 @@ import { VocalizacionesSectionComponent } from './sections/vocalizaciones-sectio
 import { TresCamarasSectionComponent } from './sections/tres-camaras-section.component';
 import { MicroscopiaSectionComponent } from './sections/microscopia-section.component';
 import { InoculacionSectionComponent } from './sections/inoculacion-section.component';
+import { CopyBadgeComponent } from '../../../shared/copy-badge/copy-badge.component';
 
 @Component({
   selector: 'app-modelo-animal-detail',
@@ -25,6 +26,7 @@ import { InoculacionSectionComponent } from './sections/inoculacion-section.comp
     VocalizacionesSectionComponent,
     TresCamarasSectionComponent,
     MicroscopiaSectionComponent,
+    CopyBadgeComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './modelo-animal-detail.component.html',

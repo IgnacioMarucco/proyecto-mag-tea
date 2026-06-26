@@ -10,9 +10,7 @@
 <div class="px-8 pb-0">
   <div class="mb-6">
     <app-page-header [crumbs]="crumbs()">
-      <span class="font-mono text-xs text-text-muted bg-surface border border-border rounded px-2 py-0.5">
-        {{ ma.identificador }}
-      </span>
+      <app-copy-badge [value]="ma.identificador" />
       <app-status-badge
         [value]="ma.poolUso"
         [labels]="usoLabels"

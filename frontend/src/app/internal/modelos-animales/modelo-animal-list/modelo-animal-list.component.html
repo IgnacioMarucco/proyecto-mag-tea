@@ -62,8 +62,20 @@
           />
         </td>
 
-        <td class="px-5 py-3.5 hidden md:table-cell text-text-muted text-sm font-mono">
-          {{ ma.aportesCount > 0 ? ma.aportesCount : '—' }}
+        <td class="px-5 py-3.5 hidden md:table-cell">
+          <app-status-badge
+            [value]="ma.estadoProtocolo"
+            [labels]="estadoLabels"
+            [colorMap]="estadoColors"
+          />
+        </td>
+
+        <td class="px-5 py-3.5 font-mono text-sm">
+          @if (ma.fechaProximoEvento) {
+            <span class="text-text">{{ ma.fechaProximoEvento | fecha }}</span>
+          } @else {
+            <span class="text-text-muted">—</span>
+          }
         </td>
 
         <td class="px-5 py-3.5">

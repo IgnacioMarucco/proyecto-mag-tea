@@ -113,6 +113,17 @@
         : 'text-text-muted hover:text-text'">
       Correlaciones
     </button>
+    <button
+      role="tab"
+      [attr.aria-selected]="tabActivo() === 4"
+      aria-controls="tab-panel-4"
+      (click)="tabActivo.set(4)"
+      class="px-4 py-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      [class]="tabActivo() === 4
+        ? 'border-b-2 border-primary text-primary'
+        : 'text-text-muted hover:text-text'">
+      Exportación
+    </button>
   </div>
 
   <!-- ══ TAB 0 — COHORTE & DEMOGRAFÍA ══ -->
@@ -155,6 +166,15 @@
       <app-correlaciones [filtros]="filtros()" />
     } @placeholder {
       <div class="h-64 bg-background rounded-lg animate-pulse" aria-busy="true" aria-label="Cargando correlaciones"></div>
+    }
+  </div>
+
+  <!-- ══ TAB 4 — EXPORTACIÓN ══ -->
+  <div [hidden]="tabActivo() !== 4" id="tab-panel-4" role="tabpanel">
+    @defer (when tabActivo() === 4) {
+      <app-exportacion />
+    } @placeholder {
+      <div class="h-32 bg-background rounded-lg animate-pulse" aria-busy="true" aria-label="Cargando exportación"></div>
     }
   </div>
 

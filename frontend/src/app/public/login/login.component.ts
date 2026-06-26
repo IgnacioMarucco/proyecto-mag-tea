@@ -34,7 +34,7 @@ export class LoginComponent {
     this.authService.login(this.form.value as LoginRequest)
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: () => this.router.navigate(['/internal/profesionales']),
+        next: () => this.router.navigate(['/internal/inicio']),
         error: err => this.error.set(extractErrorMessage(err, 'Error al iniciar sesión')),
       });
   }

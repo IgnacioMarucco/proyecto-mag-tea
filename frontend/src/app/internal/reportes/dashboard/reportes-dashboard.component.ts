@@ -11,6 +11,7 @@ import { CarsAnalisisComponent } from '../cars/cars-analisis.component';
 import { VinelandAnalisisComponent } from '../vineland/vineland-analisis.component';
 import { CorrelacionesComponent } from '../correlaciones/correlaciones.component';
 import { AnticuerposAnalisisComponent } from '../anticuerpos/anticuerpos-analisis.component';
+import { ExportacionComponent } from '../exportacion/exportacion.component';
 import { ListToolbarComponent, FilterGroup } from '../../../shared/list-toolbar/list-toolbar.component';
 import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 
@@ -25,6 +26,7 @@ import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-hea
     VinelandAnalisisComponent,
     CorrelacionesComponent,
     AnticuerposAnalisisComponent,
+    ExportacionComponent,
     ListToolbarComponent,
     PageHeaderComponent,
   ],
@@ -39,7 +41,7 @@ export class ReportesDashboardComponent {
     { initialValue: [] as Crumb[] }
   );
 
-  readonly tabActivo = signal<0 | 1 | 2 | 3>(0);
+  readonly tabActivo = signal<0 | 1 | 2 | 3 | 4>(0);
   readonly filtros   = signal<FiltroReportes>(FILTRO_DEFAULT);
   loading = signal(false);
   error   = signal(false);

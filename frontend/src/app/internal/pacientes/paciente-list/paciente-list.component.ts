@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { BehaviorSubject, catchError, combineLatest, map, of, switchMap, tap, timer } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -22,7 +23,7 @@ const ALL_ESTADOS = ['ADMITIDO', 'MCHAT_RESPONDIDO', 'EXTRACCION_PENDIENTE', 'EX
 
 @Component({
   selector: 'app-paciente-list',
-  imports: [RouterLink, ListToolbarComponent, ConfirmModalComponent, DataTableComponent, StatusBadgeComponent, RowActionsComponent, PaginatorComponent, IconComponent, PageHeaderComponent, EdadPipe],
+  imports: [RouterLink, DatePipe, ListToolbarComponent, ConfirmModalComponent, DataTableComponent, StatusBadgeComponent, RowActionsComponent, PaginatorComponent, IconComponent, PageHeaderComponent, EdadPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './paciente-list.component.html',
   host: { '(window:keydown)': 'onGlobalKey($event)' },
@@ -39,10 +40,11 @@ export class PacienteListComponent {
     { initialValue: [] as Crumb[] }
   );
 
-  private readonly params$ = new BehaviorSubject<PacienteListParams>({
-    page: 0, size: PAGE_SIZE, sortBy: 'proximaFechaEvento', sortDir: 'asc',
-    estados: ['ADMITIDO', 'MCHAT_RESPONDIDO', 'EXTRACCION_PENDIENTE'],
-  });
+  readonly fechaEventoActiva = signal<string | null>(null);
+
+  private readonly params$ = new BehaviorSubject<PacienteListParams>(
+    this.buildInitialParams()
+  );
 
   error   = signal(false);
   loading = signal(false);
@@ -206,6 +208,24 @@ proximaFecha(p: PacienteListItem): { label: string; valor: string } | null {
       next:  () => { this.deleting.set(null); this.toast.show('Paciente dado de baja'); this.reload(); },
       error: () =>   this.deleting.set(null),
     });
+  }
+
+  clearFechaEvento(): void {
+    this.fechaEventoActiva.set(null);
+    this.params$.next({ ...this.params$.value, page: 0, fechaEvento: undefined, categoriaAgenda: undefined });
+  }
+
+  private buildInitialParams(): PacienteListParams {
+    const qp = this.route.snapshot.queryParams;
+    const fecha: string | undefined = qp['fecha'];
+    const categoria: string | undefined = qp['categoria'];
+    if (fecha && categoria) this.fechaEventoActiva.set(fecha);
+    return {
+      page: 0, size: PAGE_SIZE, sortBy: 'proximaFechaEvento', sortDir: 'asc',
+      estados: ['ADMITIDO', 'MCHAT_RESPONDIDO', 'EXTRACCION_PENDIENTE'],
+      fechaEvento: fecha,
+      categoriaAgenda: categoria,
+    };
   }
 
   onGlobalKey(event: KeyboardEvent): void {

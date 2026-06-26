@@ -8,6 +8,17 @@
     </a>
   </div>
 
+  @if (fechaEventoActiva()) {
+    <div class="mb-4 flex items-center gap-3 px-4 py-2.5 bg-primary/5 border border-primary/20 rounded-md text-sm">
+      <span class="text-text-muted">Mostrando pacientes del</span>
+      <span class="font-medium text-text font-mono">{{ fechaEventoActiva()! | date:'dd/MM/yyyy' }}</span>
+      <button (click)="clearFechaEvento()"
+              class="ml-auto text-xs text-text-muted hover:text-text transition-colors">
+        Ver todos
+      </button>
+    </div>
+  }
+
   <app-list-toolbar
     placeholder="Buscar por nombre, apellido o código…"
     [filterGroups]="filterGroups"

@@ -10,9 +10,12 @@ import {
   ModeloAnimalUpdate,
   ModeloAnimalInoculacionCreate,
   SexoRaton,
+  EstadoProtocolo,
   VocalizacionesCreate,
   TresCamarasCreate,
   MicroscopiaCreate,
+  ImagenMicroscopiaCreate,
+  ImagenMicroscopiaResponse,
 } from '../models/modelo-animal.model';
 
 export interface ModeloAnimalListParams extends PageParams {
@@ -21,6 +24,7 @@ export interface ModeloAnimalListParams extends PageParams {
   uso?: string;
   rango?: number;
   soloAlertas?: boolean;
+  estado?: EstadoProtocolo;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -40,6 +44,7 @@ export class ModeloAnimalService {
     if (params.uso)         p = p.set('uso', params.uso);
     if (params.rango != null) p = p.set('rango', params.rango);
     if (params.soloAlertas) p = p.set('soloAlertas', params.soloAlertas);
+    if (params.estado)      p = p.set('estado', params.estado);
     return this.http.get<PageResponse<ModeloAnimalListItem>>(this.base, { params: p });
   }
 
@@ -77,6 +82,14 @@ export class ModeloAnimalService {
 
   patchMicroscopia(id: number, dto: MicroscopiaCreate): Observable<ModeloAnimalResponse> {
     return this.http.patch<ModeloAnimalResponse>(`${this.base}/${id}/microscopia`, dto);
+  }
+
+  agregarImagen(id: number, dto: ImagenMicroscopiaCreate): Observable<ImagenMicroscopiaResponse> {
+    return this.http.post<ImagenMicroscopiaResponse>(`${this.base}/${id}/imagenes-microscopia`, dto);
+  }
+
+  eliminarImagen(modeloId: number, imagenId: number): Observable<void> {
+    return this.http.delete<void>(`${this.base}/${modeloId}/imagenes-microscopia/${imagenId}`);
   }
 
   getReporte(identificador: string): Observable<ModeloAnimalReporte> {

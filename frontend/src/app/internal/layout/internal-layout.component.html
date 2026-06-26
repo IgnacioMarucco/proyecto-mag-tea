@@ -29,11 +29,9 @@
          [class.px-5]="!collapsed()" [class.py-5]="!collapsed()"
          [class.justify-center]="collapsed()" [class.py-4]="collapsed()">
       @if (!collapsed()) {
-        <div>
-          <img ngSrc="/assets/logo-magtea.png" alt="MAG-TEA" width="150" height="150" class="h-7 w-auto mb-1" />
-          <p class="text-sidebar-muted text-[10px] font-mono tracking-widest uppercase">
-            Sistema de Investigación
-          </p>
+        <div class="flex items-center gap-2.5">
+          <img ngSrc="/assets/logo-magtea.png" alt="MAG-TEA" width="150" height="150" class="h-7 w-auto" />
+          <span class="text-white font-semibold tracking-wide">MAG-TEA</span>
         </div>
       } @else {
         <img ngSrc="/assets/logo-magtea.png" alt="MAG-TEA" width="150" height="150" class="h-6 w-auto max-w-[36px] object-contain object-left" />
@@ -42,16 +40,38 @@
 
     <!-- Nav -->
     <nav class="flex-1 py-2 overflow-y-auto overflow-x-hidden" aria-label="Navegación principal">
+
+      <!-- Inicio — visible para todos los roles -->
+      <a
+        routerLink="/internal/inicio"
+        routerLinkActive="!text-white !border-l-2 !border-primary bg-primary/10"
+        [routerLinkActiveOptions]="{ exact: true }"
+        class="flex items-center text-sm text-sidebar-muted border-l-2 border-transparent
+               hover:text-white hover:bg-white/5 transition-all duration-150"
+        [class.py-1.5]="!collapsed()" [class.py-2.5]="collapsed()"
+        [class.pl-4]="!collapsed()" [class.pr-5]="!collapsed()"
+        [class.justify-center]="collapsed()" [class.px-0]="collapsed()"
+        aria-label="Inicio"
+        [title]="collapsed() ? 'Inicio' : ''"
+      >
+        <lucide-angular [img]="HomeIcon" [size]="17" [strokeWidth]="1.5" class="flex-shrink-0" />
+        @if (!collapsed()) {
+          <span class="ml-2.5 truncate">Inicio</span>
+        }
+      </a>
+
+      <div class="my-1 border-t border-sidebar-border" [class.mx-5]="!collapsed()" [class.mx-3]="collapsed()"></div>
+
       @for (section of visibleNavSections(); track section.label; let first = $first) {
 
         <!-- Separador -->
         @if (!first) {
-          <div class="my-2 border-t border-sidebar-border" [class.mx-5]="!collapsed()" [class.mx-3]="collapsed()"></div>
+          <div class="my-1 border-t border-sidebar-border" [class.mx-5]="!collapsed()" [class.mx-3]="collapsed()"></div>
         }
 
         <!-- Label de sección (solo expandido) -->
         @if (!collapsed()) {
-          <p class="px-5 pt-2 pb-1 text-[10px] font-mono text-sidebar-muted uppercase tracking-widest select-none">
+          <p class="px-5 pt-1.5 pb-0.5 text-[10px] font-mono text-sidebar-muted uppercase tracking-widest select-none">
             {{ section.label }}
           </p>
         } @else {
@@ -64,8 +84,9 @@
             [routerLink]="item.path"
             routerLinkActive="!text-white !border-l-2 !border-primary bg-primary/10"
             [routerLinkActiveOptions]="{ exact: false }"
-            class="flex items-center py-2.5 text-sm text-sidebar-muted border-l-2 border-transparent
+            class="flex items-center text-sm text-sidebar-muted border-l-2 border-transparent
                    hover:text-white hover:bg-white/5 transition-all duration-150"
+            [class.py-1.5]="!collapsed()" [class.py-2.5]="collapsed()"
             [class.pl-4]="!collapsed()" [class.pr-5]="!collapsed()"
             [class.justify-center]="collapsed()" [class.px-0]="collapsed()"
             [attr.aria-label]="item.label"

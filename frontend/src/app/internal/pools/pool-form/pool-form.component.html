@@ -349,15 +349,21 @@
               <p class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-2">
                 Tubos del pool <span class="text-danger">*</span>
               </p>
-              <app-tubo-grid
-                [value]="tubosValue()"
-                [occupied]="ocupadasStr()"
-                (valueChange)="onTubosChange($event)"
-              />
-              <app-tubo-quantity-table
-                [tubos]="tubosPoolConCantidad()"
-                (tubosChange)="onTubosPoolConCantidadChange($event)"
-              />
+              @if (cajaSeleccionada()) {
+                <app-tubo-grid
+                  [value]="tubosValue()"
+                  [occupied]="ocupadasStr()"
+                  (valueChange)="onTubosChange($event)"
+                />
+                <app-tubo-quantity-table
+                  [tubos]="tubosPoolConCantidad()"
+                  (tubosChange)="onTubosPoolConCantidadChange($event)"
+                />
+              } @else {
+                <p class="text-sm text-text-muted py-6 text-center border border-dashed border-border rounded-md">
+                  Seleccioná freezer, cajón y caja para ver la grilla
+                </p>
+              }
             </div>
 
             <!-- Indicador de invariante (solo en creación) -->

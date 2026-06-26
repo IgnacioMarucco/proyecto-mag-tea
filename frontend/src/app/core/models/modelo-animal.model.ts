@@ -2,6 +2,14 @@ export type SexoRaton = 'MACHO' | 'HEMBRA';
 export type VusBanda = 'AVERSIVA' | 'APETITIVA';
 export type SocializacionResultado = 'NORMAL' | 'FALTA_SOCIALIZACION';
 export type SueroUso = 'PROBLEMA' | 'CONTROL';
+export type TipoImagenMicroscopia = 'GANGLIONAR' | 'PURKINJE';
+export type EstadoProtocolo =
+  | 'PENDIENTE_INOCULACION'
+  | 'INOCULACION_EN_CURSO'
+  | 'PENDIENTE_VOCALIZACIONES'
+  | 'PENDIENTE_TRES_CAMARAS'
+  | 'PENDIENTE_MICROSCOPIA'
+  | 'COMPLETO';
 
 export interface VocalizacionesCreate {
   muestra1Khz: number;
@@ -36,6 +44,22 @@ export interface MicroscopiaCreate {
   numCelulasPurkinje: number;
 }
 
+export interface ImagenMicroscopiaResponse {
+  id: number;
+  tipo: TipoImagenMicroscopia;
+  documentoId: number | null;
+  urlExterna: string | null;
+  descripcion: string | null;
+  createdAt: string;
+}
+
+export interface ImagenMicroscopiaCreate {
+  tipo: TipoImagenMicroscopia;
+  documentoId?: number;
+  urlExterna?: string;
+  descripcion?: string;
+}
+
 export interface ModeloAnimalPoolAporteInput {
   poolTuboId: number;
   cantidadConsumida?: number;
@@ -67,6 +91,8 @@ export interface ModeloAnimalListItem {
   aportesCount: number;
   necesitaVocalizaciones: boolean;
   necesitaTresCamaras: boolean;
+  estadoProtocolo: EstadoProtocolo;
+  fechaProximoEvento: string | null;
 }
 
 export interface ModeloAnimalResponse {
@@ -83,10 +109,13 @@ export interface ModeloAnimalResponse {
   fechaDia1Inoculacion: string | null;
   necesitaVocalizaciones: boolean;
   necesitaTresCamaras: boolean;
+  estadoProtocolo: EstadoProtocolo;
+  fechaProximoEvento: string | null;
   vocalizaciones: VocalizacionesResponse | null;
   tresCamaras: TresCamarasResponse | null;
   numCelulasGanglionares: number | null;
   numCelulasPurkinje: number | null;
+  imagenesMicroscopia: ImagenMicroscopiaResponse[];
   aportes: ModeloAnimalPoolAporteItem[];
   activo: boolean;
   createdAt: string;

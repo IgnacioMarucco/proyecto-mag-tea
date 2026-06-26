@@ -1,0 +1,283 @@
+<div class="px-8 pb-8">
+
+  <div class="mb-6">
+    <app-page-header [crumbs]="crumbs" />
+  </div>
+
+  @if (error()) {
+    <div role="alert" class="mb-6 px-4 py-3 bg-danger/10 border border-danger/30 rounded-md text-sm text-danger flex items-center gap-2">
+      <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+      </svg>
+      No se pudo cargar el inicio. Revisá tu conexión o intentá de nuevo.
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="space-y-4">
+      @for (i of [1,2,3]; track i) {
+        <div class="h-24 bg-surface rounded-lg animate-pulse"></div>
+      }
+    </div>
+  }
+
+  @if (!loading() && !error()) {
+
+    <!-- Cards superiores -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+
+      @if (formulariosPendientes() !== null) {
+        <a routerLink="/internal/bandeja"
+           class="flex items-center gap-4 px-5 py-4 bg-surface border border-border rounded-lg hover:border-primary/40 transition-colors group">
+          <div class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-lg"
+               [class.bg-warning/10]="(formulariosPendientes() ?? 0) > 0"
+               [class.bg-background]="(formulariosPendientes() ?? 0) === 0">
+            <lucide-angular [img]="InboxIcon" [size]="18" [strokeWidth]="1.5"
+                            [class.text-warning]="(formulariosPendientes() ?? 0) > 0"
+                            [class.text-text-muted]="(formulariosPendientes() ?? 0) === 0" />
+          </div>
+          <div>
+            <p class="text-2xl font-semibold text-text">{{ formulariosPendientes() }}</p>
+            <p class="text-xs text-text-muted mt-0.5">Formulario(s) pendiente(s)</p>
+          </div>
+        </a>
+      }
+
+      @if (inoculaciones().length > 0) {
+        <div class="flex items-center gap-4 px-5 py-4 bg-surface border border-border rounded-lg">
+          <div class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+            <lucide-angular [img]="ActivityIcon" [size]="18" [strokeWidth]="1.5" class="text-primary" />
+          </div>
+          <div>
+            <p class="text-2xl font-semibold text-text">{{ inoculaciones().length }}</p>
+            <p class="text-xs text-text-muted mt-0.5">Animal(es) con inoculación esta semana</p>
+          </div>
+        </div>
+      }
+
+      @if (alertasCriticas() > 0) {
+        <div class="flex items-center gap-4 px-5 py-4 bg-surface border border-danger/30 rounded-lg">
+          <div class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-lg bg-danger/10">
+            <lucide-angular [img]="AlertTriangleIcon" [size]="18" [strokeWidth]="1.5" class="text-danger" />
+          </div>
+          <div>
+            <p class="text-2xl font-semibold text-danger">{{ alertasCriticas() }}</p>
+            <p class="text-xs text-text-muted mt-0.5">Test(s) vencido(s) o crítico(s)</p>
+          </div>
+        </div>
+      }
+
+    </div>
+
+    <!-- Agenda de la semana -->
+    <section class="mb-8" aria-labelledby="agenda-semana-heading">
+      <h2 id="agenda-semana-heading" class="text-sm font-medium text-text-muted uppercase tracking-wider mb-3">
+        Agenda de la semana
+      </h2>
+
+      <div class="overflow-x-auto rounded-lg border border-border bg-surface">
+        <table class="w-full min-w-[640px] text-sm border-collapse">
+
+          <!-- Encabezado de días -->
+          <thead>
+            <tr>
+              <th class="w-32 px-4 py-2.5 text-left text-xs font-medium text-text-muted border-b border-r border-border bg-background"></th>
+              @for (dia of semana(); track dia.iso; let last = $last) {
+                <th class="px-3 py-2.5 text-center border-b border-border text-xs font-medium"
+                    [class.border-r]="!last"
+                    [class.bg-primary/5]="dia.isToday"
+                    [class.text-primary]="dia.isToday"
+                    [class.text-text-muted]="!dia.isToday">
+                  <p class="capitalize">{{ dia.diaNombre }}</p>
+                  <p class="font-mono">{{ dia.diaNum }}</p>
+                </th>
+              }
+            </tr>
+          </thead>
+
+          <!-- Filas de categoría -->
+          <tbody>
+            @for (cat of CATEGORIAS; track cat; let last = $last) {
+              <tr>
+                <td class="px-4 py-2 text-xs font-medium text-text-muted border-r border-border whitespace-nowrap"
+                    [class.border-b]="!last"
+                    [class.border-border]="!last">
+                  {{ CATEGORIA_LABELS[cat] }}
+                </td>
+                @for (dia of semana(); track dia.iso; let lastDia = $last) {
+                  @let eventos = getEventos(dia.iso, cat);
+                  <td class="px-2 py-2 align-top"
+                      [class.border-b]="!last"
+                      [class.border-r]="!lastDia"
+                      [class.border-border]="!last || !lastDia"
+                      [class.bg-primary/5]="dia.isToday">
+                    @if (eventos.length > 0) {
+                      <div class="flex flex-wrap gap-1">
+                        @for (ev of eventos.slice(0, 2); track ev.entityId + ev.categoria) {
+                          <a [routerLink]="['/internal', ev.entityPath, ev.identificador]"
+                             class="inline-block px-1.5 py-0.5 rounded text-[11px] font-mono font-medium
+                                    bg-primary/10 text-primary hover:bg-primary/20 transition-colors whitespace-nowrap">
+                            {{ ev.identificador }}
+                          </a>
+                        }
+                        @if (eventos.length > 2) {
+                          <a [routerLink]="['/internal', eventos[0].entityPath]"
+                             [queryParams]="{ fecha: dia.iso, categoria: cat }"
+                             class="inline-block px-1.5 py-0.5 rounded text-[11px] font-medium
+                                    bg-background text-text-muted hover:text-text transition-colors whitespace-nowrap">
+                            +{{ eventos.length - 2 }}
+                          </a>
+                        }
+                      </div>
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+
+        </table>
+      </div>
+
+      @if (agendaVacia()) {
+        <p class="mt-3 text-sm text-text-muted text-center py-4">Sin actividad programada para esta semana.</p>
+      }
+
+    </section>
+
+    <!-- Alertas conductuales -->
+    @if (alertas().length > 0) {
+      <section class="mb-8" aria-labelledby="alertas-heading">
+        <h2 id="alertas-heading" class="text-sm font-medium text-text-muted uppercase tracking-wider mb-3">
+          Tests conductuales
+        </h2>
+        <div class="space-y-2">
+          @for (item of alertas(); track item.modeloAnimalId + item.tipoTest) {
+            <a [routerLink]="['/internal/modelos-animales', item.identificador]"
+               class="flex items-center justify-between px-4 py-3 bg-surface border rounded-md hover:border-primary/30 transition-colors"
+               [class.border-danger/40]="nivelAlerta(item) === 'critico' || nivelAlerta(item) === 'vencida'"
+               [class.border-warning/40]="nivelAlerta(item) === 'urgente'"
+               [class.border-border]="nivelAlerta(item) === 'aviso'">
+
+              <div class="flex items-center gap-3">
+                <span class="inline-flex items-center justify-center w-2 h-2 rounded-full flex-shrink-0"
+                      [class.bg-danger]="nivelAlerta(item) === 'critico' || nivelAlerta(item) === 'vencida'"
+                      [class.bg-warning]="nivelAlerta(item) === 'urgente'"
+                      [class.bg-primary/50]="nivelAlerta(item) === 'aviso'">
+                </span>
+                <div>
+                  <p class="text-sm font-medium text-text">
+                    {{ labelTipoTest(item.tipoTest) }}
+                    <span class="text-text-muted font-normal">— {{ item.identificador }} ({{ item.camadaNombre }})</span>
+                  </p>
+                  <p class="text-xs text-text-muted mt-0.5">{{ item.fechaTest | date:'dd/MM/yyyy' }}</p>
+                </div>
+              </div>
+
+              <span class="text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0"
+                    [class.bg-danger/10]="nivelAlerta(item) === 'critico'"
+                    [class.text-danger]="nivelAlerta(item) === 'critico'"
+                    [class.bg-gray-500/10]="nivelAlerta(item) === 'vencida'"
+                    [class.text-text-muted]="nivelAlerta(item) === 'vencida'"
+                    [class.bg-warning/10]="nivelAlerta(item) === 'urgente'"
+                    [class.text-warning]="nivelAlerta(item) === 'urgente'"
+                    [class.bg-primary/10]="nivelAlerta(item) === 'aviso'"
+                    [class.text-primary]="nivelAlerta(item) === 'aviso'">
+                {{ labelDiasRestantes(item) }}
+              </span>
+
+            </a>
+          }
+        </div>
+      </section>
+    }
+
+    <!-- Agenda de inoculaciones -->
+    @if (inoculaciones().length > 0) {
+      <section class="mb-8" aria-labelledby="agenda-heading">
+        <h2 id="agenda-heading" class="text-sm font-medium text-text-muted uppercase tracking-wider mb-3">
+          Inoculaciones esta semana
+        </h2>
+        <div class="space-y-2">
+          @for (item of inoculaciones(); track item.modeloAnimalId) {
+            <a [routerLink]="['/internal/modelos-animales', item.identificador]"
+               class="flex items-center justify-between px-4 py-3 bg-surface border border-border rounded-md hover:border-primary/30 transition-colors">
+              <div>
+                <p class="text-sm font-medium text-text">
+                  {{ item.identificador }}
+                  <span class="text-text-muted font-normal">— {{ item.camadaNombre }} / Pool {{ item.poolCodigo }}</span>
+                </p>
+                <p class="text-xs text-text-muted mt-0.5">Día 1: {{ item.fechaDia1 | date:'dd/MM/yyyy' }}</p>
+              </div>
+              <div class="flex gap-1.5 flex-shrink-0 ml-4">
+                @for (dia of [1,2,3,4]; track dia) {
+                  <span class="inline-flex flex-col items-center gap-0.5">
+                    <span class="text-[10px] text-text-muted">D{{ dia }}</span>
+                    <span class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium"
+                          [class.bg-success/20]="item.diasHechos.includes(dia)"
+                          [class.text-success]="item.diasHechos.includes(dia)"
+                          [class.bg-primary]="item.diasPendientes.includes(dia)"
+                          [class.text-white]="item.diasPendientes.includes(dia)"
+                          [class.bg-background]="!item.diasHechos.includes(dia) && !item.diasPendientes.includes(dia)"
+                          [class.text-text-muted]="!item.diasHechos.includes(dia) && !item.diasPendientes.includes(dia)">
+                      {{ item.diasHechos.includes(dia) ? '✓' : (item.diasPendientes.includes(dia) ? '·' : '–') }}
+                    </span>
+                  </span>
+                }
+              </div>
+            </a>
+          }
+        </div>
+      </section>
+    }
+
+    <!-- Actividad reciente (solo IP) -->
+    @if (actividad().length > 0) {
+      <section aria-labelledby="actividad-heading">
+        <h2 id="actividad-heading" class="text-sm font-medium text-text-muted uppercase tracking-wider mb-3">
+          Actividad reciente
+        </h2>
+        <div class="bg-surface border border-border rounded-lg divide-y divide-border">
+          @for (item of actividad(); track item.fecha + item.tipo) {
+            <div class="flex items-center justify-between px-4 py-3">
+              <div class="flex items-center gap-3 min-w-0">
+                <a [routerLink]="['/internal', item.entityPath, item.identificador]"
+                   class="inline-block px-2 py-0.5 rounded text-xs font-mono font-semibold flex-shrink-0
+                          bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+                  {{ item.identificador }}
+                </a>
+                <span class="text-xs font-mono px-2 py-0.5 rounded bg-background text-text-muted flex-shrink-0">
+                  {{ item.tipo.replace('_', ' ') }}
+                </span>
+                <p class="text-sm text-text truncate">{{ item.descripcion }}</p>
+              </div>
+              <div class="flex items-center gap-4 flex-shrink-0 ml-4">
+                @if (item.nombreProfesional) {
+                  <div class="flex items-center gap-1.5 text-xs text-text-muted">
+                    <span>{{ item.nombreProfesional }}</span>
+                    <span class="font-mono px-1.5 py-0.5 rounded bg-background text-text-muted/70">
+                      {{ rolLabel(item.rol) }}
+                    </span>
+                  </div>
+                }
+                <p class="text-xs text-text-muted">
+                  {{ item.fecha | date:'dd/MM/yyyy HH:mm' }}
+                </p>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    @if (!formulariosPendientes() && inoculaciones().length === 0 && alertas().length === 0 && actividad().length === 0) {
+      <div class="flex flex-col items-center justify-center py-20 text-center">
+        <lucide-angular [img]="CheckCircleIcon" [size]="40" [strokeWidth]="1" class="text-success mb-3" />
+        <p class="text-text font-medium">Todo en orden</p>
+        <p class="text-sm text-text-muted mt-1">No hay pendientes ni alertas para esta semana.</p>
+      </div>
+    }
+
+  }
+
+</div>

@@ -140,6 +140,7 @@ export interface PacienteSegundaVisita {
 
 export interface PacienteConsentimiento {
   consentimientoFirmado: boolean;
+  documentoId?: number;
 }
 
 export interface PacientePrimeraVisita {
@@ -166,6 +167,8 @@ export interface PacienteResponse {
   tipoPaciente: TipoPaciente;
   fechaPrimeraVisita: string | null;
   consentimientoFirmado: boolean;
+  documentoConsentimientoId: number | null;
+  documentoConsentimientoNombre: string | null;
   notas: string | null;
   pacienteEstado: PacienteEstado;
   mchatEstado: MchatEstado;

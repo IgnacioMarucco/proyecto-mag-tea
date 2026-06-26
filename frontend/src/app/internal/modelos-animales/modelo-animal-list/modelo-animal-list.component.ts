@@ -4,7 +4,7 @@ import { BehaviorSubject, catchError, map, of, switchMap } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ModeloAnimalService, ModeloAnimalListParams } from '../../../core/services/modelo-animal.service';
 import { ToastService } from '../../../core/services/toast.service';
-import { ModeloAnimalListItem } from '../../../core/models/modelo-animal.model';
+import { ModeloAnimalListItem, EstadoProtocolo } from '../../../core/models/modelo-animal.model';
 import { ListToolbarComponent, FilterGroup } from '../../../shared/list-toolbar/list-toolbar.component';
 import { ConfirmModalComponent } from '../../../shared/confirm-modal/confirm-modal.component';
 import { DataTableComponent, TableColumn } from '../../../shared/data-table/data-table.component';
@@ -39,7 +39,7 @@ export class ModeloAnimalListComponent {
   );
 
   private readonly params$ = new BehaviorSubject<ModeloAnimalListParams>({
-    page: 0, size: PAGE_SIZE, sortBy: 'fechaNacimiento', sortDir: 'desc',
+    page: 0, size: PAGE_SIZE, sortBy: 'fechaProximoEvento', sortDir: 'asc',
   });
 
   private readonly response = toSignal(
@@ -55,7 +55,7 @@ export class ModeloAnimalListComponent {
   readonly currentPage     = computed(() => this.response()?.page ?? 0);
 
   search          = signal('');
-  sortState       = signal<SortState>({ key: 'fechaNacimiento', direction: 'desc' });
+  sortState       = signal<SortState>({ key: 'fechaProximoEvento', direction: 'asc' });
   activeFilters   = signal<Record<string, string | string[]>>({});
   deleting        = signal<number | null>(null);
   pendingDeleteId = signal<number | null>(null);
@@ -98,14 +98,28 @@ export class ModeloAnimalListComponent {
         { key: 'false', label: 'Todos'                },
       ],
     },
+    {
+      key: 'estado',
+      label: 'Estado',
+      multiSelect: false,
+      options: [
+        { key: 'PENDIENTE_INOCULACION',    label: 'Pendiente inoculación'   },
+        { key: 'INOCULACION_EN_CURSO',     label: 'Inoculación en curso'    },
+        { key: 'PENDIENTE_VOCALIZACIONES', label: 'Pendiente vocalizaciones' },
+        { key: 'PENDIENTE_TRES_CAMARAS',   label: 'Pendiente 3 cámaras'     },
+        { key: 'PENDIENTE_MICROSCOPIA',    label: 'Pendiente microscopía'   },
+        { key: 'COMPLETO',                 label: 'Completo'                },
+      ],
+    },
   ];
 
   readonly columns: TableColumn[] = [
-    { label: 'CÓDIGO',  sortKey: 'fechaNacimiento' },
-    { label: 'CAMADA',  sortKey: 'camadaNombre', hidden: 'sm' },
-    { label: 'TIPO',    hidden: 'sm'             },
-    { label: 'RANGO',   hidden: 'sm'             },
-    { label: 'APORTES', hidden: 'md'             },
+    { label: 'CÓDIGO',          sortKey: 'identificador'      },
+    { label: 'CAMADA',          sortKey: 'camadaNombre', hidden: 'sm' },
+    { label: 'TIPO',            hidden: 'sm'              },
+    { label: 'RANGO',           hidden: 'sm'              },
+    { label: 'ESTADO',          hidden: 'md'              },
+    { label: 'PRÓXIMO EVENTO',  sortKey: 'fechaProximoEvento' },
   ];
 
   readonly rangoColors: Record<string, string> = {
@@ -124,6 +138,24 @@ export class ModeloAnimalListComponent {
   readonly usoLabels: Record<string, string> = {
     PROBLEMA: 'Caso Problema',
     CONTROL:  'Caso Control',
+  };
+
+  readonly estadoColors: Record<EstadoProtocolo, string> = {
+    PENDIENTE_INOCULACION:    'bg-background text-text-muted border border-border',
+    INOCULACION_EN_CURSO:     'bg-blue-50 text-blue-700 border border-blue-200',
+    PENDIENTE_VOCALIZACIONES: 'bg-yellow-50 text-yellow-700 border border-yellow-200',
+    PENDIENTE_TRES_CAMARAS:   'bg-orange-50 text-orange-700 border border-orange-200',
+    PENDIENTE_MICROSCOPIA:    'bg-purple-50 text-purple-700 border border-purple-200',
+    COMPLETO:                 'bg-success/10 text-success border border-success/30',
+  };
+
+  readonly estadoLabels: Record<EstadoProtocolo, string> = {
+    PENDIENTE_INOCULACION:    'Pendiente inoculación',
+    INOCULACION_EN_CURSO:     'Inoculación en curso',
+    PENDIENTE_VOCALIZACIONES: 'Pendiente vocalizaciones',
+    PENDIENTE_TRES_CAMARAS:   'Pendiente 3 cámaras',
+    PENDIENTE_MICROSCOPIA:    'Pendiente microscopía',
+    COMPLETO:                 'Completo',
   };
 
   readonly emptyTitle = computed(() =>
@@ -149,6 +181,7 @@ export class ModeloAnimalListComponent {
     const rangoVal   = filters['rango']       as string | undefined;
     const sexo       = filters['sexo']        as string | undefined;
     const alertasVal = filters['soloAlertas'] as string | undefined;
+    const estadoVal  = filters['estado']      as EstadoProtocolo | undefined;
     this.params$.next({
       ...this.params$.value,
       page:        0,
@@ -156,6 +189,7 @@ export class ModeloAnimalListComponent {
       rango:       rangoVal ? Number(rangoVal) : undefined,
       sexo:        (sexo === 'MACHO' || sexo === 'HEMBRA') ? sexo : undefined,
       soloAlertas: alertasVal === 'true' ? true : undefined,
+      estado:      estadoVal ?? undefined,
     });
   }
 
@@ -169,7 +203,7 @@ export class ModeloAnimalListComponent {
 
   private hasActiveSearch(): boolean {
     const p = this.params$.value;
-    return !!(p.q || p.uso || p.rango != null || p.sexo || p.soloAlertas);
+    return !!(p.q || p.uso || p.rango != null || p.sexo || p.soloAlertas || p.estado);
   }
 
   getActionsFor(ma: ModeloAnimalListItem): RowAction[] {
