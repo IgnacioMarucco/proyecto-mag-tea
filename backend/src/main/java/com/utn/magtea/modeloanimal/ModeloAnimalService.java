@@ -2,6 +2,7 @@ package com.utn.magtea.modeloanimal;
 
 import com.utn.magtea.camada.Camada;
 import com.utn.magtea.camada.CamadaRepository;
+import com.utn.magtea.common.DomainConstants;
 import com.utn.magtea.common.PageResponse;
 import com.utn.magtea.common.SpecificationUtils;
 import com.utn.magtea.suero.SueroUso;
@@ -39,6 +40,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -198,6 +200,8 @@ public class ModeloAnimalService {
         m.setPool(pool);
         m.setCamada(camada);
         m.setSexo(dto.sexo());
+        m.setEstadoProtocolo(calcularEstado(m));
+        m.setFechaProximoEvento(calcularFechaProximoEvento(m));
 
         LocalDate hoy = LocalDate.now(clock);
         ModeloAnimal saved = repository.save(m);
@@ -289,7 +293,16 @@ public class ModeloAnimalService {
     public ModeloAnimalResponseDTO registrarInoculacion(Long id, ModeloAnimalInoculacionDTO dto) {
         ModeloAnimal m = findActiveById(id);
         m.setFechaDia1Inoculacion(dto.fechaDia1Inoculacion());
-        if (dto.aportes() != null) {
+        if (dto.aportes() != null && !dto.aportes().isEmpty()) {
+            // Pasada 0: pre-cargar aportes anteriores por día (para upsert awareness en validación)
+            Map<Integer, ModeloAnimalPoolAporte> prevAportes = new HashMap<>();
+            for (ModeloAnimalPoolAporteInputDTO a : dto.aportes()) {
+                modeloAnimalPoolAporteRepository.findByModeloAnimal_IdAndDia(m.getId(), a.dia())
+                        .ifPresent(prev -> prevAportes.put(a.dia(), prev));
+            }
+
+            // Pasada 1a: cargar tubos y validar tipo + pertenencia al pool (sin escrituras)
+            Map<Long, Tubo> tubosMap = new LinkedHashMap<>();
             for (ModeloAnimalPoolAporteInputDTO a : dto.aportes()) {
                 Tubo tubo = tuboRepository.findById(a.poolTuboId())
                         .orElseThrow(() -> new ResourceNotFoundException("Tubo con id " + a.poolTuboId() + " no existe"));
@@ -301,16 +314,44 @@ public class ModeloAnimalService {
                     throw new BusinessRuleException(
                             "El tubo " + tubo.getPosicion() + " no pertenece al pool de este modelo animal");
                 }
-                // Upsert por día: si ya existe, revertir su volumen del tubo antes de reemplazarlo
-                modeloAnimalPoolAporteRepository.findByModeloAnimal_IdAndDia(m.getId(), a.dia())
-                        .ifPresent(prev -> {
-                            if (prev.getCantidadConsumida() != null) {
-                                Tubo tuboAnterior = prev.getTubo();
-                                tuboAnterior.setCantidadUsada(tuboAnterior.getCantidadUsada().subtract(prev.getCantidadConsumida()));
-                                tuboRepository.save(tuboAnterior);
-                            }
-                            modeloAnimalPoolAporteRepository.delete(prev);
-                        });
+                tubosMap.put(a.poolTuboId(), tubo);
+            }
+
+            // Pasada 1b: validar disponibilidad de volumen antes de escribir nada.
+            // Considera: (i) volumen liberado por upsert del mismo tubo en el mismo día,
+            //            (ii) consumo acumulado de otros aportes del batch sobre el mismo tubo.
+            Map<Long, BigDecimal> netUsage = new HashMap<>();
+            for (ModeloAnimalPoolAporteInputDTO a : dto.aportes()) {
+                if (a.cantidadConsumida() == null) continue;
+                Tubo tubo = tubosMap.get(a.poolTuboId());
+                ModeloAnimalPoolAporte prev = prevAportes.get(a.dia());
+                BigDecimal freed = (prev != null
+                        && prev.getTubo().getId().equals(a.poolTuboId())
+                        && prev.getCantidadConsumida() != null)
+                        ? prev.getCantidadConsumida() : BigDecimal.ZERO;
+                BigDecimal acumuladoBatch = netUsage.getOrDefault(a.poolTuboId(), BigDecimal.ZERO);
+                BigDecimal disponibleEfectivo = tubo.getCantidadRestante().add(freed).subtract(acumuladoBatch);
+                if (a.cantidadConsumida().compareTo(disponibleEfectivo) > 0) {
+                    throw new BusinessRuleException(
+                            "El tubo en posición " + tubo.getPosicion()
+                            + " no tiene suficiente volumen. Disponible: " + disponibleEfectivo
+                            + " mL, solicitado: " + a.cantidadConsumida() + " mL");
+                }
+                netUsage.merge(a.poolTuboId(), a.cantidadConsumida(), BigDecimal::add);
+            }
+
+            // Pasada 2: persistencia (todas las validaciones ya pasaron)
+            for (ModeloAnimalPoolAporteInputDTO a : dto.aportes()) {
+                Tubo tubo = tubosMap.get(a.poolTuboId());
+                ModeloAnimalPoolAporte prev = prevAportes.get(a.dia());
+                if (prev != null) {
+                    if (prev.getCantidadConsumida() != null) {
+                        Tubo tuboAnterior = prev.getTubo();
+                        tuboAnterior.setCantidadUsada(tuboAnterior.getCantidadUsada().subtract(prev.getCantidadConsumida()));
+                        tuboRepository.save(tuboAnterior);
+                    }
+                    modeloAnimalPoolAporteRepository.delete(prev);
+                }
                 ModeloAnimalPoolAporte aporte = new ModeloAnimalPoolAporte();
                 aporte.setModeloAnimal(m);
                 aporte.setTubo(tubo);
@@ -318,12 +359,6 @@ public class ModeloAnimalService {
                 aporte.setDia(a.dia());
                 modeloAnimalPoolAporteRepository.save(aporte);
                 if (a.cantidadConsumida() != null) {
-                    if (a.cantidadConsumida().compareTo(tubo.getCantidadRestante()) > 0) {
-                        throw new BusinessRuleException(
-                                "El tubo en posición " + tubo.getPosicion()
-                                + " no tiene suficiente volumen. Disponible: " + tubo.getCantidadRestante()
-                                + " mL, solicitado: " + a.cantidadConsumida() + " mL");
-                    }
                     tubo.setCantidadUsada(tubo.getCantidadUsada().add(a.cantidadConsumida()));
                     if (tubo.getCantidadRestante().compareTo(BigDecimal.ZERO) == 0) {
                         tubo.setPosicion(null);
@@ -332,19 +367,19 @@ public class ModeloAnimalService {
                 }
             }
         }
-        repository.save(m);
+        // H-09: m ya tiene fechaDia1Inoculacion seteada y calcularEstado no depende de aportes;
+        // eliminar el save + findById redundantes que existían previamente.
+        m.setEstadoProtocolo(calcularEstado(m));
+        m.setFechaProximoEvento(calcularFechaProximoEvento(m));
+        ModeloAnimal saved = repository.save(m);
         LocalDate hoy = LocalDate.now(clock);
-        ModeloAnimal refreshed = repository.findById(m.getId()).orElseThrow();
-        refreshed.setEstadoProtocolo(calcularEstado(refreshed));
-        refreshed.setFechaProximoEvento(calcularFechaProximoEvento(refreshed));
-        repository.save(refreshed);
-        VocalizacionesDTO vusDTO = refreshed.getVocalizaciones() != null
-                ? mapper.toVocalizacionesDTO(refreshed.getVocalizaciones()) : null;
-        TresCamarasDTO tcDTO = refreshed.getTresCamaras() != null
-                ? mapper.toTresCamarasDTO(refreshed.getTresCamaras()) : null;
-        return mapper.toDTO(refreshed,
-                calcularNecesitaVocalizaciones(refreshed, hoy),
-                calcularNecesitaTresCamaras(refreshed, hoy),
+        VocalizacionesDTO vusDTO = saved.getVocalizaciones() != null
+                ? mapper.toVocalizacionesDTO(saved.getVocalizaciones()) : null;
+        TresCamarasDTO tcDTO = saved.getTresCamaras() != null
+                ? mapper.toTresCamarasDTO(saved.getTresCamaras()) : null;
+        return mapper.toDTO(saved,
+                calcularNecesitaVocalizaciones(saved, hoy),
+                calcularNecesitaTresCamaras(saved, hoy),
                 vusDTO, tcDTO);
     }
 
@@ -495,9 +530,9 @@ public class ModeloAnimalService {
         LocalDate fn = m.getCamada() != null ? m.getCamada().getFechaNacimiento() : null;
         return switch (calcularEstado(m)) {
             case INOCULACION_EN_CURSO     -> m.getFechaDia1Inoculacion().plusDays(m.getAportes().size());
-            case PENDIENTE_VOCALIZACIONES -> fn != null ? fn.plusDays(5)  : null;
-            case PENDIENTE_TRES_CAMARAS   -> fn != null ? fn.plusDays(19) : null;
-            case PENDIENTE_MICROSCOPIA    -> fn != null ? fn.plusDays(19) : null;
+            case PENDIENTE_VOCALIZACIONES -> fn != null ? fn.plusDays(DomainConstants.DIA_VOCALIZACIONES) : null;
+            case PENDIENTE_TRES_CAMARAS   -> fn != null ? fn.plusDays(DomainConstants.DIA_TRES_CAMARAS)   : null;
+            case PENDIENTE_MICROSCOPIA    -> fn != null ? fn.plusDays(DomainConstants.DIA_TRES_CAMARAS)   : null;
             default                       -> null;
         };
     }
@@ -506,14 +541,14 @@ public class ModeloAnimalService {
         LocalDate fn = m.getCamada() != null ? m.getCamada().getFechaNacimiento() : null;
         return m.getVocalizaciones() == null
                 && fn != null
-                && fn.plusDays(5).equals(hoy);
+                && !fn.plusDays(DomainConstants.DIA_VOCALIZACIONES - DomainConstants.VENTANA_ALERTA_DIAS).isAfter(hoy);
     }
 
     private boolean calcularNecesitaTresCamaras(ModeloAnimal m, LocalDate hoy) {
         LocalDate fn = m.getCamada() != null ? m.getCamada().getFechaNacimiento() : null;
         return m.getTresCamaras() == null
                 && fn != null
-                && fn.plusDays(19).equals(hoy);
+                && !fn.plusDays(DomainConstants.DIA_TRES_CAMARAS - DomainConstants.VENTANA_ALERTA_DIAS).isAfter(hoy);
     }
 
     private Specification<ModeloAnimal> buildSpec(String q, Long poolId, SexoRaton sexo, SueroUso uso, Integer rango, EstadoProtocolo estado) {

@@ -7,7 +7,6 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @Mapper(componentModel = "spring", uses = {MapperHelper.class})
@@ -27,16 +26,15 @@ public interface SueroMapper {
     @Mapping(target = "cajaNumero",     source = "caja.numero")
     @Mapping(target = "cantidadTotal",    source = "tubos", qualifiedByName = "sumCantidadInicial")
     @Mapping(target = "cantidadRestante", source = "tubos", qualifiedByName = "sumCantidadRestante")
-    @Mapping(target = "tubos",            source = "tubos", qualifiedByName = "toActiveTuboList")
+    @Mapping(target = "tubos", source = "tubos", qualifiedByName = "toTuboList")
     SueroResponseDTO toDTO(Suero suero);
 
     TuboDTO toTuboDTO(Tubo tubo);
 
-    @Named("toActiveTuboList")
-    default List<TuboDTO> toActiveTuboList(List<Tubo> tubos) {
+    @Named("toTuboList")
+    default List<TuboDTO> toTuboList(List<Tubo> tubos) {
         if (tubos == null) return List.of();
         return tubos.stream()
-                .filter(t -> t.getCantidadRestante().compareTo(BigDecimal.ZERO) > 0)
                 .map(this::toTuboDTO)
                 .toList();
     }

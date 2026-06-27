@@ -184,8 +184,9 @@ public class PacienteService {
         paciente.setFechaNacimientoNino(dto.fechaNacimientoNino());
         paciente.setSexo(dto.sexo());
         paciente.setNotas(dto.notas());
-        if (dto.fechaPrimeraVisita() != null) paciente.setFechaPrimeraVisita(dto.fechaPrimeraVisita());
+        if (dto.fechaPrimeraVisita() != null)   paciente.setFechaPrimeraVisita(dto.fechaPrimeraVisita());
         if (dto.fechaTurnoExtraccion() != null) paciente.setFechaTurnoExtraccion(dto.fechaTurnoExtraccion());
+        paciente.setEstadoClinico(calcularEstado(paciente));
         Paciente saved = repository.save(paciente);
         return mapper.toDTO(saved, calcularMchatEstado(saved));
     }
@@ -300,19 +301,11 @@ public class PacienteService {
     @Transactional
     public void delete(String codigo) {
         Paciente paciente = findActiveByCodigo(codigo);
-        Optional<Suero> sueroOpt = sueroRepository.findByPacienteCodigoNumericoAndActivoTrue(codigo);
-        if (sueroOpt.isPresent()) {
-            Suero suero = sueroOpt.get();
-            boolean tieneAportesActivos = suero.getTubos().stream()
-                    .anyMatch(t -> poolSueroAporteRepository.existsByTuboIdAndPool_ActivoTrue(t.getId()));
-            if (tieneAportesActivos) {
-                throw new BusinessRuleException(
-                        "El paciente tiene un suero con aportes en pools activos. Dé de baja los pools primero.");
-            }
+        sueroRepository.findByPacienteCodigoNumericoAndActivoTrue(codigo).ifPresent(suero -> {
             suero.getTubos().forEach(t -> { t.setPosicion(null); tuboRepository.save(t); });
             suero.setActivo(false);
             sueroRepository.save(suero);
-        }
+        });
         paciente.setMchatToken(null);
         paciente.setMchatTokenExpiry(null);
         paciente.setActivo(false);
@@ -352,6 +345,9 @@ public class PacienteService {
     void onSueroRegistrado(PacienteEvents.SueroRegistradoEvent event) {
         log.debug("Evento {} para paciente {}", "SueroRegistradoEvent", event.pacienteId());
         Paciente p = findActiveById(event.pacienteId());
+        // Set directo intencional: calcularEstado() no tiene acceso al Suero (relación inversa),
+        // por lo que este evento es la única fuente de verdad para la transición a EXTRACCION_REALIZADA.
+        // Si se agrega una condición previa a este estado, actualizar también este listener.
         p.setEstadoClinico(PacienteEstado.EXTRACCION_REALIZADA);
         repository.save(p);
     }
@@ -360,6 +356,8 @@ public class PacienteService {
     void onSueroEliminado(PacienteEvents.SueroEliminadoEvent event) {
         log.debug("Evento {} para paciente {}", "SueroEliminadoEvent", event.pacienteId());
         Paciente p = findActiveById(event.pacienteId());
+        // Set directo intencional: igual que onSueroRegistrado, calcularEstado() no tiene
+        // acceso al Suero, por lo que no puede determinar si la extracción fue realizada.
         p.setEstadoClinico(PacienteEstado.EXTRACCION_PENDIENTE);
         repository.save(p);
     }

@@ -1,5 +1,6 @@
 package com.utn.magtea.storage;
 
+import com.utn.magtea.common.exception.BusinessRuleException;
 import com.utn.magtea.common.exception.ResourceNotFoundException;
 import io.minio.BucketExistsArgs;
 import io.minio.GetPresignedObjectUrlArgs;
@@ -15,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -25,6 +27,9 @@ public class StorageService {
 
     public static final String BUCKET_CONSENTIMIENTOS = "consentimientos";
     public static final String BUCKET_MICROSCOPIA = "microscopia";
+
+    private static final Set<String> BUCKETS_PERMITIDOS =
+            Set.of(BUCKET_CONSENTIMIENTOS, BUCKET_MICROSCOPIA);
 
     private final MinioClient minioClient;
 
@@ -49,6 +54,10 @@ public class StorageService {
 
     @Transactional
     public PresignedUploadResponseDTO generarPresignedUpload(PresignedUploadRequestDTO request) {
+        if (!BUCKETS_PERMITIDOS.contains(request.bucket())) {
+            throw new BusinessRuleException(
+                    "Bucket no permitido. Valores aceptados: " + BUCKETS_PERMITIDOS);
+        }
         String safeFilename = request.nombreOriginal().replaceAll("[^a-zA-Z0-9._-]", "_");
         String clave = UUID.randomUUID() + "/" + safeFilename;
 

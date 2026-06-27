@@ -76,4 +76,8 @@ public interface PacienteRepository extends JpaRepository<Paciente, Long>, JpaSp
         WHERE p.activo = true
     """)
     List<Paciente> findAllForExport();
+
+    List<Paciente> findTop3ByActivoTrueOrderByCreatedAtDesc();
+
+    List<Paciente> findTop3ByActivoTrueAndEstadoClinicoOrderByUpdatedAtDesc(PacienteEstado estadoClinico);
 }

@@ -1,10 +1,12 @@
 package com.utn.magtea.inicio;
 
+import com.utn.magtea.common.DomainConstants;
 import com.utn.magtea.formulariointeres.EstadoFormulario;
 import com.utn.magtea.formulariointeres.FormularioInteresRepository;
 import com.utn.magtea.modeloanimal.ModeloAnimal;
 import com.utn.magtea.modeloanimal.ModeloAnimalPoolAporteRepository;
 import com.utn.magtea.modeloanimal.ModeloAnimalRepository;
+import com.utn.magtea.paciente.PacienteEstado;
 import com.utn.magtea.paciente.PacienteRepository;
 import com.utn.magtea.pool.PoolRepository;
 import com.utn.magtea.profesional.Profesional;
@@ -32,12 +34,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class InicioService {
 
-    private static final DayOfWeek INICIO_SEMANA    = DayOfWeek.SUNDAY;
-    private static final int DIAS_INOCULACION       = 4;
-    private static final int DIA_VOCALIZACIONES     = 7;
-    private static final int DIA_TRES_CAMARAS       = 21;
-    private static final int VENTANA_ALERTA_DIAS    = 2;
-    private static final int MAX_ACTIVIDAD          = 7;
+    private static final DayOfWeek INICIO_SEMANA = DayOfWeek.SUNDAY;
+    private static final int DIAS_INOCULACION    = 4;
+    private static final int MAX_ACTIVIDAD       = 7;
 
     private static final Set<String> ROLES_CLINICOS = Set.of("CUERPO_MEDICO", "INVESTIGADOR_PRINCIPAL");
     private static final Set<String> ROLES_TECNICOS = Set.of("CUERPO_TECNICO", "INVESTIGADOR_PRINCIPAL");
@@ -74,7 +73,7 @@ public class InicioService {
 
     private List<AgendaEventoDTO> buildAgendaSemana(String role, LocalDate hoy) {
         LocalDate inicioSemana = hoy.with(TemporalAdjusters.previousOrSame(INICIO_SEMANA));
-        LocalDate finSemana    = inicioSemana.plusDays(6);
+        LocalDate finSemana    = inicioSemana.plusDays(13);
 
         List<AgendaEventoDTO> eventos = new ArrayList<>();
 
@@ -118,22 +117,22 @@ public class InicioService {
 
             // Vocalizaciones: animales cuyo día 7 cae en la semana y aún no se registró
             modeloAnimalRepo.findByCamadaFechaNacimientoBetween(
-                            inicioSemana.minusDays(DIA_VOCALIZACIONES),
-                            finSemana.minusDays(DIA_VOCALIZACIONES))
+                            inicioSemana.minusDays(DomainConstants.DIA_VOCALIZACIONES),
+                            finSemana.minusDays(DomainConstants.DIA_VOCALIZACIONES))
                     .stream()
                     .filter(ma -> ma.getVocalizaciones() == null)
                     .forEach(ma -> eventos.add(new AgendaEventoDTO(
-                            ma.getCamada().getFechaNacimiento().plusDays(DIA_VOCALIZACIONES),
+                            ma.getCamada().getFechaNacimiento().plusDays(DomainConstants.DIA_VOCALIZACIONES),
                             "VOCALIZACIONES", ma.getIdentificador(), ma.getId(), "modelos-animales")));
 
             // Tres cámaras + Microscopía: animales cuyo día 21 cae en la semana y aún no se registró
             modeloAnimalRepo.findByCamadaFechaNacimientoBetween(
-                            inicioSemana.minusDays(DIA_TRES_CAMARAS),
-                            finSemana.minusDays(DIA_TRES_CAMARAS))
+                            inicioSemana.minusDays(DomainConstants.DIA_TRES_CAMARAS),
+                            finSemana.minusDays(DomainConstants.DIA_TRES_CAMARAS))
                     .stream()
                     .filter(ma -> ma.getTresCamaras() == null)
                     .forEach(ma -> {
-                        LocalDate fechaTest = ma.getCamada().getFechaNacimiento().plusDays(DIA_TRES_CAMARAS);
+                        LocalDate fechaTest = ma.getCamada().getFechaNacimiento().plusDays(DomainConstants.DIA_TRES_CAMARAS);
                         eventos.add(new AgendaEventoDTO(fechaTest, "TRES_CAMARAS",
                                 ma.getIdentificador(), ma.getId(), "modelos-animales"));
                         eventos.add(new AgendaEventoDTO(fechaTest, "MICROSCOPIA",
@@ -182,8 +181,8 @@ public class InicioService {
     // ── Alertas conductuales ────────────────────────────────────────────────────
 
     private List<AlertaConductualItemDTO> buildAlertasConductuales(LocalDate hoy) {
-        LocalDate umbralVocalizaciones = hoy.minusDays(DIA_VOCALIZACIONES - VENTANA_ALERTA_DIAS);
-        LocalDate umbralTresCamaras    = hoy.minusDays(DIA_TRES_CAMARAS - VENTANA_ALERTA_DIAS);
+        LocalDate umbralVocalizaciones = hoy.minusDays(DomainConstants.DIA_VOCALIZACIONES - DomainConstants.VENTANA_ALERTA_DIAS);
+        LocalDate umbralTresCamaras    = hoy.minusDays(DomainConstants.DIA_TRES_CAMARAS - DomainConstants.VENTANA_ALERTA_DIAS);
 
         List<AlertaConductualItemDTO> alertas = new ArrayList<>();
 
@@ -192,7 +191,7 @@ public class InicioService {
                     LocalDate fn = ma.getCamada().getFechaNacimiento();
 
                     if (ma.getVocalizaciones() == null && !fn.isAfter(umbralVocalizaciones)) {
-                        LocalDate fechaTest = fn.plusDays(DIA_VOCALIZACIONES);
+                        LocalDate fechaTest = fn.plusDays(DomainConstants.DIA_VOCALIZACIONES);
                         alertas.add(new AlertaConductualItemDTO(
                                 ma.getId(), ma.getIdentificador(), ma.getCamada().getNombre(),
                                 "VOCALIZACIONES", fechaTest,
@@ -200,7 +199,7 @@ public class InicioService {
                     }
 
                     if (ma.getTresCamaras() == null && !fn.isAfter(umbralTresCamaras)) {
-                        LocalDate fechaTest = fn.plusDays(DIA_TRES_CAMARAS);
+                        LocalDate fechaTest = fn.plusDays(DomainConstants.DIA_TRES_CAMARAS);
                         alertas.add(new AlertaConductualItemDTO(
                                 ma.getId(), ma.getIdentificador(), ma.getCamada().getNombre(),
                                 "TRES_CAMARAS", fechaTest,
@@ -224,6 +223,20 @@ public class InicioService {
 
     private List<ActividadRecienteItemDTO> buildActividadReciente() {
         List<ActividadRaw> raws = new ArrayList<>();
+
+        pacienteRepo.findTop3ByActivoTrueOrderByCreatedAtDesc().forEach(p ->
+                raws.add(new ActividadRaw("PACIENTE", "admitido",
+                        p.getCreatedAt(), p.getId(), p.getCodigoNumerico(), "pacientes", p.getCreatedBy())));
+
+        pacienteRepo.findTop3ByActivoTrueAndEstadoClinicoOrderByUpdatedAtDesc(
+                        PacienteEstado.MCHAT_RESPONDIDO).forEach(p ->
+                raws.add(new ActividadRaw("MCHAT", "M-CHAT recibido",
+                        p.getUpdatedAt(), p.getId(), p.getCodigoNumerico(), "pacientes", null)));
+
+        pacienteRepo.findTop3ByActivoTrueAndEstadoClinicoOrderByUpdatedAtDesc(
+                        PacienteEstado.EXTRACCION_PENDIENTE).forEach(p ->
+                raws.add(new ActividadRaw("PACIENTE", "extracción pendiente",
+                        p.getUpdatedAt(), p.getId(), p.getCodigoNumerico(), "pacientes", p.getLastModifiedBy())));
 
         sueroRepo.findTop3ByActivoTrueOrderByCreatedAtDesc().forEach(s ->
                 raws.add(new ActividadRaw("SUERO",

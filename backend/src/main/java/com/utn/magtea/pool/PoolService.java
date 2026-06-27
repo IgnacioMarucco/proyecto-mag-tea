@@ -7,6 +7,7 @@ import com.utn.magtea.common.PageResponse;
 import com.utn.magtea.common.SpecificationUtils;
 import com.utn.magtea.common.exception.BusinessRuleException;
 import com.utn.magtea.common.exception.ResourceNotFoundException;
+import com.utn.magtea.modeloanimal.EstadoProtocolo;
 import com.utn.magtea.modeloanimal.ModeloAnimal;
 import com.utn.magtea.suero.SueroUso;
 import com.utn.magtea.tubo.Tubo;
@@ -263,10 +264,11 @@ public class PoolService {
     public void delete(Long id) {
         Pool pool = findActiveById(id);
         long modelosActivos = pool.getModelosAnimales().stream()
-                .filter(ModeloAnimal::isActivo).count();
+                .filter(m -> m.isActivo() && m.getEstadoProtocolo() != EstadoProtocolo.COMPLETO)
+                .count();
         if (modelosActivos > 0)
             throw new BusinessRuleException(
-                    "El pool tiene " + modelosActivos + " modelo(s) animal(es) activo(s) y no puede darse de baja");
+                    "El pool tiene " + modelosActivos + " modelo(s) animal(es) en curso y no puede darse de baja");
         for (Tubo tubo : pool.getTubos()) {
             tubo.setPosicion(null);
             tuboRepository.save(tubo);
