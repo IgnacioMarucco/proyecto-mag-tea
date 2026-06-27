@@ -6,16 +6,21 @@
 
   <button #triggerBtn type="button" (click)="togglePanel($event)"
     class="flex items-center justify-center w-8 h-8 rounded-md text-text-muted hover:text-text hover:bg-background transition-colors cursor-pointer"
-    aria-label="Acciones">
+    aria-label="Acciones"
+    aria-haspopup="menu"
+    [attr.aria-expanded]="panelOpen()">
     <app-icon name="ellipsis-vertical" class="w-5 h-5" />
   </button>
 
   @if (panelOpen()) {
     <div class="fixed z-50 bg-surface border border-border rounded-lg shadow-md min-w-36 py-1"
+      role="menu"
+      aria-label="Acciones"
       [style.top.px]="panelPosition().top"
       [style.right.px]="panelPosition().right">
       @for (action of visibleActions(); track action.label) {
         <button #actionItem type="button"
+          role="menuitem"
           [disabled]="action.disabled"
           (click)="execute(action)"
           class="w-full text-left px-3 py-2 text-sm transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"

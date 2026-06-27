@@ -1,7 +1,6 @@
 import {
   ChangeDetectionStrategy, Component, computed, inject, signal,
 } from '@angular/core';
-import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { catchError, of } from 'rxjs';
@@ -10,10 +9,11 @@ import { LucideAngularModule, AlertTriangle, CheckCircle, Activity, Inbox } from
 import { InicioService } from '../../core/services/inicio.service';
 import { AgendaEvento, AlertaConductualItem } from '../../core/models/inicio.model';
 import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
+import { FechaPipe } from '../../core/pipes/fecha.pipe';
 
 @Component({
   selector: 'app-inicio',
-  imports: [RouterLink, DatePipe, LucideAngularModule, PageHeaderComponent],
+  imports: [RouterLink, FechaPipe, LucideAngularModule, PageHeaderComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './inicio.component.html',
 })
@@ -66,13 +66,16 @@ export class InicioComponent {
     MICROSCOPIA:    'Microscopía',
   };
 
-  readonly semana = computed(() => {
+  readonly semanaActual  = this.generarDias(0);
+  readonly semanaProxima = this.generarDias(7);
+
+  private generarDias(offsetDias: number) {
     const hoy = new Date();
     const toIso = (d: Date) =>
       `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     const todayIso = toIso(hoy);
     const domingo = new Date(hoy);
-    domingo.setDate(hoy.getDate() - hoy.getDay());
+    domingo.setDate(hoy.getDate() - hoy.getDay() + offsetDias);
     return Array.from({ length: 7 }, (_, i) => {
       const d = new Date(domingo);
       d.setDate(domingo.getDate() + i);
@@ -84,7 +87,7 @@ export class InicioComponent {
         isToday: iso === todayIso,
       };
     });
-  });
+  }
 
   private readonly agendaMap = computed(() => {
     const map = new Map<string, AgendaEvento[]>();

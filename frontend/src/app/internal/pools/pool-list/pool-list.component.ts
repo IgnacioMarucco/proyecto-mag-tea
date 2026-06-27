@@ -20,6 +20,7 @@ import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-hea
 import { FechaPipe } from '../../../core/pipes/fecha.pipe';
 import { MlPipe } from '../../../core/pipes/ml.pipe';
 import { VolumeBarComponent } from '../../../shared/volume-bar/volume-bar.component';
+import { RANGO_COLORS, RANGO_LABELS, USO_COLORS, USO_LABELS } from '../../../shared/utils/btu.utils';
 
 const PAGE_SIZE = 20;
 
@@ -122,20 +123,10 @@ export class PoolListComponent {
     { label: 'RATONES', hidden: 'sm', align: 'center'            },
   ];
 
-  readonly rangoColors: Record<string, string> = {
-    '0': 'badge-rango0', '1': 'badge-rango1', '2': 'badge-rango2', '3': 'badge-rango3',
-  };
-  readonly rangoLabels: Record<string, string> = {
-    '0': 'Rango 0', '1': 'Rango 1', '2': 'Rango 2', '3': 'Rango 3',
-  };
-
-  readonly usoColors: Record<string, string> = {
-    'CONTROL':  'bg-background text-text-muted border border-border',
-    'PROBLEMA': 'bg-primary-light text-primary',
-  };
-  readonly usoLabels: Record<string, string> = {
-    'CONTROL': 'Caso Control', 'PROBLEMA': 'Caso Problema',
-  };
+  readonly rangoColors = RANGO_COLORS;
+  readonly rangoLabels = RANGO_LABELS;
+  readonly usoColors   = USO_COLORS;
+  readonly usoLabels   = USO_LABELS;
 
   readonly canCreateRaton = computed(() => {
     const usos   = this.activeFilters()['uso']   as string[] | undefined;

@@ -5,6 +5,7 @@ import { ModeloAnimalResponse } from '../../../../core/models/modelo-animal.mode
 import { extractErrorMessage } from '../../../../shared/utils/error.utils';
 import { ToastService } from '../../../../core/services/toast.service';
 import { StatusBadgeComponent } from '../../../../shared/status-badge/status-badge.component';
+import { BANDA_COLORS, BANDA_LABELS } from '../../../../shared/utils/modelo-animal.utils';
 
 @Component({
   selector: 'app-vocalizaciones-section',
@@ -28,13 +29,8 @@ export class VocalizacionesSectionComponent {
     muestra2Khz: [null as number | null, [Validators.required, Validators.min(0)]],
   });
 
-  readonly bandaColors: Record<string, string> = {
-    AVERSIVA:  'bg-warning/10 text-warning',
-    APETITIVA: 'bg-accent-light text-accent',
-  };
-  readonly bandaLabels: Record<string, string> = {
-    AVERSIVA: 'Aversiva', APETITIVA: 'Apetitiva',
-  };
+  readonly bandaColors = BANDA_COLORS;
+  readonly bandaLabels = BANDA_LABELS;
 
   save(): void {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }

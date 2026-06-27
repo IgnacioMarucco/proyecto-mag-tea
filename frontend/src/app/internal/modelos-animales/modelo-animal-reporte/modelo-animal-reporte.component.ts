@@ -6,6 +6,8 @@ import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { ModeloAnimalService } from '../../../core/services/modelo-animal.service';
 import { CarsItemsResponse, ModeloAnimalReporte } from '../../../core/models/modelo-animal.model';
 import { FechaPipe } from '../../../core/pipes/fecha.pipe';
+import { USO_LABELS } from '../../../shared/utils/btu.utils';
+import { BANDA_LABELS, SEXO_LABELS, SOCIALIZACION_LABELS } from '../../../shared/utils/modelo-animal.utils';
 
 @Component({
   selector: 'app-modelo-animal-reporte',
@@ -73,21 +75,13 @@ export class ModeloAnimalReporteComponent {
     day: '2-digit', month: '2-digit', year: 'numeric',
   });
 
-  readonly usoLabels: Record<string, string> = {
-    PROBLEMA: 'Caso Problema', CONTROL: 'Caso Control',
-  };
-  readonly sexoLabels: Record<string, string> = {
-    MACHO: 'Macho', HEMBRA: 'Hembra',
-  };
+  readonly usoLabels = USO_LABELS;
+  readonly sexoLabels = SEXO_LABELS;
   readonly tipoLabels: Record<string, string> = {
     CONTROL: 'Control', PROBLEMA: 'Caso problema',
   };
-  readonly bandaLabels: Record<string, string> = {
-    AVERSIVA: 'Aversiva', APETITIVA: 'Apetitiva',
-  };
-  readonly socializacionLabels: Record<string, string> = {
-    NORMAL: 'Normal', FALTA_SOCIALIZACION: 'Falta socialización',
-  };
+  readonly bandaLabels        = BANDA_LABELS;
+  readonly socializacionLabels = SOCIALIZACION_LABELS;
   readonly mchatRiesgoLabels: Record<string, string> = {
     BAJO_RIESGO: 'Bajo riesgo', MEDIANO_RIESGO: 'Riesgo mediano', ALTO_RIESGO: 'Alto riesgo',
   };

@@ -38,6 +38,8 @@
         <!-- Botón -->
         <button #triggerBtn type="button" (click)="togglePanel()"
           class="relative flex items-center gap-2 px-3 py-2 text-sm border rounded-md transition-colors cursor-pointer"
+          aria-haspopup="true"
+          [attr.aria-expanded]="panelOpen()"
           [class]="activeCount() > 0
             ? 'border-primary text-primary bg-primary-light'
             : 'border-border text-text-muted hover:text-text hover:border-text-muted bg-surface'">

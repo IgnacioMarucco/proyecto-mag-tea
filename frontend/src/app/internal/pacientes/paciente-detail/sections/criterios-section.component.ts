@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, inject, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { startWith } from 'rxjs';
@@ -51,9 +51,9 @@ export class CriteriosSectionComponent {
     return !!((this.formValue() as Record<string, unknown>)[key]);
   }
 
-  readonly criteriosEstado = () => this.paciente().criteriosRegistrados
-    ? this.paciente().criteriosAptitud
-    : null;
+  readonly criteriosEstado = computed(() =>
+    this.paciente().criteriosRegistrados ? this.paciente().criteriosAptitud : null
+  );
 
   readonly estadoLabels: Record<string, string> = {
     APTO: 'Apto para el protocolo', EXCLUIDO: 'Excluido del protocolo', INCOMPLETO: 'Criterios incompletos',

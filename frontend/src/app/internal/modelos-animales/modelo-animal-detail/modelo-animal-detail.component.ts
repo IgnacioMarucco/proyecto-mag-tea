@@ -14,6 +14,7 @@ import { TresCamarasSectionComponent } from './sections/tres-camaras-section.com
 import { MicroscopiaSectionComponent } from './sections/microscopia-section.component';
 import { InoculacionSectionComponent } from './sections/inoculacion-section.component';
 import { CopyBadgeComponent } from '../../../shared/copy-badge/copy-badge.component';
+import { RANGO_COLORS, RANGO_LABELS, USO_COLORS, USO_LABELS } from '../../../shared/utils/btu.utils';
 
 @Component({
   selector: 'app-modelo-animal-detail',
@@ -49,23 +50,10 @@ export class ModeloAnimalDetailComponent {
     return [...base.slice(0, -1), { label: ma.identificador }];
   });
 
-  readonly rangoColors: Record<string, string> = {
-    '1': 'badge-rango1',
-    '2': 'badge-rango2',
-    '3': 'badge-rango3',
-  };
-  readonly rangoLabels: Record<string, string> = {
-    '1': 'Rango 1', '2': 'Rango 2', '3': 'Rango 3',
-  };
-
-  readonly usoColors: Record<string, string> = {
-    PROBLEMA: 'bg-primary-light text-primary',
-    CONTROL:  'bg-background text-text-muted border border-border',
-  };
-  readonly usoLabels: Record<string, string> = {
-    PROBLEMA: 'Caso Problema',
-    CONTROL:  'Caso Control',
-  };
+  readonly rangoColors = RANGO_COLORS;
+  readonly rangoLabels = RANGO_LABELS;
+  readonly usoColors   = USO_COLORS;
+  readonly usoLabels   = USO_LABELS;
 
   constructor() {
     toObservable(this.identificador).pipe(

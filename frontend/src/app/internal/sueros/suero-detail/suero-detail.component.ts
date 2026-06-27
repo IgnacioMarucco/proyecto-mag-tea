@@ -17,6 +17,7 @@ import { CopyBadgeComponent } from '../../../shared/copy-badge/copy-badge.compon
 import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 import { FechaPipe } from '../../../core/pipes/fecha.pipe';
 import { MlPipe } from '../../../core/pipes/ml.pipe';
+import { RANGO_COLORS, RANGO_LABELS, USO_COLORS, USO_LABELS } from '../../../shared/utils/btu.utils';
 
 @Component({
   selector: 'app-suero-detail',
@@ -35,19 +36,10 @@ export class SueroDetailComponent {
   loading   = signal(true);
   loadError = signal<string | null>(null);
 
-  readonly rangoLabels: Record<string, string> = {
-    '0': 'Rango 0', '1': 'Rango 1', '2': 'Rango 2', '3': 'Rango 3',
-  };
-  readonly rangoColors: Record<string, string> = {
-    '0': 'badge-rango0', '1': 'badge-rango1', '2': 'badge-rango2', '3': 'badge-rango3',
-  };
-  readonly usoLabels: Record<string, string> = {
-    'CONTROL': 'Caso Control', 'PROBLEMA': 'Caso Problema',
-  };
-  readonly usoColors: Record<string, string> = {
-    'CONTROL': 'bg-background text-text-muted border border-border',
-    'PROBLEMA': 'bg-primary-light text-primary',
-  };
+  readonly rangoLabels = RANGO_LABELS;
+  readonly rangoColors = RANGO_COLORS;
+  readonly usoLabels   = USO_LABELS;
+  readonly usoColors   = USO_COLORS;
 
   readonly crumbs = computed<Crumb[]>(() => {
     const base: Crumb[] = this.route.snapshot.data['crumbs'] ?? [];

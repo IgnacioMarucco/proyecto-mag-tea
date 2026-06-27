@@ -23,6 +23,7 @@ import { IconComponent } from '../../../shared/icon/icon.component';
 import { StatusBadgeComponent } from '../../../shared/status-badge/status-badge.component';
 import { MlPipe } from '../../../core/pipes/ml.pipe';
 import { SueroUso } from '../../../core/models/suero.model';
+import { RANGO_COLORS, RANGO_LABELS, USO_COLORS, USO_LABELS } from '../../../shared/utils/btu.utils';
 
 @Component({
   selector: 'app-modelo-animal-form',
@@ -67,19 +68,10 @@ export class ModeloAnimalFormComponent {
     );
   });
 
-  readonly rangoColors: Record<string, string> = {
-    '0': 'badge-rango0', '1': 'badge-rango1', '2': 'badge-rango2', '3': 'badge-rango3',
-  };
-  readonly rangoLabels: Record<string, string> = {
-    '0': 'Rango 0', '1': 'Rango 1', '2': 'Rango 2', '3': 'Rango 3',
-  };
-  readonly usoColors: Record<string, string> = {
-    'CONTROL':  'bg-background text-text-muted border border-border',
-    'PROBLEMA': 'bg-primary-light text-primary',
-  };
-  readonly usoLabels: Record<string, string> = {
-    'CONTROL': 'Caso Control', 'PROBLEMA': 'Caso Problema',
-  };
+  readonly rangoColors = RANGO_COLORS;
+  readonly rangoLabels = RANGO_LABELS;
+  readonly usoColors   = USO_COLORS;
+  readonly usoLabels   = USO_LABELS;
 
   showCamadaModal    = signal(false);
   camadaModalLoading = signal(false);

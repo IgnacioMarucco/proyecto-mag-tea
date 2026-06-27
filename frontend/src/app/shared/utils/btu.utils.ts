@@ -14,3 +14,18 @@ export function getBtuColor(btu: number | null): string {
   if (btu == null || btu < 0) return '';
   return BTU_RANGOS.find(r => btu <= r.max)?.css ?? 'badge-rango3';
 }
+
+export const RANGO_LABELS: Record<string, string> = Object.fromEntries(
+  BTU_RANGOS.map((r, i) => [String(i), r.label])
+);
+export const RANGO_COLORS: Record<string, string> = Object.fromEntries(
+  BTU_RANGOS.map((r, i) => [String(i), r.css])
+);
+export const USO_LABELS: Record<string, string> = {
+  CONTROL:  'Caso Control',
+  PROBLEMA: 'Caso Problema',
+};
+export const USO_COLORS: Record<string, string> = {
+  CONTROL:  'bg-background text-text-muted border border-border',
+  PROBLEMA: 'bg-primary-light text-primary',
+};

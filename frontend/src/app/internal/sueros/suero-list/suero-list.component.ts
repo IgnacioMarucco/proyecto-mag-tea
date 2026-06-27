@@ -17,6 +17,7 @@ import { hasActiveSearch } from '../../../shared/utils/list.utils';
 import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 import { FechaPipe } from '../../../core/pipes/fecha.pipe';
 import { VolumeBarComponent } from '../../../shared/volume-bar/volume-bar.component';
+import { RANGO_COLORS, RANGO_LABELS, USO_COLORS, USO_LABELS } from '../../../shared/utils/btu.utils';
 
 const PAGE_SIZE = 20;
 
@@ -104,23 +105,10 @@ export class SueroListComponent {
     { label: 'CANT. REST.'                              },
   ];
 
-  readonly rangoColors: Record<string, string> = {
-    '0': 'badge-rango0',
-    '1': 'badge-rango1',
-    '2': 'badge-rango2',
-    '3': 'badge-rango3',
-  };
-  readonly rangoLabels: Record<string, string> = {
-    '0': 'Rango 0', '1': 'Rango 1', '2': 'Rango 2', '3': 'Rango 3',
-  };
-
-  readonly usoColors: Record<string, string> = {
-    'CONTROL':  'bg-background text-text-muted border border-border',
-    'PROBLEMA': 'bg-primary-light text-primary',
-  };
-  readonly usoLabels: Record<string, string> = {
-    'CONTROL': 'Caso Control', 'PROBLEMA': 'Caso Problema',
-  };
+  readonly rangoColors = RANGO_COLORS;
+  readonly rangoLabels = RANGO_LABELS;
+  readonly usoColors   = USO_COLORS;
+  readonly usoLabels   = USO_LABELS;
 
   readonly emptyTitle = computed(() =>
     this.totalElements() === 0 && !this.hasActiveSearch()

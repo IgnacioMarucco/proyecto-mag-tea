@@ -13,6 +13,8 @@ import { StatusBadgeComponent } from '../../../shared/status-badge/status-badge.
 import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 import { MlPipe } from '../../../core/pipes/ml.pipe';
 import { FechaPipe } from '../../../core/pipes/fecha.pipe';
+import { RANGO_COLORS, RANGO_LABELS, USO_COLORS, USO_LABELS } from '../../../shared/utils/btu.utils';
+import { SEXO_COLORS, SEXO_LABELS } from '../../../shared/utils/modelo-animal.utils';
 
 @Component({
   selector: 'app-pool-detail',
@@ -40,26 +42,13 @@ export class PoolDetailComponent {
     return [...base.slice(0, -1), { label: p.codigo }];
   });
 
-  readonly rangoColors: Record<string, string> = {
-    '0': 'badge-rango0', '1': 'badge-rango1', '2': 'badge-rango2', '3': 'badge-rango3',
-  };
-  readonly rangoLabels: Record<string, string> = {
-    '0': 'Rango 0', '1': 'Rango 1', '2': 'Rango 2', '3': 'Rango 3',
-  };
+  readonly rangoColors = RANGO_COLORS;
+  readonly rangoLabels = RANGO_LABELS;
+  readonly usoColors   = USO_COLORS;
+  readonly usoLabels   = USO_LABELS;
 
-  readonly usoColors: Record<string, string> = {
-    'CONTROL':  'bg-background text-text-muted border border-border',
-    'PROBLEMA': 'bg-primary-light text-primary',
-  };
-  readonly usoLabels: Record<string, string> = {
-    'CONTROL': 'Caso Control', 'PROBLEMA': 'Caso Problema',
-  };
-
-  readonly sexoLabels: Record<string, string> = { MACHO: 'Macho', HEMBRA: 'Hembra' };
-  readonly sexoColors: Record<string, string>  = {
-    MACHO:  'bg-primary-light text-primary',
-    HEMBRA: 'bg-accent-light text-accent',
-  };
+  readonly sexoLabels = SEXO_LABELS;
+  readonly sexoColors = SEXO_COLORS;
 
   constructor() {
     toObservable(this.codigo).pipe(

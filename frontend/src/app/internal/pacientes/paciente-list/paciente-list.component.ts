@@ -17,6 +17,7 @@ import { hasActiveSearch } from '../../../shared/utils/list.utils';
 import { IconComponent } from '../../../shared/icon/icon.component';
 import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 import { EdadPipe } from '../../../core/pipes/edad.pipe';
+import { USO_COLORS, USO_LABELS } from '../../../shared/utils/btu.utils';
 
 const PAGE_SIZE = 20;
 const ALL_ESTADOS = ['ADMITIDO', 'MCHAT_RESPONDIDO', 'EXTRACCION_PENDIENTE', 'EXTRACCION_REALIZADA'];
@@ -102,15 +103,8 @@ export class PacienteListComponent {
     { label: 'FECHA', sortKey: 'proximaFechaEvento' },
   ];
 
-  readonly tipoLabels: Record<string, string> = {
-    CONTROL:  'Caso Control',
-    PROBLEMA: 'Caso Problema',
-  };
-
-  readonly tipoColors: Record<string, string> = {
-    CONTROL:  'bg-background text-text-muted border border-border',
-    PROBLEMA: 'bg-primary-light text-primary',
-  };
+  readonly tipoLabels = USO_LABELS;
+  readonly tipoColors = USO_COLORS;
 
   readonly estadoLabels: Record<string, string> = {
     ADMITIDO:             'Admitido',

@@ -3,6 +3,8 @@ import { RouterLink } from '@angular/router';
 import { ModeloAnimalResponse } from '../../../../core/models/modelo-animal.model';
 import { StatusBadgeComponent } from '../../../../shared/status-badge/status-badge.component';
 import { FechaPipe } from '../../../../core/pipes/fecha.pipe';
+import { RANGO_COLORS, RANGO_LABELS } from '../../../../shared/utils/btu.utils';
+import { SEXO_COLORS, SEXO_LABELS } from '../../../../shared/utils/modelo-animal.utils';
 
 @Component({
   selector: 'app-datos-basicos-ma-section',
@@ -13,19 +15,10 @@ import { FechaPipe } from '../../../../core/pipes/fecha.pipe';
 export class DatosBasicosMaSectionComponent {
   modeloAnimal = input.required<ModeloAnimalResponse>();
 
-  readonly rangoColors: Record<string, string> = {
-    '1': 'badge-rango1',
-    '2': 'badge-rango2',
-    '3': 'badge-rango3',
-  };
-  readonly rangoLabels: Record<string, string> = {
-    '1': 'Rango 1', '2': 'Rango 2', '3': 'Rango 3',
-  };
-  readonly sexoLabels: Record<string, string> = { MACHO: 'Macho', HEMBRA: 'Hembra' };
-  readonly sexoColors: Record<string, string> = {
-    MACHO:  'bg-primary-light text-primary',
-    HEMBRA: 'bg-accent-light text-accent',
-  };
+  readonly rangoColors = RANGO_COLORS;
+  readonly rangoLabels = RANGO_LABELS;
+  readonly sexoLabels = SEXO_LABELS;
+  readonly sexoColors = SEXO_COLORS;
 
   readonly diaNacimiento = computed(() => {
     const ma = this.modeloAnimal();

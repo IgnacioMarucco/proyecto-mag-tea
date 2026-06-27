@@ -16,6 +16,7 @@ import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-hea
 import { EdadPipe } from '../../../core/pipes/edad.pipe';
 import { FechaPipe } from '../../../core/pipes/fecha.pipe';
 import { FormularioDetalleModalComponent } from './formulario-detalle-modal.component';
+import { ESTADO_FORMULARIO_COLORS, ESTADO_FORMULARIO_LABELS } from '../../../shared/utils/formulario.utils';
 
 const PAGE_SIZE = 20;
 const ALL_ESTADOS = ['PENDIENTE', 'CONTACTADO', 'ADMITIDO', 'DESCARTADO'];
@@ -91,19 +92,8 @@ export class BandejaComponent {
     { label: 'ESTADO' },
   ];
 
-  readonly estadoLabels: Record<EstadoFormulario, string> = {
-    PENDIENTE:   'Pendiente',
-    CONTACTADO:  'Contactado',
-    ADMITIDO:    'Admitido',
-    DESCARTADO:  'Descartado',
-  };
-
-  readonly estadoColors: Record<EstadoFormulario, string> = {
-    PENDIENTE:   'bg-warning/10 text-warning',
-    CONTACTADO:  'bg-primary-light text-primary',
-    ADMITIDO:    'bg-accent-light text-accent',
-    DESCARTADO:  'bg-background text-text-muted border border-border',
-  };
+  readonly estadoLabels = ESTADO_FORMULARIO_LABELS;
+  readonly estadoColors = ESTADO_FORMULARIO_COLORS;
 
   readonly emptyTitle = computed(() =>
     this.totalElements() === 0 && !this.hasActiveSearch()

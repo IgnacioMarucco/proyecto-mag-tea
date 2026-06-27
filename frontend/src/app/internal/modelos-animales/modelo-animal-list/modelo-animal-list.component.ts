@@ -15,6 +15,7 @@ import { IconComponent } from '../../../shared/icon/icon.component';
 import { SortState } from '../../../shared/utils/sort.utils';
 import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 import { FechaPipe } from '../../../core/pipes/fecha.pipe';
+import { RANGO_COLORS, RANGO_LABELS, USO_COLORS, USO_LABELS } from '../../../shared/utils/btu.utils';
 
 const PAGE_SIZE = 20;
 
@@ -122,23 +123,10 @@ export class ModeloAnimalListComponent {
     { label: 'PRÓXIMO EVENTO',  sortKey: 'fechaProximoEvento' },
   ];
 
-  readonly rangoColors: Record<string, string> = {
-    '1': 'badge-rango1',
-    '2': 'badge-rango2',
-    '3': 'badge-rango3',
-  };
-  readonly rangoLabels: Record<string, string> = {
-    '1': 'Rango 1', '2': 'Rango 2', '3': 'Rango 3',
-  };
-
-  readonly usoColors: Record<string, string> = {
-    PROBLEMA: 'bg-primary-light text-primary',
-    CONTROL:  'bg-background text-text-muted border border-border',
-  };
-  readonly usoLabels: Record<string, string> = {
-    PROBLEMA: 'Caso Problema',
-    CONTROL:  'Caso Control',
-  };
+  readonly rangoColors = RANGO_COLORS;
+  readonly rangoLabels = RANGO_LABELS;
+  readonly usoColors   = USO_COLORS;
+  readonly usoLabels   = USO_LABELS;
 
   readonly estadoColors: Record<EstadoProtocolo, string> = {
     PENDIENTE_INOCULACION:    'bg-background text-text-muted border border-border',

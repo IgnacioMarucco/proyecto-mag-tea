@@ -43,46 +43,54 @@
         </a>
       }
 
-      @if (inoculaciones().length > 0) {
-        <div class="flex items-center gap-4 px-5 py-4 bg-surface border border-border rounded-lg">
-          <div class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-            <lucide-angular [img]="ActivityIcon" [size]="18" [strokeWidth]="1.5" class="text-primary" />
-          </div>
-          <div>
-            <p class="text-2xl font-semibold text-text">{{ inoculaciones().length }}</p>
-            <p class="text-xs text-text-muted mt-0.5">Animal(es) con inoculación esta semana</p>
-          </div>
+      <div class="flex items-center gap-4 px-5 py-4 bg-surface border border-border rounded-lg">
+        <div class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-lg"
+             [class.bg-primary/10]="inoculaciones().length > 0"
+             [class.bg-background]="inoculaciones().length === 0">
+          <lucide-angular [img]="ActivityIcon" [size]="18" [strokeWidth]="1.5"
+                          [class.text-primary]="inoculaciones().length > 0"
+                          [class.text-text-muted]="inoculaciones().length === 0" />
         </div>
-      }
+        <div>
+          <p class="text-2xl font-semibold text-text">{{ inoculaciones().length }}</p>
+          <p class="text-xs text-text-muted mt-0.5">Animal(es) con inoculación esta semana</p>
+        </div>
+      </div>
 
-      @if (alertasCriticas() > 0) {
-        <div class="flex items-center gap-4 px-5 py-4 bg-surface border border-danger/30 rounded-lg">
-          <div class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-lg bg-danger/10">
-            <lucide-angular [img]="AlertTriangleIcon" [size]="18" [strokeWidth]="1.5" class="text-danger" />
-          </div>
-          <div>
-            <p class="text-2xl font-semibold text-danger">{{ alertasCriticas() }}</p>
-            <p class="text-xs text-text-muted mt-0.5">Test(s) vencido(s) o crítico(s)</p>
-          </div>
+      <div class="flex items-center gap-4 px-5 py-4 bg-surface border rounded-lg"
+           [class.border-danger/30]="alertasCriticas() > 0"
+           [class.border-border]="alertasCriticas() === 0">
+        <div class="flex-shrink-0 flex items-center justify-center w-10 h-10 rounded-lg"
+             [class.bg-danger/10]="alertasCriticas() > 0"
+             [class.bg-background]="alertasCriticas() === 0">
+          <lucide-angular [img]="AlertTriangleIcon" [size]="18" [strokeWidth]="1.5"
+                          [class.text-danger]="alertasCriticas() > 0"
+                          [class.text-text-muted]="alertasCriticas() === 0" />
         </div>
-      }
+        <div>
+          <p class="text-2xl font-semibold"
+             [class.text-danger]="alertasCriticas() > 0"
+             [class.text-text]="alertasCriticas() === 0">{{ alertasCriticas() }}</p>
+          <p class="text-xs text-text-muted mt-0.5">Test(s) vencido(s) o crítico(s)</p>
+        </div>
+      </div>
 
     </div>
 
-    <!-- Agenda de la semana -->
+    <!-- Agenda de las próximas 2 semanas -->
     <section class="mb-8" aria-labelledby="agenda-semana-heading">
       <h2 id="agenda-semana-heading" class="text-sm font-medium text-text-muted uppercase tracking-wider mb-3">
-        Agenda de la semana
+        Agenda
       </h2>
 
-      <div class="overflow-x-auto rounded-lg border border-border bg-surface">
-        <table class="w-full min-w-[640px] text-sm border-collapse">
-
-          <!-- Encabezado de días -->
+      <!-- Esta semana -->
+      <p class="text-xs font-medium text-text-muted mb-1.5">Esta semana</p>
+      <div class="overflow-x-auto rounded-lg border border-border bg-surface mb-4">
+        <table class="w-full min-w-[640px] text-sm border-collapse table-fixed">
           <thead>
             <tr>
               <th class="w-32 px-4 py-2.5 text-left text-xs font-medium text-text-muted border-b border-r border-border bg-background"></th>
-              @for (dia of semana(); track dia.iso; let last = $last) {
+              @for (dia of semanaActual; track dia.iso; let last = $last) {
                 <th class="px-3 py-2.5 text-center border-b border-border text-xs font-medium"
                     [class.border-r]="!last"
                     [class.bg-primary/5]="dia.isToday"
@@ -94,8 +102,6 @@
               }
             </tr>
           </thead>
-
-          <!-- Filas de categoría -->
           <tbody>
             @for (cat of CATEGORIAS; track cat; let last = $last) {
               <tr>
@@ -104,7 +110,7 @@
                     [class.border-border]="!last">
                   {{ CATEGORIA_LABELS[cat] }}
                 </td>
-                @for (dia of semana(); track dia.iso; let lastDia = $last) {
+                @for (dia of semanaActual; track dia.iso; let lastDia = $last) {
                   @let eventos = getEventos(dia.iso, cat);
                   <td class="px-2 py-2 align-top"
                       [class.border-b]="!last"
@@ -135,69 +141,79 @@
               </tr>
             }
           </tbody>
+        </table>
+      </div>
 
+      <!-- Próxima semana -->
+      <p class="text-xs font-medium text-text-muted mb-1.5">Próxima semana</p>
+      <div class="overflow-x-auto rounded-lg border border-border bg-surface">
+        <table class="w-full min-w-[640px] text-sm border-collapse table-fixed">
+          <thead>
+            <tr>
+              <th class="w-32 px-4 py-2.5 text-left text-xs font-medium text-text-muted border-b border-r border-border bg-background"></th>
+              @for (dia of semanaProxima; track dia.iso; let last = $last) {
+                <th class="px-3 py-2.5 text-center border-b border-border text-xs font-medium"
+                    [class.border-r]="!last"
+                    [class.text-text-muted]="true">
+                  <p class="capitalize">{{ dia.diaNombre }}</p>
+                  <p class="font-mono">{{ dia.diaNum }}</p>
+                </th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (cat of CATEGORIAS; track cat; let last = $last) {
+              <tr>
+                <td class="px-4 py-2 text-xs font-medium text-text-muted border-r border-border whitespace-nowrap"
+                    [class.border-b]="!last"
+                    [class.border-border]="!last">
+                  {{ CATEGORIA_LABELS[cat] }}
+                </td>
+                @for (dia of semanaProxima; track dia.iso; let lastDia = $last) {
+                  @let eventos = getEventos(dia.iso, cat);
+                  <td class="px-2 py-2 align-top"
+                      [class.border-b]="!last"
+                      [class.border-r]="!lastDia"
+                      [class.border-border]="!last || !lastDia">
+                    @if (eventos.length > 0) {
+                      <div class="flex flex-wrap gap-1">
+                        @for (ev of eventos.slice(0, 2); track ev.entityId + ev.categoria) {
+                          <a [routerLink]="['/internal', ev.entityPath, ev.identificador]"
+                             class="inline-block px-1.5 py-0.5 rounded text-[11px] font-mono font-medium
+                                    bg-primary/10 text-primary hover:bg-primary/20 transition-colors whitespace-nowrap">
+                            {{ ev.identificador }}
+                          </a>
+                        }
+                        @if (eventos.length > 2) {
+                          <a [routerLink]="['/internal', eventos[0].entityPath]"
+                             [queryParams]="{ fecha: dia.iso, categoria: cat }"
+                             class="inline-block px-1.5 py-0.5 rounded text-[11px] font-medium
+                                    bg-background text-text-muted hover:text-text transition-colors whitespace-nowrap">
+                            +{{ eventos.length - 2 }}
+                          </a>
+                        }
+                      </div>
+                    }
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
         </table>
       </div>
 
       @if (agendaVacia()) {
-        <p class="mt-3 text-sm text-text-muted text-center py-4">Sin actividad programada para esta semana.</p>
+        <p class="mt-3 text-sm text-text-muted text-center py-4">Sin actividad programada para las próximas 2 semanas.</p>
       }
 
     </section>
 
-    <!-- Alertas conductuales -->
-    @if (alertas().length > 0) {
-      <section class="mb-8" aria-labelledby="alertas-heading">
-        <h2 id="alertas-heading" class="text-sm font-medium text-text-muted uppercase tracking-wider mb-3">
-          Tests conductuales
-        </h2>
-        <div class="space-y-2">
-          @for (item of alertas(); track item.modeloAnimalId + item.tipoTest) {
-            <a [routerLink]="['/internal/modelos-animales', item.identificador]"
-               class="flex items-center justify-between px-4 py-3 bg-surface border rounded-md hover:border-primary/30 transition-colors"
-               [class.border-danger/40]="nivelAlerta(item) === 'critico' || nivelAlerta(item) === 'vencida'"
-               [class.border-warning/40]="nivelAlerta(item) === 'urgente'"
-               [class.border-border]="nivelAlerta(item) === 'aviso'">
-
-              <div class="flex items-center gap-3">
-                <span class="inline-flex items-center justify-center w-2 h-2 rounded-full flex-shrink-0"
-                      [class.bg-danger]="nivelAlerta(item) === 'critico' || nivelAlerta(item) === 'vencida'"
-                      [class.bg-warning]="nivelAlerta(item) === 'urgente'"
-                      [class.bg-primary/50]="nivelAlerta(item) === 'aviso'">
-                </span>
-                <div>
-                  <p class="text-sm font-medium text-text">
-                    {{ labelTipoTest(item.tipoTest) }}
-                    <span class="text-text-muted font-normal">— {{ item.identificador }} ({{ item.camadaNombre }})</span>
-                  </p>
-                  <p class="text-xs text-text-muted mt-0.5">{{ item.fechaTest | date:'dd/MM/yyyy' }}</p>
-                </div>
-              </div>
-
-              <span class="text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0"
-                    [class.bg-danger/10]="nivelAlerta(item) === 'critico'"
-                    [class.text-danger]="nivelAlerta(item) === 'critico'"
-                    [class.bg-gray-500/10]="nivelAlerta(item) === 'vencida'"
-                    [class.text-text-muted]="nivelAlerta(item) === 'vencida'"
-                    [class.bg-warning/10]="nivelAlerta(item) === 'urgente'"
-                    [class.text-warning]="nivelAlerta(item) === 'urgente'"
-                    [class.bg-primary/10]="nivelAlerta(item) === 'aviso'"
-                    [class.text-primary]="nivelAlerta(item) === 'aviso'">
-                {{ labelDiasRestantes(item) }}
-              </span>
-
-            </a>
-          }
-        </div>
-      </section>
-    }
-
     <!-- Agenda de inoculaciones -->
-    @if (inoculaciones().length > 0) {
-      <section class="mb-8" aria-labelledby="agenda-heading">
-        <h2 id="agenda-heading" class="text-sm font-medium text-text-muted uppercase tracking-wider mb-3">
-          Inoculaciones esta semana
-        </h2>
+    <section class="mb-8" aria-labelledby="agenda-heading">
+      <h2 id="agenda-heading" class="text-sm font-medium text-text-muted uppercase tracking-wider mb-3">
+        Inoculaciones esta semana
+      </h2>
+      @if (inoculaciones().length > 0) {
         <div class="space-y-2">
           @for (item of inoculaciones(); track item.modeloAnimalId) {
             <a [routerLink]="['/internal/modelos-animales', item.identificador]"
@@ -207,7 +223,7 @@
                   {{ item.identificador }}
                   <span class="text-text-muted font-normal">— {{ item.camadaNombre }} / Pool {{ item.poolCodigo }}</span>
                 </p>
-                <p class="text-xs text-text-muted mt-0.5">Día 1: {{ item.fechaDia1 | date:'dd/MM/yyyy' }}</p>
+                <p class="text-xs text-text-muted mt-0.5">Día 1: {{ item.fechaDia1 | fecha }}</p>
               </div>
               <div class="flex gap-1.5 flex-shrink-0 ml-4">
                 @for (dia of [1,2,3,4]; track dia) {
@@ -228,17 +244,69 @@
             </a>
           }
         </div>
-      </section>
-    }
+      } @else {
+        <p class="text-sm text-text-muted py-3">Sin inoculaciones programadas para esta semana.</p>
+      }
+    </section>
+
+    <!-- Alertas conductuales -->
+    <section class="mb-8" aria-labelledby="alertas-heading">
+      <h2 id="alertas-heading" class="text-sm font-medium text-text-muted uppercase tracking-wider mb-3">
+        Tests conductuales
+      </h2>
+      @if (alertas().length > 0) {
+        <div class="space-y-2">
+          @for (item of alertas(); track item.modeloAnimalId + '_' + item.tipoTest) {
+            @let nivel = nivelAlerta(item);
+            <a [routerLink]="['/internal/modelos-animales', item.identificador]"
+               class="flex items-center justify-between px-4 py-3 bg-surface border rounded-md hover:border-primary/30 transition-colors"
+               [class.border-danger/40]="nivel === 'critico' || nivel === 'vencida'"
+               [class.border-warning/40]="nivel === 'urgente'"
+               [class.border-border]="nivel === 'aviso'">
+
+              <div class="flex items-center gap-3">
+                <span class="inline-flex items-center justify-center w-2 h-2 rounded-full flex-shrink-0"
+                      [class.bg-danger]="nivel === 'critico' || nivel === 'vencida'"
+                      [class.bg-warning]="nivel === 'urgente'"
+                      [class.bg-primary/50]="nivel === 'aviso'">
+                </span>
+                <div>
+                  <p class="text-sm font-medium text-text">
+                    {{ labelTipoTest(item.tipoTest) }}
+                    <span class="text-text-muted font-normal">— {{ item.identificador }} ({{ item.camadaNombre }})</span>
+                  </p>
+                  <p class="text-xs text-text-muted mt-0.5">{{ item.fechaTest | fecha }}</p>
+                </div>
+              </div>
+
+              <span class="text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0"
+                    [class.bg-danger/10]="nivel === 'critico'"
+                    [class.text-danger]="nivel === 'critico'"
+                    [class.bg-gray-500/10]="nivel === 'vencida'"
+                    [class.text-text-muted]="nivel === 'vencida'"
+                    [class.bg-warning/10]="nivel === 'urgente'"
+                    [class.text-warning]="nivel === 'urgente'"
+                    [class.bg-primary/10]="nivel === 'aviso'"
+                    [class.text-primary]="nivel === 'aviso'">
+                {{ labelDiasRestantes(item) }}
+              </span>
+
+            </a>
+          }
+        </div>
+      } @else {
+        <p class="text-sm text-text-muted py-3">Sin alertas conductuales activas.</p>
+      }
+    </section>
 
     <!-- Actividad reciente (solo IP) -->
-    @if (actividad().length > 0) {
-      <section aria-labelledby="actividad-heading">
-        <h2 id="actividad-heading" class="text-sm font-medium text-text-muted uppercase tracking-wider mb-3">
-          Actividad reciente
-        </h2>
+    <section aria-labelledby="actividad-heading">
+      <h2 id="actividad-heading" class="text-sm font-medium text-text-muted uppercase tracking-wider mb-3">
+        Actividad reciente
+      </h2>
+      @if (actividad().length > 0) {
         <div class="bg-surface border border-border rounded-lg divide-y divide-border">
-          @for (item of actividad(); track item.fecha + item.tipo) {
+          @for (item of actividad(); track item.entityId + '_' + item.tipo + '_' + item.fecha) {
             <div class="flex items-center justify-between px-4 py-3">
               <div class="flex items-center gap-3 min-w-0">
                 <a [routerLink]="['/internal', item.entityPath, item.identificador]"
@@ -261,22 +329,16 @@
                   </div>
                 }
                 <p class="text-xs text-text-muted">
-                  {{ item.fecha | date:'dd/MM/yyyy HH:mm' }}
+                  {{ item.fecha | fecha:'datetime' }}
                 </p>
               </div>
             </div>
           }
         </div>
-      </section>
-    }
-
-    @if (!formulariosPendientes() && inoculaciones().length === 0 && alertas().length === 0 && actividad().length === 0) {
-      <div class="flex flex-col items-center justify-center py-20 text-center">
-        <lucide-angular [img]="CheckCircleIcon" [size]="40" [strokeWidth]="1" class="text-success mb-3" />
-        <p class="text-text font-medium">Todo en orden</p>
-        <p class="text-sm text-text-muted mt-1">No hay pendientes ni alertas para esta semana.</p>
-      </div>
-    }
+      } @else {
+        <p class="text-sm text-text-muted py-3">Sin actividad reciente.</p>
+      }
+    </section>
 
   }
 

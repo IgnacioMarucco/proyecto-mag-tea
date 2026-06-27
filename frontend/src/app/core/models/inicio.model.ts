@@ -18,7 +18,7 @@ export interface AlertaConductualItem {
 }
 
 export interface ActividadRecienteItem {
-  tipo: 'SUERO' | 'POOL' | 'MODELO_ANIMAL' | 'INOCULACION';
+  tipo: 'SUERO' | 'POOL' | 'MODELO_ANIMAL' | 'INOCULACION' | 'PACIENTE' | 'MCHAT';
   descripcion: string;
   fecha: string;
   entityId: number;

@@ -4,6 +4,7 @@ import { StatusBadgeComponent } from '../../../shared/status-badge/status-badge.
 import { EdadPipe } from '../../../core/pipes/edad.pipe';
 import { FechaPipe } from '../../../core/pipes/fecha.pipe';
 import { ModalContainerComponent } from '../../../shared/modal-container/modal-container.component';
+import { ESTADO_FORMULARIO_COLORS, ESTADO_FORMULARIO_LABELS } from '../../../shared/utils/formulario.utils';
 
 @Component({
   selector: 'app-formulario-detalle-modal',
@@ -15,19 +16,8 @@ export class FormularioDetalleModalComponent {
   formulario = input.required<FormularioInteresResponse>();
   closed     = output<void>();
 
-  readonly estadoLabels: Record<EstadoFormulario, string> = {
-    PENDIENTE:  'Pendiente',
-    CONTACTADO: 'Contactado',
-    ADMITIDO:   'Admitido',
-    DESCARTADO: 'Descartado',
-  };
-
-  readonly estadoColors: Record<EstadoFormulario, string> = {
-    PENDIENTE:  'bg-warning/10 text-warning',
-    CONTACTADO: 'bg-primary-light text-primary',
-    ADMITIDO:   'bg-accent-light text-accent',
-    DESCARTADO: 'bg-background text-text-muted border border-border',
-  };
+  readonly estadoLabels = ESTADO_FORMULARIO_LABELS;
+  readonly estadoColors = ESTADO_FORMULARIO_COLORS;
 
   readonly comoConocioLabels: Record<string, string> = {
     INSTAGRAM:                   'Instagram',

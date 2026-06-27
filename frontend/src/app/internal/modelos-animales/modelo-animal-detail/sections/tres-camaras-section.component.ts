@@ -5,6 +5,7 @@ import { ModeloAnimalResponse } from '../../../../core/models/modelo-animal.mode
 import { extractErrorMessage } from '../../../../shared/utils/error.utils';
 import { ToastService } from '../../../../core/services/toast.service';
 import { StatusBadgeComponent } from '../../../../shared/status-badge/status-badge.component';
+import { SOCIALIZACION_COLORS, SOCIALIZACION_LABELS } from '../../../../shared/utils/modelo-animal.utils';
 
 @Component({
   selector: 'app-tres-camaras-section',
@@ -35,14 +36,8 @@ export class TresCamarasSectionComponent {
     m2TiempoRatonFamiliar:    [null as number | null, [Validators.required, Validators.min(0)]],
   });
 
-  readonly socializacionColors: Record<string, string> = {
-    NORMAL:              'bg-accent-light text-accent',
-    FALTA_SOCIALIZACION: 'bg-error/10 text-error',
-  };
-  readonly socializacionLabels: Record<string, string> = {
-    NORMAL:              'Normal',
-    FALTA_SOCIALIZACION: 'Falta socialización',
-  };
+  readonly socializacionColors = SOCIALIZACION_COLORS;
+  readonly socializacionLabels = SOCIALIZACION_LABELS;
 
   saveM1(): void {
     if (this.formM1.invalid) { this.formM1.markAllAsTouched(); return; }
