@@ -30,11 +30,11 @@ public class SueroController {
             @RequestParam(defaultValue = "20")       int size,
             @RequestParam(required = false)          String q,
             @RequestParam(required = false)          List<Integer> rangos,
-            @RequestParam(required = false)          SueroUso uso,
+            @RequestParam(required = false)          List<SueroUso> usos,
             @RequestParam(required = false)           String codigoPaciente,
             @RequestParam(defaultValue = "createdAt") String sortBy,
             @RequestParam(defaultValue = "desc")     String sortDir) {
-        return service.findAll(page, size, q, rangos, uso, codigoPaciente, sortBy, sortDir);
+        return service.findAll(page, size, q, rangos, usos, codigoPaciente, sortBy, sortDir);
     }
 
     @GetMapping("/disponibilidad-pool")    @Operation(summary = "Disponibilidad de sueros por rango para armar pools")

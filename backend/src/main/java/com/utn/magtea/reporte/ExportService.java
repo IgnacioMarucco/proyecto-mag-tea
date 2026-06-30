@@ -90,7 +90,7 @@ public class ExportService {
     private String headerRatones() {
         return String.join(SEP,
                 "identificador", "sexo", "camada_nombre", "camada_fecha_nacimiento",
-                "pool_codigo", "pool_rango", "pool_uso",
+                "pool_codigo", "pool_rango", "pool_uso", "pool_activo",
                 "vocalizacion_muestra1_khz", "vocalizacion_muestra2_khz",
                 "tres_camaras_m1_raton_novedad", "tres_camaras_m1_objeto_novedoso",
                 "tres_camaras_m2_raton_desconocido", "tres_camaras_m2_raton_familiar",
@@ -116,7 +116,7 @@ public class ExportService {
     private String headerPoolComposicion() {
         return String.join(SEP,
                 "pool_codigo", "pool_rango", "pool_uso",
-                "paciente_codigo", "suero_valor_anticuerpos", "suero_rango");
+                "paciente_codigo", "suero_valor_anticuerpos", "suero_rango", "suero_activo");
     }
 
     // ── Rows ─────────────────────────────────────────────────────────────────
@@ -132,6 +132,7 @@ public class ExportService {
                 csv(m.getPool().getCodigo()),
                 csv(m.getPool().getRango()),
                 csv(m.getPool().getUso()),
+                m.getPool().isActivo() ? "Sí" : "No (baja)",
                 v  != null ? csv(v.getMuestra1Khz())              : "",
                 v  != null ? csv(v.getMuestra2Khz())              : "",
                 tc != null ? csv(tc.getM1TiempoRatonNovedad())    : "",
@@ -204,7 +205,8 @@ public class ExportService {
                 csv(pool.getUso()),
                 csv(paciente.getCodigoNumerico()),
                 csv(suero.getValorAnticuerpos()),
-                csv(suero.getRango()));
+                csv(suero.getRango()),
+                suero.isActivo() ? "Sí" : "No (baja)");
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 package com.utn.magtea.caja;
 
+import com.utn.magtea.common.exception.BusinessRuleException;
 import com.utn.magtea.common.exception.DuplicateResourceException;
 import com.utn.magtea.common.exception.ResourceNotFoundException;
 import com.utn.magtea.tubo.Tubo;
@@ -221,6 +222,62 @@ class CajaServiceTest {
         var result = service.getOcupacion(1L, null);
 
         assertThat(result.ocupadas()).containsExactlyInAnyOrder("A1", "A2", "B3");
+    }
+
+    @Test
+    void deberia_retornarCaja_cuandoIdExiste() {
+        var caja = new Caja();
+        caja.setId(1L);
+        caja.setFreezer("A");
+        caja.setCajon(1);
+        caja.setNumero(1);
+        caja.setActivo(true);
+        var response = new CajaResponseDTO(1L, "A", 1, 1, true, null);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(caja));
+        when(mapper.toDTO(caja)).thenReturn(response);
+
+        var result = service.findById(1L);
+
+        assertThat(result.id()).isEqualTo(1L);
+        assertThat(result.freezer()).isEqualTo("A");
+    }
+
+    @Test
+    void deberia_lanzarBusinessRuleException_cuandoBorrarCajaConSuerosActivos() {
+        var caja = new Caja();
+        caja.setId(1L);
+        caja.setActivo(true);
+
+        var tuboConVolumen = new Tubo();
+        tuboConVolumen.setCantidadInicial(BigDecimal.valueOf(1.0));
+        tuboConVolumen.setCantidadUsada(BigDecimal.ZERO);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(caja));
+        when(tuboRepository.findByCajaIdAndSueroActivoTrue(1L)).thenReturn(List.of(tuboConVolumen));
+
+        assertThatThrownBy(() -> service.delete(1L))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("muestras activas");
+    }
+
+    @Test
+    void deberia_lanzarBusinessRuleException_cuandoBorrarCajaConPoolsActivos() {
+        var caja = new Caja();
+        caja.setId(1L);
+        caja.setActivo(true);
+
+        var tuboConVolumen = new Tubo();
+        tuboConVolumen.setCantidadInicial(BigDecimal.valueOf(0.5));
+        tuboConVolumen.setCantidadUsada(BigDecimal.ZERO);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(caja));
+        when(tuboRepository.findByCajaIdAndSueroActivoTrue(1L)).thenReturn(List.of());
+        when(tuboRepository.findByCajaIdAndPoolActivoTrue(1L)).thenReturn(List.of(tuboConVolumen));
+
+        assertThatThrownBy(() -> service.delete(1L))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("muestras activas");
     }
 
     @Test

@@ -55,7 +55,8 @@ public interface PoolMapper {
                     suero.getId(),
                     suero.getPaciente().getCodigoNumerico(),
                     suero.getPaciente().getCodigoNumerico(),
-                    total
+                    total,
+                    suero.isActivo()
                 );
             })
             .toList();

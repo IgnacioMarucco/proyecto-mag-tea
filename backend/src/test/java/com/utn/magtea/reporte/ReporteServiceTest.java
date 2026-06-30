@@ -31,7 +31,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -238,4 +238,222 @@ class ReporteServiceTest {
         assertThat(resultado.puntos().get(0).y()).isEqualTo(35.0);
         assertThat(resultado.puntos().get(0).codigoNumerico()).isEqualTo("P001");
     }
+
+
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void deberia_retornarListaVacia_cuandoPacientesSinValoresEnEjes() {
+        // Paciente sin M-CHAT ni CARS → x y y serán null → no se incluye en puntos
+        var paciente = new Paciente();
+        paciente.setCodigoNumerico("P002");
+        paciente.setTipoPaciente(TipoPaciente.PROBLEMA);
+        paciente.setFechaNacimientoNino(LocalDate.now().minusYears(2));
+
+        when(pacienteRepository.findAll(any(Specification.class))).thenReturn(List.of(paciente));
+
+        var resultado = service.getCorrelaciones("MCHAT_SCORE", "CARS_RAW", "TODOS", List.of());
+
+        assertThat(resultado.puntos()).isEmpty();
+        assertThat(resultado.n()).isEqualTo(0);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void deberia_filtrarPorTipoPaciente_cuandoDashboardConFiltroPROBLEMA() {
+        var pacienteProblema = new Paciente();
+        pacienteProblema.setId(1L);
+        pacienteProblema.setSexo(Sexo.MASCULINO);
+        pacienteProblema.setTipoPaciente(TipoPaciente.PROBLEMA);
+        pacienteProblema.setEstadoClinico(PacienteEstado.ADMITIDO);
+
+        var pacienteControl = new Paciente();
+        pacienteControl.setId(2L);
+        pacienteControl.setSexo(Sexo.FEMENINO);
+        pacienteControl.setTipoPaciente(TipoPaciente.CONTROL);
+        pacienteControl.setEstadoClinico(PacienteEstado.ADMITIDO);
+
+        when(pacienteRepository.findAll(any(Specification.class))).thenReturn(List.of(pacienteProblema, pacienteControl));
+        when(formularioRepository.findAll(any(Specification.class))).thenReturn(List.of());
+        when(sueroRepository.findAllByPacienteIdInAndActivoTrue(any())).thenReturn(List.of());
+
+        var result = service.getDashboard("PROBLEMA", List.of());
+
+        assertThat(result).isNotNull();
+        // Solo el paciente PROBLEMA es incluido en filtrados
+        assertThat(result.resumen().pacientesTotal()).isEqualTo(1);
+        assertThat(result.resumen().pacientesProblema()).isEqualTo(1);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void deberia_retornarDashboard_cuandoNoHayPacientes() {
+        when(pacienteRepository.findAll(any(Specification.class))).thenReturn(List.of());
+        when(formularioRepository.findAll(any(Specification.class))).thenReturn(List.of());
+
+        var result = service.getDashboard("TODOS", List.of());
+
+        assertThat(result).isNotNull();
+        assertThat(result.resumen().pacientesTotal()).isEqualTo(0);
+        assertThat(result.mchat().totalConMchat()).isEqualTo(0);
+        assertThat(result.cars().totalConCars()).isEqualTo(0);
+    }
+
+    @Test
+    void deberia_lanzarBusinessRuleException_cuandoEjeXNoValido() {
+        assertThatThrownBy(() -> service.getCorrelaciones("EJE_INVALIDO", "CARS_RAW", "TODOS", List.of()))
+                .isInstanceOf(com.utn.magtea.common.exception.BusinessRuleException.class)
+                .hasMessageContaining("Eje no válido");
+    }
+
+    @Test
+    void deberia_lanzarBusinessRuleException_cuandoEjeYNoValido() {
+        assertThatThrownBy(() -> service.getCorrelaciones("MCHAT_SCORE", "EJE_INVALIDO", "TODOS", List.of()))
+                .isInstanceOf(com.utn.magtea.common.exception.BusinessRuleException.class)
+                .hasMessageContaining("Eje no válido");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void deberia_retornarCorrelacionesBTU_cuandoHaySueros() {
+        var paciente = new Paciente();
+        paciente.setId(1L);
+        paciente.setCodigoNumerico("P001");
+        paciente.setTipoPaciente(TipoPaciente.PROBLEMA);
+        paciente.setFechaNacimientoNino(LocalDate.now().minusYears(3));
+
+        var mchat = new MchatFamilia();
+        mchat.setScoreTotal(5);
+        paciente.setMchatFamilia(mchat);
+
+        when(pacienteRepository.findAll(any(Specification.class))).thenReturn(List.of(paciente));
+
+        var suero = new com.utn.magtea.suero.Suero();
+        suero.setValorAnticuerpos(new java.math.BigDecimal("120.0"));
+        suero.setPaciente(paciente);
+
+        when(sueroRepository.findAllByPacienteIdInAndActivoTrue(any())).thenReturn(List.of(suero));
+
+        var resultado = service.getCorrelaciones("BTU_VALUE", "MCHAT_SCORE", "TODOS", List.of());
+
+        assertThat(resultado.puntos()).hasSize(1);
+        assertThat(resultado.puntos().get(0).x()).isEqualTo(120.0);
+        assertThat(resultado.puntos().get(0).y()).isEqualTo(5.0);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void deberia_retornarDashboard_cuandoTipoPacienteNulo() {
+        when(pacienteRepository.findAll(any(Specification.class))).thenReturn(List.of());
+        when(formularioRepository.findAll(any(Specification.class))).thenReturn(List.of());
+
+        var result = service.getDashboard(null, List.of());
+
+        assertThat(result).isNotNull();
+        assertThat(result.resumen().pacientesTotal()).isEqualTo(0);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void deberia_retornarDashboard_cuandoTipoPacienteBlanco() {
+        when(pacienteRepository.findAll(any(Specification.class))).thenReturn(List.of());
+        when(formularioRepository.findAll(any(Specification.class))).thenReturn(List.of());
+
+        var result = service.getDashboard("  ", List.of());
+
+        assertThat(result).isNotNull();
+        assertThat(result.resumen().pacientesTotal()).isEqualTo(0);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void deberia_calcularAnticuerpos_cuandoHaySueros() {
+        var paciente1 = new Paciente();
+        paciente1.setId(1L);
+        paciente1.setTipoPaciente(TipoPaciente.PROBLEMA);
+        paciente1.setEstadoClinico(PacienteEstado.EXTRACCION_REALIZADA);
+
+        var paciente2 = new Paciente();
+        paciente2.setId(2L);
+        paciente2.setTipoPaciente(TipoPaciente.CONTROL);
+        paciente2.setEstadoClinico(PacienteEstado.EXTRACCION_REALIZADA);
+
+        when(pacienteRepository.findAll(any(Specification.class))).thenReturn(List.of(paciente1, paciente2));
+        when(formularioRepository.findAll(any(Specification.class))).thenReturn(List.of());
+
+        var suero1 = new com.utn.magtea.suero.Suero();
+        suero1.setValorAnticuerpos(new java.math.BigDecimal("100.0"));
+        suero1.setRango(2);
+        suero1.setPaciente(paciente1);
+
+        var suero2 = new com.utn.magtea.suero.Suero();
+        suero2.setValorAnticuerpos(new java.math.BigDecimal("200.0"));
+        suero2.setRango(3);
+        suero2.setPaciente(paciente2);
+
+        when(sueroRepository.findAllByPacienteIdInAndActivoTrue(any())).thenReturn(List.of(suero1, suero2));
+
+        var result = service.getDashboard("TODOS", List.of());
+
+        assertThat(result.anticuerpos().totalConSuero()).isEqualTo(2);
+        assertThat(result.anticuerpos().totalSinSuero()).isEqualTo(0);
+        assertThat(result.anticuerpos().mediaBtu()).isEqualTo(150.0);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void deberia_retornarVineland_cuandoSinCamposOpcionales() {
+        var paciente = new Paciente();
+        paciente.setId(1L);
+        paciente.setTipoPaciente(TipoPaciente.PROBLEMA);
+        paciente.setEstadoClinico(PacienteEstado.EXTRACCION_REALIZADA);
+
+        var vineland = new EvaluacionVineland();
+        vineland.setComunicacion(80);
+        vineland.setAutovalimiento(75);
+        vineland.setSocial(70);
+        vineland.setMotor(85);
+        vineland.setCocienteFinal(78);
+        // conductaDesadaptativa, internalizante, externalizante → null
+
+        paciente.setEvaluacionVineland(vineland);
+
+        when(pacienteRepository.findAll(any(Specification.class))).thenReturn(List.of(paciente));
+        when(formularioRepository.findAll(any(Specification.class))).thenReturn(List.of());
+        when(sueroRepository.findAllByPacienteIdInAndActivoTrue(any())).thenReturn(List.of());
+
+        var result = service.getDashboard("TODOS", List.of());
+
+        assertThat(result.vineland().mediaCocienteFinal()).isEqualTo(78.0);
+        assertThat(result.vineland().mediaConductaDesadaptativa()).isNull();
+        assertThat(result.vineland().mediaInternalizante()).isNull();
+        assertThat(result.vineland().mediaExternalizante()).isNull();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void deberia_retornarRNulo_cuandoMenosDeDosCorrelaciones() {
+        var paciente = new Paciente();
+        paciente.setCodigoNumerico("P001");
+        paciente.setTipoPaciente(TipoPaciente.PROBLEMA);
+        paciente.setFechaNacimientoNino(LocalDate.now().minusYears(3));
+
+        var mchat = new MchatFamilia();
+        mchat.setScoreTotal(5);
+        paciente.setMchatFamilia(mchat);
+
+        var cars = new EvaluacionCars();
+        cars.setRawScore(new java.math.BigDecimal("35.0"));
+        paciente.setEvaluacionCars(cars);
+
+        // Solo 1 punto → Pearson retorna null
+        when(pacienteRepository.findAll(any(Specification.class))).thenReturn(List.of(paciente));
+
+        var resultado = service.getCorrelaciones("MCHAT_SCORE", "CARS_RAW", "TODOS", List.of());
+
+        assertThat(resultado.n()).isEqualTo(1);
+        assertThat(resultado.r()).isNull();
+        assertThat(resultado.pValue()).isNull();
+    }
 }
+

@@ -10,7 +10,10 @@ import com.utn.magtea.common.exception.ResourceNotFoundException;
 import com.utn.magtea.paciente.Paciente;
 import com.utn.magtea.paciente.PacienteEvents;
 import com.utn.magtea.paciente.PacienteRepository;
+import com.utn.magtea.paciente.PacienteEstado;
 import com.utn.magtea.paciente.TipoPaciente;
+import com.utn.magtea.paciente.criterios.CriteriosAptitud;
+import com.utn.magtea.paciente.criterios.CriteriosUtil;
 import com.utn.magtea.pool.PoolSueroAporteRepository;
 import com.utn.magtea.tubo.Tubo;
 import com.utn.magtea.tubo.TipoTubo;
@@ -53,11 +56,11 @@ public class SueroService {
 
     @Transactional(readOnly = true)
     public PageResponse<SueroListDTO> findAll(int page, int size, String q, List<Integer> rangos,
-                                              SueroUso uso, String codigoPaciente,
+                                              List<SueroUso> usos, String codigoPaciente,
                                               String sortBy, String sortDir) {
         Sort sort = SpecificationUtils.buildSort(sortBy, sortDir, "createdAt", SORT_FIELDS_VALIDOS, SORT_FIELD_ALIASES);
         Page<Suero> result = repository.findAll(
-                buildSpec(q, rangos, uso, codigoPaciente),
+                buildSpec(q, rangos, usos, codigoPaciente),
                 PageRequest.of(page, size, sort));
         return new PageResponse<>(
                 result.map(mapper::toListDTO).getContent(),
@@ -84,6 +87,23 @@ public class SueroService {
         Paciente paciente = pacienteRepository.findById(dto.pacienteId())
                 .filter(Paciente::isActivo)
                 .orElseThrow(() -> new ResourceNotFoundException("Paciente con id " + dto.pacienteId() + " no existe"));
+
+        if (!paciente.isConsentimientoFirmado()) {
+            throw new BusinessRuleException("El paciente no tiene consentimiento informado firmado");
+        }
+
+        if (paciente.getEstadoClinico() != PacienteEstado.EXTRACCION_PENDIENTE) {
+            throw new BusinessRuleException("El paciente no tiene extracción pendiente");
+        }
+
+        CriteriosAptitud aptitudPaciente = CriteriosUtil.calcularAptitud(paciente);
+        if (aptitudPaciente != null && aptitudPaciente != CriteriosAptitud.APTO) {
+            throw new BusinessRuleException(
+                aptitudPaciente == CriteriosAptitud.EXCLUIDO
+                    ? "El paciente presenta un criterio de exclusión y no puede participar en el protocolo"
+                    : "El paciente no tiene criterios de aptitud completos para el protocolo"
+            );
+        }
 
         if (repository.existsByPacienteIdAndActivoTrue(dto.pacienteId())) {
             throw new BusinessRuleException("El paciente ya tiene un suero registrado");
@@ -236,12 +256,12 @@ public class SueroService {
         return result;
     }
 
-    private Specification<Suero> buildSpec(String q, List<Integer> rangos, SueroUso uso, String codigoPaciente) {
+    private Specification<Suero> buildSpec(String q, List<Integer> rangos, List<SueroUso> usos, String codigoPaciente) {
         Specification<Suero> spec = SpecificationUtils.activoTrue();
-        if (q != null && !q.isBlank())       spec = spec.and(searchByCodigo(q));
+        if (q != null && !q.isBlank())           spec = spec.and(searchByCodigo(q));
         if (rangos != null && !rangos.isEmpty()) spec = spec.and(rangoIn(rangos));
-        if (uso != null)              spec = spec.and(usoEquals(uso));
-        if (codigoPaciente != null)   spec = spec.and(codigoPacienteEquals(codigoPaciente));
+        if (usos != null && !usos.isEmpty())     spec = spec.and(usoIn(usos));
+        if (codigoPaciente != null)              spec = spec.and(codigoPacienteEquals(codigoPaciente));
         return spec;
     }
 
@@ -259,8 +279,8 @@ public class SueroService {
         return (root, query, cb) -> root.get("rango").in(rangos);
     }
 
-    private Specification<Suero> usoEquals(SueroUso uso) {
-        return (root, query, cb) -> cb.equal(root.get("uso"), uso);
+    private Specification<Suero> usoIn(List<SueroUso> usos) {
+        return (root, query, cb) -> root.get("uso").in(usos);
     }
 
     private Suero findActiveById(Long id) {

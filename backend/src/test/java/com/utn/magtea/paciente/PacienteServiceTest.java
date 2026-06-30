@@ -221,7 +221,7 @@ class PacienteServiceTest {
 
         doAnswer(inv -> page).when(repository).findBy(any(Specification.class), any());
 
-        var result = service.findAll(0, 20, null, null, null, "createdAt", "desc");
+        var result = service.findAll(0, 20, null, null, null, "createdAt", "desc", null, null);
 
         assertThat(result.content()).hasSize(1);
         assertThat(result.totalElements()).isEqualTo(1);
@@ -259,6 +259,23 @@ class PacienteServiceTest {
 
         assertThat(entidad.getCriterios()).isNotNull();
         assertThat(entidad.getCriterios().isEpilepsia()).isTrue();
+    }
+
+    @Test
+    void deberia_actualizarCriterios_sinBloquear_cuandoAptitudResultaIncompleta() {
+        // RN-04: criterios pueden degradarse a INCOMPLETO sin excepción — se logea y se devuelve el DTO
+        var entidad = pacienteActivo(1L); // TipoPaciente.PROBLEMA
+        var dto = new CriteriosDTO(false /* criterioTEADSMV=false */, true, true,
+                false, false, false, false, false, false, false, false, false, false);
+
+        when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
+        when(repository.save(entidad)).thenReturn(entidad);
+        when(mapper.toDTO(eq(entidad), any(MchatEstado.class))).thenReturn(buildResponse(1L));
+
+        assertThatCode(() -> service.updateCriterios("TST00001", dto)).doesNotThrowAnyException();
+
+        assertThat(entidad.getCriterios().isCriterioTEADSMV()).isFalse();
+        verify(repository).save(entidad);
     }
 
     // ─── updateMchatSeguimiento ───────────────────────────────────────────────
@@ -512,6 +529,7 @@ class PacienteServiceTest {
     void deberia_onSueroEliminado_marcaExtraccionPendiente() {
         var entidad = pacienteActivo(1L);
         entidad.setEstadoClinico(PacienteEstado.EXTRACCION_REALIZADA);
+        entidad.setFechaTurnoExtraccion(LocalDateTime.now()); // refleja el flujo real: turno sigue seteado al borrar el suero
 
         when(repository.findById(1L)).thenReturn(Optional.of(entidad));
 
@@ -581,7 +599,7 @@ class PacienteServiceTest {
     @Test
     void deberia_actualizarConsentimiento_cuandoDatosValidos() {
         var entidad = pacienteActivo(1L);
-        var dto = new PacienteConsentimientoDTO(true);
+        var dto = new PacienteConsentimientoDTO(true, null);
 
         when(repository.findByCodigoNumericoAndActivoTrue("TST00001")).thenReturn(Optional.of(entidad));
         when(repository.save(entidad)).thenReturn(entidad);
@@ -676,7 +694,7 @@ class PacienteServiceTest {
         var specCaptor = org.mockito.ArgumentCaptor.forClass(Specification.class);
         doAnswer(inv -> page).when(repository).findBy(specCaptor.capture(), any());
 
-        service.findAll(0, 20, "filtro", List.of(PacienteEstado.ADMITIDO), List.of(TipoPaciente.PROBLEMA), "createdAt", "desc");
+        service.findAll(0, 20, "filtro", List.of(PacienteEstado.ADMITIDO), List.of(TipoPaciente.PROBLEMA), "createdAt", "desc", null, null);
 
         Specification<Paciente> capturedSpec = specCaptor.getValue();
         assertThat(capturedSpec).isNotNull();

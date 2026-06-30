@@ -7,7 +7,9 @@ import com.utn.magtea.common.exception.ResourceNotFoundException;
 import com.utn.magtea.paciente.Paciente;
 import com.utn.magtea.paciente.PacienteEvents;
 import com.utn.magtea.paciente.PacienteRepository;
+import com.utn.magtea.paciente.PacienteEstado;
 import com.utn.magtea.paciente.TipoPaciente;
+import com.utn.magtea.paciente.criterios.Criterios;
 import com.utn.magtea.tubo.Tubo;
 import com.utn.magtea.tubo.TuboInputDTO;
 import com.utn.magtea.tubo.TuboRepository;
@@ -67,9 +69,22 @@ class SueroServiceTest {
 
         when(repository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
-        var result = service.findAll(0, 10, "PAC", List.of(1, 2), SueroUso.PROBLEMA, "P-0005", "fechaExtraccion", "asc");
+        var result = service.findAll(0, 10, "PAC", List.of(1, 2), List.of(SueroUso.PROBLEMA), "P-0005", "fechaExtraccion", "asc");
 
         assertThat(result.content()).isEmpty();
+    }
+
+    @Test
+    void deberia_listarSueros_cuandoFiltroUsosMultiples() {
+        var page = new PageImpl<Suero>(List.of());
+
+        when(repository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        var result = service.findAll(0, 10, null, null,
+                List.of(SueroUso.PROBLEMA, SueroUso.CONTROL), null, "createdAt", "desc");
+
+        assertThat(result.content()).isEmpty();
+        verify(repository).findAll(any(Specification.class), any(Pageable.class));
     }
 
     // --- findById ---
@@ -206,6 +221,49 @@ class SueroServiceTest {
         assertThatThrownBy(() -> service.create(dto))
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Paciente con id 99 no existe");
+    }
+
+    @Test
+    void deberia_lanzarBusinessRuleException_cuandoPacienteSinExtraccionPendiente() {
+        var dto = new SueroCreateDTO(1L, 1L, List.of(new TuboInputDTO("A1", BigDecimal.valueOf(1.0))), LocalDate.now(), new BigDecimal("100"));
+        var paciente = buildPaciente(1L, TipoPaciente.PROBLEMA);
+        paciente.setEstadoClinico(PacienteEstado.ADMITIDO);
+
+        when(pacienteRepository.findById(1L)).thenReturn(Optional.of(paciente));
+
+        assertThatThrownBy(() -> service.create(dto))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("extracción pendiente");
+    }
+
+    @Test
+    void deberia_lanzarBusinessRuleException_cuandoPacienteSinConsentimiento() {
+        var dto = new SueroCreateDTO(1L, 1L, List.of(new TuboInputDTO("A1", BigDecimal.valueOf(1.0))), LocalDate.now(), new BigDecimal("100"));
+        var paciente = buildPaciente(1L, TipoPaciente.PROBLEMA);
+        paciente.setConsentimientoFirmado(false);
+
+        when(pacienteRepository.findById(1L)).thenReturn(Optional.of(paciente));
+
+        assertThatThrownBy(() -> service.create(dto))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("consentimiento");
+    }
+
+    @Test
+    void deberia_lanzarBusinessRuleException_cuandoPacienteConCriterioExclusion() {
+        // RN-04: si los criterios fueron actualizados post-admisión y resultan en EXCLUIDO,
+        // el backend bloquea la creación del suero con HTTP 422
+        var dto = new SueroCreateDTO(1L, 1L, List.of(new TuboInputDTO("A1", BigDecimal.valueOf(1.0))), LocalDate.now(), new BigDecimal("100"));
+        var paciente = buildPaciente(1L, TipoPaciente.PROBLEMA);
+        var criterios = new Criterios();
+        criterios.setEpilepsia(true);
+        paciente.setCriterios(criterios);
+
+        when(pacienteRepository.findById(1L)).thenReturn(Optional.of(paciente));
+
+        assertThatThrownBy(() -> service.create(dto))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("exclusión");
     }
 
     // --- update ---
@@ -394,6 +452,8 @@ class SueroServiceTest {
         var p = new Paciente();
         p.setId(id);
         p.setActivo(true);
+        p.setConsentimientoFirmado(true);
+        p.setEstadoClinico(PacienteEstado.EXTRACCION_PENDIENTE);
         p.setTipoPaciente(tipo);
         return p;
     }

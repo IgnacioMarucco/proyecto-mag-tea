@@ -220,6 +220,11 @@ public class PacienteService {
         mapCriterios(criterios, dto);
         paciente.setCriterios(criterios);
         Paciente saved = repository.save(paciente);
+        CriteriosAptitud nuevaAptitud = CriteriosUtil.calcularAptitud(saved);
+        if (nuevaAptitud != null && nuevaAptitud != CriteriosAptitud.APTO) {
+            log.warn("Paciente {} cambió aptitud a {} — operaciones clínicas bloqueadas",
+                    saved.getCodigoNumerico(), nuevaAptitud);
+        }
         return mapper.toDTO(saved, calcularMchatEstado(saved));
     }
 
@@ -324,7 +329,19 @@ public class PacienteService {
         if (paciente.getTipoPaciente() == TipoPaciente.CONTROL) return;
         paciente.setMchatToken(null);
         paciente.setMchatTokenExpiry(null);
-        paciente.setEstadoClinico(calcularEstado(paciente));
+        // No se usa calcularEstado() aquí: getMchatFamilia() puede devolver null porque
+        // la entidad recién guardada en la misma TX no está sincronizada en el caché L1.
+        // Sabemos que el M-CHAT fue respondido (es lo que disparó este evento), así que
+        // derivamos el estado directamente.
+        PacienteEstado nuevoEstado;
+        if (paciente.getEstadoClinico() == PacienteEstado.EXTRACCION_REALIZADA) {
+            nuevoEstado = PacienteEstado.EXTRACCION_REALIZADA;
+        } else if (paciente.getFechaTurnoExtraccion() != null) {
+            nuevoEstado = PacienteEstado.EXTRACCION_PENDIENTE;
+        } else {
+            nuevoEstado = PacienteEstado.MCHAT_RESPONDIDO;
+        }
+        paciente.setEstadoClinico(nuevoEstado);
         repository.save(paciente);
     }
 
@@ -356,9 +373,11 @@ public class PacienteService {
     void onSueroEliminado(PacienteEvents.SueroEliminadoEvent event) {
         log.debug("Evento {} para paciente {}", "SueroEliminadoEvent", event.pacienteId());
         Paciente p = findActiveById(event.pacienteId());
-        // Set directo intencional: igual que onSueroRegistrado, calcularEstado() no tiene
-        // acceso al Suero, por lo que no puede determinar si la extracción fue realizada.
-        p.setEstadoClinico(PacienteEstado.EXTRACCION_PENDIENTE);
+        // Reset el estado terminal antes de recalcular: EXTRACCION_REALIZADA es sticky en
+        // calcularEstado(), por lo que se necesita volver a ADMITIDO para que la función
+        // derive el estado correcto desde los datos del paciente (fechaTurnoExtraccion, mchat).
+        p.setEstadoClinico(PacienteEstado.ADMITIDO);
+        p.setEstadoClinico(calcularEstado(p));
         repository.save(p);
     }
 

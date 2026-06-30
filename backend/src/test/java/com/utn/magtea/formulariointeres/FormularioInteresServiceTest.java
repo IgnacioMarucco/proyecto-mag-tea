@@ -212,6 +212,45 @@ class FormularioInteresServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class);
     }
 
+    @Test
+    void deberia_cambiarEstado_cuandoPendienteADescartado() {
+        var entidad = formularioActivo(EstadoFormulario.PENDIENTE);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(repository.save(entidad)).thenReturn(entidad);
+        when(mapper.toDTO(entidad)).thenReturn(buildResponse(1L, EstadoFormulario.DESCARTADO));
+
+        service.cambiarEstado(1L, new EstadoUpdateDTO(EstadoFormulario.DESCARTADO));
+
+        assertThat(entidad.getEstado()).isEqualTo(EstadoFormulario.DESCARTADO);
+    }
+
+    @Test
+    void deberia_lanzarExcepcion_cuandoFormularioInactivo() {
+        var entidad = formularioActivo(EstadoFormulario.PENDIENTE);
+        entidad.setActivo(false);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+
+        assertThatThrownBy(() -> service.findById(1L))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void deberia_listarFormularios_cuandoFiltroEstados() {
+        var entidad = formularioActivo(EstadoFormulario.CONTACTADO);
+        var response = buildResponse(1L, EstadoFormulario.CONTACTADO);
+
+        when(repository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(entidad)));
+        when(mapper.toDTO(entidad)).thenReturn(response);
+
+        var result = service.findAll(0, 20, null, List.of(EstadoFormulario.CONTACTADO), "fechaContacto", "asc");
+
+        assertThat(result.content()).hasSize(1);
+        assertThat(result.content().getFirst().estado()).isEqualTo(EstadoFormulario.CONTACTADO);
+    }
+
     // Helpers
     private FormularioInteres formularioActivo(EstadoFormulario estado) {
         var f = new FormularioInteres();

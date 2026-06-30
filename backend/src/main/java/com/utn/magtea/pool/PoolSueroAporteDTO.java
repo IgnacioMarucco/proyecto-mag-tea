@@ -6,5 +6,6 @@ public record PoolSueroAporteDTO(
         Long sueroId,
         String codigoSuero,
         String codigoPaciente,
-        BigDecimal cantidadAportada
+        BigDecimal cantidadAportada,
+        boolean sueroActivo
 ) {}

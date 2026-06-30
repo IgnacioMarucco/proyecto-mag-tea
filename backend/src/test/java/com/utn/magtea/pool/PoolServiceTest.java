@@ -309,6 +309,202 @@ class PoolServiceTest {
                 .hasMessageContaining("Pool con id 99 no existe");
     }
 
+    // --- findByCodigo ---
+
+    @Test
+    void deberia_obtenerPoolPorCodigo_cuandoCodigoExiste() {
+        var pool = buildPool(1L);
+        pool.setCodigo("ABC123");
+        var response = buildResponseDTO(1L);
+
+        when(repository.findByCodigoAndActivoTrue("ABC123")).thenReturn(Optional.of(pool));
+        when(mapper.toDTO(pool)).thenReturn(response);
+
+        var result = service.findByCodigo("ABC123");
+
+        assertThat(result).isNotNull();
+        assertThat(result.id()).isEqualTo(1L);
+    }
+
+    @Test
+    void deberia_lanzarResourceNotFoundException_cuandoCodigoNoExiste() {
+        when(repository.findByCodigoAndActivoTrue("INVALIDO")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.findByCodigo("INVALIDO"))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Pool con c\u00f3digo INVALIDO no existe");
+    }
+
+    // --- delete con modelos animales ---
+
+    @Test
+    void deberia_lanzarBusinessRuleException_cuandoPoolTieneModelosEnCurso() {
+        var pool = buildPool(1L);
+
+        var modelo = new com.utn.magtea.modeloanimal.ModeloAnimal();
+        modelo.setActivo(true);
+        modelo.setEstadoProtocolo(com.utn.magtea.modeloanimal.EstadoProtocolo.PENDIENTE_VOCALIZACIONES);
+        pool.getModelosAnimales().add(modelo);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(pool));
+
+        assertThatThrownBy(() -> service.delete(1L))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("modelo(s) animal(es) en curso");
+    }
+
+    @Test
+    void deberia_darDeBajaPool_cuandoModelosEstanCompletos() {
+        var pool = buildPool(1L);
+
+        var modelo = new com.utn.magtea.modeloanimal.ModeloAnimal();
+        modelo.setActivo(true);
+        modelo.setEstadoProtocolo(com.utn.magtea.modeloanimal.EstadoProtocolo.COMPLETO);
+        pool.getModelosAnimales().add(modelo);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(pool));
+        when(repository.save(pool)).thenReturn(pool);
+
+        service.delete(1L);
+
+        assertThat(pool.isActivo()).isFalse();
+    }
+
+    // --- liberarGrilla ---
+
+    @Test
+    void deberia_liberarGrilla_cuandoPoolExiste() {
+        var pool = buildPool(1L);
+
+        var tubo = new Tubo();
+        tubo.setId(10L);
+        tubo.setPool(pool);
+        tubo.setCantidadInicial(BigDecimal.valueOf(0.5));
+        tubo.setCantidadUsada(BigDecimal.ZERO);
+        pool.getTubos().add(tubo);
+
+        var response = buildResponseDTO(1L);
+        var req = new com.utn.magtea.tubo.VaciarTuboRequest(com.utn.magtea.tubo.MotivoVaciado.CONSUMIDO, null);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(pool));
+        // tuboService.vaciar se llama con el id del tubo
+        doNothing().when(tuboService).vaciar(10L, req);
+        when(repository.findById(1L)).thenReturn(Optional.of(pool));
+        when(mapper.toDTO(pool)).thenReturn(response);
+
+        var result = service.liberarGrilla(1L, req);
+
+        assertThat(result).isNotNull();
+        verify(tuboService).vaciar(10L, req);
+    }
+
+    @Test
+    void deberia_lanzarResourceNotFoundException_cuandoPoolNoExisteAlLiberarGrilla() {
+        var req = new com.utn.magtea.tubo.VaciarTuboRequest(com.utn.magtea.tubo.MotivoVaciado.CONSUMIDO, null);
+        when(repository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.liberarGrilla(99L, req))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    // --- create: validaciones adicionales ---
+
+    @Test
+    void deberia_lanzarResourceNotFoundException_cuandoCajaNoExisteAlCrear() {
+        var aportes = List.of(new SueroTuboAporteInputDTO(1L, BigDecimal.valueOf(0.3)));
+        var tubos = List.of(new TuboInputDTO("P1", BigDecimal.valueOf(0.3)));
+        var dto = new PoolCreateDTO(99L, aportes, tubos);
+
+        when(cajaRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.create(dto))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Caja con id 99 no existe");
+    }
+
+    @Test
+    void deberia_lanzarBusinessRuleException_cuandoTuboNoEsDeTipoSuero() {
+        var aportes = List.of(new SueroTuboAporteInputDTO(1L, BigDecimal.valueOf(0.3)));
+        var tubos = List.of(new TuboInputDTO("P1", BigDecimal.valueOf(0.3)));
+        var dto = new PoolCreateDTO(1L, aportes, tubos);
+
+        var caja = buildCaja(1L);
+
+        var tuboPool = new Tubo();
+        tuboPool.setId(1L);
+        tuboPool.setTipo(TipoTubo.POOL);
+        tuboPool.setPosicion("A1");
+
+        when(cajaRepository.findById(1L)).thenReturn(Optional.of(caja));
+        when(tuboRepository.findById(1L)).thenReturn(Optional.of(tuboPool));
+
+        assertThatThrownBy(() -> service.create(dto))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("no es un tubo de suero");
+    }
+
+    @Test
+    void deberia_lanzarBusinessRuleException_cuandoSueroInactivo() {
+        var aportes = List.of(new SueroTuboAporteInputDTO(1L, BigDecimal.valueOf(0.3)));
+        var tubos = List.of(new TuboInputDTO("P1", BigDecimal.valueOf(0.3)));
+        var dto = new PoolCreateDTO(1L, aportes, tubos);
+
+        var caja = buildCaja(1L);
+        var st = buildSueroTubo(1L, 1, SueroUso.PROBLEMA, "A1", 1.0, 0.0);
+        st.getSuero().setActivo(false);
+
+        when(cajaRepository.findById(1L)).thenReturn(Optional.of(caja));
+        when(tuboRepository.findById(1L)).thenReturn(Optional.of(st));
+
+        assertThatThrownBy(() -> service.create(dto))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("no está activo");
+    }
+
+    @Test
+    void deberia_lanzarBusinessRuleException_cuandoSumaAportesNoCoincidesConTubosPool() {
+        // aportes suman 0.15 pero tubos del pool suman 0.30 → no coinciden
+        var aportes = List.of(new SueroTuboAporteInputDTO(1L, BigDecimal.valueOf(0.15)));
+        var tubos = List.of(new TuboInputDTO("P1", BigDecimal.valueOf(0.30)));
+        var dto = new PoolCreateDTO(1L, aportes, tubos);
+
+        var caja = buildCaja(1L);
+        var st = buildSueroTubo(1L, 1, SueroUso.PROBLEMA, "A1", 1.0, 0.0);
+
+        when(cajaRepository.findById(1L)).thenReturn(Optional.of(caja));
+        when(tuboRepository.findById(1L)).thenReturn(Optional.of(st));
+
+        assertThatThrownBy(() -> service.create(dto))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("suma de aportes");
+    }
+
+    // --- update: validaciones adicionales ---
+
+    @Test
+    void deberia_lanzarBusinessRuleException_cuandoNuevaCantidadMenorAUsadaEnUpdate() {
+        var pool = buildPool(1L);
+        var caja = buildCaja(1L);
+        // Tubo existente en P1 con 0.2 mL usados; dto quiere reducir inicial a 0.1
+        var tubosInput = List.of(new TuboInputDTO("P1", BigDecimal.valueOf(0.1)));
+        var dto = new PoolUpdateDTO(1L, LocalDate.now(), tubosInput);
+
+        var tuboExistente = new Tubo();
+        tuboExistente.setTipo(TipoTubo.POOL);
+        tuboExistente.setPosicion("P1");
+        tuboExistente.setCantidadInicial(BigDecimal.valueOf(0.5));
+        tuboExistente.setCantidadUsada(BigDecimal.valueOf(0.2));
+        tuboExistente.setPool(pool);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(pool));
+        when(cajaRepository.findById(1L)).thenReturn(Optional.of(caja));
+        when(tuboRepository.findByPoolId(1L)).thenReturn(List.of(tuboExistente));
+
+        assertThatThrownBy(() -> service.update(1L, dto))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("ya tiene");
+    }
+
     // --- Helpers ---
 
     private Pool buildPool(Long id) {

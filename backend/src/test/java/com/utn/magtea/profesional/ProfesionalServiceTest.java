@@ -158,4 +158,48 @@ class ProfesionalServiceTest {
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessageContaining("Profesional no encontrado");
     }
+
+    @Test
+    void deberia_lanzarDuplicateException_cuandoUpdateConEmailDeOtroProfesional() {
+        var dto = new ProfesionalUpdateDTO("Ana", "García", "nuevo@test.com", "351-000-0000", Role.CUERPO_MEDICO);
+        var entidad = new Profesional();
+        entidad.setActivo(true);
+        entidad.setEmail("viejo@test.com"); // email distinto al del DTO
+
+        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(repository.existsByEmail("nuevo@test.com")).thenReturn(true);
+
+        assertThatThrownBy(() -> service.update(1L, dto))
+                .isInstanceOf(DuplicateResourceException.class)
+                .hasMessageContaining("nuevo@test.com");
+    }
+
+    @Test
+    void deberia_lanzarExcepcion_cuandoProfesionalInactivo() {
+        var entidad = new Profesional();
+        entidad.setActivo(false);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+
+        assertThatThrownBy(() -> service.findById(1L))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("1");
+    }
+
+    @Test
+    void deberia_listarProfesionalesConFiltroRol() {
+        var entidad = new Profesional();
+        entidad.setActivo(true);
+        entidad.setRole(Role.CUERPO_TECNICO);
+        var response = new ProfesionalResponseDTO(1L, "Carlos", "López", "carlos@test.com", null, Role.CUERPO_TECNICO, true, null);
+
+        when(repository.findAll(any(Specification.class), any(Pageable.class)))
+                .thenReturn(new PageImpl<>(List.of(entidad)));
+        when(mapper.toDTO(entidad)).thenReturn(response);
+
+        var result = service.findAll(0, 20, null, Role.CUERPO_TECNICO, "apellido", "asc");
+
+        assertThat(result.content()).hasSize(1);
+        assertThat(result.content().getFirst().role()).isEqualTo(Role.CUERPO_TECNICO);
+    }
 }
