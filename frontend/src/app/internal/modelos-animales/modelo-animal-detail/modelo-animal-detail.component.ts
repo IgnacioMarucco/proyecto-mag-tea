@@ -14,6 +14,7 @@ import { TresCamarasSectionComponent } from './sections/tres-camaras-section.com
 import { MicroscopiaSectionComponent } from './sections/microscopia-section.component';
 import { InoculacionSectionComponent } from './sections/inoculacion-section.component';
 import { CopyBadgeComponent } from '../../../shared/copy-badge/copy-badge.component';
+import { IconComponent } from '../../../shared/icon/icon.component';
 import { RANGO_COLORS, RANGO_LABELS, USO_COLORS, USO_LABELS } from '../../../shared/utils/btu.utils';
 
 @Component({
@@ -28,6 +29,7 @@ import { RANGO_COLORS, RANGO_LABELS, USO_COLORS, USO_LABELS } from '../../../sha
     TresCamarasSectionComponent,
     MicroscopiaSectionComponent,
     CopyBadgeComponent,
+    IconComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './modelo-animal-detail.component.html',
@@ -42,6 +44,26 @@ export class ModeloAnimalDetailComponent {
   modeloAnimal = signal<ModeloAnimalResponse | null>(null);
   loading      = signal(true);
   loadError    = signal<string | null>(null);
+
+  readonly protocolSteps = computed(() => {
+    const ma = this.modeloAnimal();
+    if (!ma) return [];
+    const e = ma.estadoProtocolo;
+
+    const raw: { label: string; done: boolean }[] = [
+      { label: 'Inoculación',    done: e !== 'PENDIENTE_INOCULACION' && e !== 'INOCULACION_EN_CURSO' },
+      { label: 'Vocalizaciones', done: e === 'PENDIENTE_TRES_CAMARAS' || e === 'PENDIENTE_MICROSCOPIA' || e === 'COMPLETO' },
+      { label: 'Tres cámaras',   done: e === 'PENDIENTE_MICROSCOPIA' || e === 'COMPLETO' },
+      { label: 'Microscopía',    done: e === 'COMPLETO' },
+    ];
+
+    let foundCurrent = false;
+    return raw.map(s => {
+      if (s.done) return { ...s, state: 'done' as const };
+      if (!foundCurrent) { foundCurrent = true; return { ...s, state: 'current' as const }; }
+      return { ...s, state: 'upcoming' as const };
+    });
+  });
 
   readonly crumbs = computed<Crumb[]>(() => {
     const base: Crumb[] = this.route.snapshot.data['crumbs'] ?? [];

@@ -77,6 +77,15 @@ export class SueroListComponent {
 
   readonly filterGroups: FilterGroup[] = [
     {
+      key: 'uso',
+      label: 'Tipo',
+      multiSelect: true,
+      options: [
+        { key: 'CONTROL',  label: 'Control'       },
+        { key: 'PROBLEMA', label: 'Caso problema' },
+      ],
+    },
+    {
       key: 'rango',
       label: 'Rango',
       multiSelect: true,
@@ -85,15 +94,6 @@ export class SueroListComponent {
         { key: '1', label: 'Rango 1'            },
         { key: '2', label: 'Rango 2'            },
         { key: '3', label: 'Rango 3'            },
-      ],
-    },
-    {
-      key: 'uso',
-      label: 'Uso',
-      multiSelect: true,
-      options: [
-        { key: 'CONTROL',  label: 'Control'       },
-        { key: 'PROBLEMA', label: 'Caso problema' },
       ],
     },
   ];

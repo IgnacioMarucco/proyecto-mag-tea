@@ -3,14 +3,8 @@
 <section class="bg-surface border border-border rounded-lg overflow-hidden">
 
   <!-- Header -->
-  <div class="flex items-center justify-between px-6 py-4 border-b border-border bg-background">
-    <h2 class="text-sm font-semibold text-text">Datos básicos</h2>
-    @if (activeTab() === 'datos') {
-      <a [routerLink]="['/internal/pacientes', p.codigoNumerico, 'editar']"
-         class="text-xs px-3 py-1.5 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors cursor-pointer">
-        Editar datos
-      </a>
-    }
+  <div class="px-6 py-4 border-b border-border bg-background">
+    <h2 class="text-sm font-semibold text-text">Información del paciente</h2>
   </div>
 
   <!-- Tab bar -->

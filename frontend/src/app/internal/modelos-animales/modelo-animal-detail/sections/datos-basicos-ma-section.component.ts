@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { ModeloAnimalResponse } from '../../../../core/models/modelo-animal.model';
 import { StatusBadgeComponent } from '../../../../shared/status-badge/status-badge.component';
 import { FechaPipe } from '../../../../core/pipes/fecha.pipe';
@@ -8,7 +7,7 @@ import { SEXO_COLORS, SEXO_LABELS } from '../../../../shared/utils/modelo-animal
 
 @Component({
   selector: 'app-datos-basicos-ma-section',
-  imports: [RouterLink, StatusBadgeComponent, FechaPipe],
+  imports: [StatusBadgeComponent, FechaPipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './datos-basicos-ma-section.component.html',
 })

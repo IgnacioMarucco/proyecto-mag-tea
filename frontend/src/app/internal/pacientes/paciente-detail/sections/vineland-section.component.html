@@ -45,30 +45,32 @@
 
 @if (showModal()) {
   <app-modal-container title="Escala Vineland-II" size="md" (closed)="showModal.set(false)">
-    <form [formGroup]="form" (ngSubmit)="save()" class="px-6 py-5 space-y-4">
-      @for (sub of [
-        { key: 'comunicacion',          label: 'Comunicación' },
-        { key: 'autovalimiento',        label: 'Autovalimiento' },
-        { key: 'social',                label: 'Socialización' },
-        { key: 'motor',                 label: 'Motor' },
-        { key: 'cocienteFinal',         label: 'Cociente de Conducta Adaptativa (CCA)' },
-        { key: 'conductaDesadaptativa', label: 'Índice de Conducta Desadaptativa' },
-        { key: 'internalizante',        label: 'Internalizante' },
-        { key: 'externalizante',        label: 'Externalizante' }
-      ]; track sub.key) {
-        <div>
-          <label [for]="sub.key" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
-            {{ sub.label }}
-          </label>
-          <input [id]="sub.key" type="number" [formControlName]="sub.key"
-            class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text
-                   focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" />
-        </div>
-      }
+    <form [formGroup]="form" (ngSubmit)="save()" class="px-6 py-5">
+      <div class="grid grid-cols-2 gap-x-5 gap-y-4">
+        @for (sub of [
+          { key: 'comunicacion',          label: 'Comunicación' },
+          { key: 'autovalimiento',        label: 'Autovalimiento' },
+          { key: 'social',                label: 'Socialización' },
+          { key: 'motor',                 label: 'Motor' },
+          { key: 'cocienteFinal',         label: 'Cociente Adaptativo (CCA)' },
+          { key: 'conductaDesadaptativa', label: 'C. Desadaptativa' },
+          { key: 'internalizante',        label: 'Internalizante' },
+          { key: 'externalizante',        label: 'Externalizante' }
+        ]; track sub.key) {
+          <div>
+            <label [for]="sub.key" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
+              {{ sub.label }}
+            </label>
+            <input [id]="sub.key" type="number" [formControlName]="sub.key"
+              class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text
+                     focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" />
+          </div>
+        }
+      </div>
       @if (saveError()) {
-        <p class="text-xs text-danger" role="alert">{{ saveError() }}</p>
+        <p class="text-xs text-danger mt-4" role="alert">{{ saveError() }}</p>
       }
-      <div class="flex justify-end gap-3 pt-4 border-t border-border">
+      <div class="flex justify-end gap-3 pt-4 mt-4 border-t border-border">
         <button type="button" (click)="showModal.set(false)"
           class="px-4 py-2 text-sm text-text-muted hover:text-text transition-colors cursor-pointer">Cancelar</button>
         <button type="submit" [disabled]="saving()"

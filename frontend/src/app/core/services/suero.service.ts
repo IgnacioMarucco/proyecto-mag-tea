@@ -31,7 +31,7 @@ export class SueroService {
     if (params.sortBy)  p = p.set('sortBy', params.sortBy);
     if (params.sortDir) p = p.set('sortDir', params.sortDir);
     params.rango?.forEach(r => { p = p.append('rangos', r); });
-    params.uso?.forEach(u   => { p = p.append('uso',   u); });
+    params.uso?.forEach(u   => { p = p.append('usos',  u); });
     if (params.codigoPaciente) p = p.set('codigoPaciente', params.codigoPaciente);
     return this.http.get<PageResponse<SueroListItem>>(this.base, { params: p });
   }

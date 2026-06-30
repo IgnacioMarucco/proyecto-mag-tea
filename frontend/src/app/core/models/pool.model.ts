@@ -23,6 +23,7 @@ export interface PoolSueroAporteItem {
   codigoSuero: string;
   codigoPaciente: string;
   cantidadAportada: number;
+  sueroActivo: boolean;
 }
 
 export interface PoolListItem {

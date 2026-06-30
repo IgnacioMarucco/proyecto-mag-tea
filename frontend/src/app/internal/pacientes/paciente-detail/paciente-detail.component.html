@@ -8,7 +8,7 @@
 } @else if (paciente(); as p) {
 
 <div class="px-8 pb-0">
-  <div class="mb-4">
+  <div class="flex items-start justify-between mb-4 gap-4">
     <app-page-header [crumbs]="crumbs()">
       <app-copy-badge [value]="p.codigoNumerico" />
       <app-status-badge [value]="p.tipoPaciente"
@@ -18,6 +18,12 @@
         [labels]="{ ADMITIDO: 'Admitido', MCHAT_RESPONDIDO: 'M-CHAT respondido', EXTRACCION_PENDIENTE: 'Extracción pendiente', EXTRACCION_REALIZADA: 'Extracción realizada' }"
         [colorMap]="{ ADMITIDO: 'bg-background text-text-muted border border-border', MCHAT_RESPONDIDO: 'bg-warning/10 text-warning', EXTRACCION_PENDIENTE: 'bg-primary-light text-primary', EXTRACCION_REALIZADA: 'bg-accent-light text-accent' }" />
     </app-page-header>
+    <a
+      [routerLink]="['/internal/pacientes', p.codigoNumerico, 'editar']"
+      class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors whitespace-nowrap flex-shrink-0"
+    >
+      Editar
+    </a>
   </div>
 
   <!-- Protocol progress timeline -->

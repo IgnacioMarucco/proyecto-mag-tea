@@ -37,140 +37,189 @@
 
     <!-- Fila de datos básicos -->
     <div style="display:flex;gap:28px;margin-bottom:12px;font-size:11px;">
-      <div><span style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:1px;">Código</span><strong style="font-family:monospace;">{{ r.identificador }}</strong></div>
-      <div><span style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:1px;">Tipo</span>{{ usoLabels[r.pool.uso] }}</div>
-      <div><span style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:1px;">Camada</span>{{ r.camadaNombre }}</div>
-      <div><span style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:1px;">Nacimiento</span>{{ r.fechaNacimiento | fecha }}</div>
-      <div><span style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:1px;">Sexo</span>{{ sexoLabels[r.sexo] }}</div>
+      <div><span style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:2px;">Código</span><strong style="font-family:monospace;">{{ r.identificador }}</strong></div>
+      <div><span style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:2px;">Tipo</span>{{ usoLabels[r.pool.uso] }}</div>
+      <div><span style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:2px;">Camada</span>{{ r.camadaNombre }}</div>
+      <div><span style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:2px;">Nacimiento</span>{{ r.fechaNacimiento | fecha }}</div>
+      <div><span style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:2px;">Sexo</span>{{ sexoLabels[r.sexo] }}</div>
     </div>
 
-    <!-- Tabla de inoculaciones -->
-    @if (r.inoculaciones && r.inoculaciones.length > 0) {
-    <div style="margin-bottom:12px;">
-      <div style="font-size:9px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;">Inoculaciones</div>
-      <table style="border-collapse:collapse;font-size:10px;">
-        <thead>
-          <tr style="background:#f9fafb;">
-            <th style="padding:4px 12px;border:1px solid #e5e7eb;text-align:center;font-weight:600;color:#374151;">Día</th>
-            <th style="padding:4px 12px;border:1px solid #e5e7eb;text-align:left;font-weight:600;color:#374151;">Fecha</th>
-            <th style="padding:4px 12px;border:1px solid #e5e7eb;text-align:center;font-weight:600;color:#374151;">Cantidad (mL)</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (inoc of r.inoculaciones; track inoc.dia) {
-          <tr>
-            <td style="padding:3px 12px;border:1px solid #e5e7eb;text-align:center;font-weight:600;">Día {{ inoc.dia }}</td>
-            <td style="padding:3px 12px;border:1px solid #e5e7eb;">{{ inoc.fecha ? (inoc.fecha | fecha) : '—' }}</td>
-            <td style="padding:3px 12px;border:1px solid #e5e7eb;text-align:center;">{{ inoc.cantidadConsumida != null ? inoc.cantidadConsumida : '—' }}</td>
-          </tr>
-          }
-        </tbody>
-      </table>
+    <!-- INOCULACIONES + VOCALIZACIONES en 2 columnas -->
+    <div style="display:flex;gap:28px;align-items:flex-start;margin-bottom:12px;">
+      <div style="flex:1;min-width:0;">
+        @if (r.inoculaciones && r.inoculaciones.length > 0) {
+        <div>
+          <div style="font-size:10px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;">Inoculaciones</div>
+          <table style="width:100%;border-collapse:collapse;font-size:10px;">
+            <thead>
+              <tr style="background:#f9fafb;">
+                <th style="padding:4px 10px;border:1px solid #e5e7eb;text-align:center;font-weight:600;color:#374151;">Día</th>
+                <th style="padding:4px 10px;border:1px solid #e5e7eb;text-align:left;font-weight:600;color:#374151;">Fecha</th>
+                <th style="padding:4px 10px;border:1px solid #e5e7eb;text-align:center;font-weight:600;color:#374151;">Cantidad (mL)</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (inoc of r.inoculaciones; track inoc.dia) {
+              <tr>
+                <td style="padding:3px 10px;border:1px solid #e5e7eb;text-align:center;font-weight:600;">Día {{ inoc.dia }}</td>
+                <td style="padding:3px 10px;border:1px solid #e5e7eb;">{{ inoc.fecha ? (inoc.fecha | fecha) : '—' }}</td>
+                <td style="padding:3px 10px;border:1px solid #e5e7eb;text-align:center;">{{ inoc.cantidadConsumida != null ? inoc.cantidadConsumida : '—' }}</td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        } @else if (r.fechaDia1Inoculacion) {
+        <div style="font-size:10px;color:#6b7280;">
+          Inoculación día 1: {{ r.fechaDia1Inoculacion | fecha }}
+        </div>
+        }
+      </div>
+      <div style="flex:1;min-width:0;">
+        @if (r.vocalizaciones; as vus) {
+        <div>
+          <div style="font-size:10px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;">Vocalizaciones ultrasónicas</div>
+          <table style="width:100%;border-collapse:collapse;font-size:10px;">
+            <thead>
+              <tr style="background:#f9fafb;">
+                <th style="padding:4px 10px;border:1px solid #e5e7eb;text-align:left;font-weight:600;color:#374151;">Muestra</th>
+                <th style="padding:4px 10px;border:1px solid #e5e7eb;text-align:center;font-weight:600;color:#374151;">Frecuencia (kHz)</th>
+                <th style="padding:4px 10px;border:1px solid #e5e7eb;text-align:left;font-weight:600;color:#374151;">Banda</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding:3px 10px;border:1px solid #e5e7eb;">Muestra 1</td>
+                <td style="padding:3px 10px;border:1px solid #e5e7eb;text-align:center;font-weight:600;">{{ vus.muestra1Khz }}</td>
+                <td style="padding:3px 10px;border:1px solid #e5e7eb;">{{ bandaLabels[vus.vusBanda1] }}</td>
+              </tr>
+              <tr>
+                <td style="padding:3px 10px;border:1px solid #e5e7eb;">Muestra 2</td>
+                <td style="padding:3px 10px;border:1px solid #e5e7eb;text-align:center;font-weight:600;">{{ vus.muestra2Khz }}</td>
+                <td style="padding:3px 10px;border:1px solid #e5e7eb;">{{ bandaLabels[vus.vusBanda2] }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        }
+      </div>
     </div>
-    } @else if (r.fechaDia1Inoculacion) {
-    <div style="margin-bottom:12px;font-size:10px;color:#6b7280;">
-      Inoculación día 1: {{ r.fechaDia1Inoculacion | fecha }}
-    </div>
-    }
 
-    <!-- Vocalizaciones -->
-    @if (r.vocalizaciones; as vus) {
-    <div style="margin-bottom:12px;">
-      <div style="font-size:9px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;">Vocalizaciones ultrasónicas</div>
-      <table style="border-collapse:collapse;font-size:10px;">
-        <thead>
-          <tr style="background:#f9fafb;">
-            <th style="padding:4px 14px;border:1px solid #e5e7eb;text-align:left;font-weight:600;color:#374151;">Muestra</th>
-            <th style="padding:4px 14px;border:1px solid #e5e7eb;text-align:center;font-weight:600;color:#374151;">Frecuencia (kHz)</th>
-            <th style="padding:4px 14px;border:1px solid #e5e7eb;text-align:left;font-weight:600;color:#374151;">Banda</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style="padding:3px 14px;border:1px solid #e5e7eb;">Muestra 1</td>
-            <td style="padding:3px 14px;border:1px solid #e5e7eb;text-align:center;font-weight:600;">{{ vus.muestra1Khz }}</td>
-            <td style="padding:3px 14px;border:1px solid #e5e7eb;">{{ bandaLabels[vus.vusBanda1] }}</td>
-          </tr>
-          <tr>
-            <td style="padding:3px 14px;border:1px solid #e5e7eb;">Muestra 2</td>
-            <td style="padding:3px 14px;border:1px solid #e5e7eb;text-align:center;font-weight:600;">{{ vus.muestra2Khz }}</td>
-            <td style="padding:3px 14px;border:1px solid #e5e7eb;">{{ bandaLabels[vus.vusBanda2] }}</td>
-          </tr>
-        </tbody>
-      </table>
+    <!-- TEST DE TRES CÁMARAS + MICROSCOPÍA en 2 columnas -->
+    <div style="display:flex;gap:28px;align-items:flex-start;">
+      <div style="flex:1;min-width:0;">
+        @if (r.tresCamaras; as tc) {
+        <div>
+          <div style="font-size:10px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;">Test de tres cámaras</div>
+          <table style="width:100%;border-collapse:collapse;font-size:10px;">
+            <thead>
+              <tr style="background:#f9fafb;">
+                <th style="padding:4px 10px;border:1px solid #e5e7eb;text-align:left;font-weight:600;color:#374151;">Módulo</th>
+                <th style="padding:4px 10px;border:1px solid #e5e7eb;text-align:center;font-weight:600;color:#374151;">T. ratón (s)</th>
+                <th style="padding:4px 10px;border:1px solid #e5e7eb;text-align:center;font-weight:600;color:#374151;">T. comparación (s)</th>
+                <th style="padding:4px 10px;border:1px solid #e5e7eb;text-align:left;font-weight:600;color:#374151;">Resultado</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding:3px 10px;border:1px solid #e5e7eb;">Módulo 1</td>
+                <td style="padding:3px 10px;border:1px solid #e5e7eb;text-align:center;">{{ tc.m1TiempoRatonNovedad }}</td>
+                <td style="padding:3px 10px;border:1px solid #e5e7eb;text-align:center;">{{ tc.m1TiempoObjetoNovedoso }}</td>
+                <td style="padding:3px 10px;border:1px solid #e5e7eb;">{{ socializacionLabels[tc.sociabilizacion1] }}</td>
+              </tr>
+              @if (tc.m2TiempoRatonDesconocido != null) {
+              <tr>
+                <td style="padding:3px 10px;border:1px solid #e5e7eb;">Módulo 2</td>
+                <td style="padding:3px 10px;border:1px solid #e5e7eb;text-align:center;">{{ tc.m2TiempoRatonDesconocido }}</td>
+                <td style="padding:3px 10px;border:1px solid #e5e7eb;text-align:center;">{{ tc.m2TiempoRatonFamiliar }}</td>
+                <td style="padding:3px 10px;border:1px solid #e5e7eb;">{{ tc.sociabilizacion2 ? socializacionLabels[tc.sociabilizacion2] : '—' }}</td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        }
+      </div>
+      <div style="flex:1;min-width:0;">
+        @if (r.numCelulasGanglionares != null || r.numCelulasPurkinje != null) {
+        <div>
+          <div style="font-size:10px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;">Microscopía</div>
+          <table style="width:100%;border-collapse:collapse;font-size:10px;">
+            <thead>
+              <tr style="background:#f9fafb;">
+                <th style="padding:4px 10px;border:1px solid #e5e7eb;text-align:left;font-weight:600;color:#374151;">Tipo celular</th>
+                <th style="padding:4px 10px;border:1px solid #e5e7eb;text-align:center;font-weight:600;color:#374151;">Cantidad</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="padding:3px 10px;border:1px solid #e5e7eb;">Células ganglionares</td>
+                <td style="padding:3px 10px;border:1px solid #e5e7eb;text-align:center;font-weight:600;">{{ r.numCelulasGanglionares ?? '—' }}</td>
+              </tr>
+              <tr>
+                <td style="padding:3px 10px;border:1px solid #e5e7eb;">Células de Purkinje</td>
+                <td style="padding:3px 10px;border:1px solid #e5e7eb;text-align:center;font-weight:600;">{{ r.numCelulasPurkinje ?? '—' }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        }
+      </div>
     </div>
-    }
-
-    <!-- Tres cámaras -->
-    @if (r.tresCamaras; as tc) {
-    <div style="margin-bottom:12px;">
-      <div style="font-size:9px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;">Test de tres cámaras</div>
-      <table style="border-collapse:collapse;font-size:10px;">
-        <thead>
-          <tr style="background:#f9fafb;">
-            <th style="padding:4px 14px;border:1px solid #e5e7eb;text-align:left;font-weight:600;color:#374151;">Módulo</th>
-            <th style="padding:4px 14px;border:1px solid #e5e7eb;text-align:center;font-weight:600;color:#374151;">T. ratón (s)</th>
-            <th style="padding:4px 14px;border:1px solid #e5e7eb;text-align:center;font-weight:600;color:#374151;">T. comparación (s)</th>
-            <th style="padding:4px 14px;border:1px solid #e5e7eb;text-align:left;font-weight:600;color:#374151;">Resultado</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style="padding:3px 14px;border:1px solid #e5e7eb;">Módulo 1</td>
-            <td style="padding:3px 14px;border:1px solid #e5e7eb;text-align:center;">{{ tc.m1TiempoRatonNovedad }}</td>
-            <td style="padding:3px 14px;border:1px solid #e5e7eb;text-align:center;">{{ tc.m1TiempoObjetoNovedoso }}</td>
-            <td style="padding:3px 14px;border:1px solid #e5e7eb;">{{ socializacionLabels[tc.sociabilizacion1] }}</td>
-          </tr>
-          @if (tc.m2TiempoRatonDesconocido != null) {
-          <tr>
-            <td style="padding:3px 14px;border:1px solid #e5e7eb;">Módulo 2</td>
-            <td style="padding:3px 14px;border:1px solid #e5e7eb;text-align:center;">{{ tc.m2TiempoRatonDesconocido }}</td>
-            <td style="padding:3px 14px;border:1px solid #e5e7eb;text-align:center;">{{ tc.m2TiempoRatonFamiliar }}</td>
-            <td style="padding:3px 14px;border:1px solid #e5e7eb;">{{ tc.sociabilizacion2 ? socializacionLabels[tc.sociabilizacion2] : '—' }}</td>
-          </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-    }
-
-    <!-- Microscopía -->
-    @if (r.numCelulasGanglionares != null || r.numCelulasPurkinje != null) {
-    <div>
-      <div style="font-size:9px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:5px;">Microscopía</div>
-      <table style="border-collapse:collapse;font-size:10px;">
-        <thead>
-          <tr style="background:#f9fafb;">
-            <th style="padding:4px 14px;border:1px solid #e5e7eb;text-align:left;font-weight:600;color:#374151;">Tipo celular</th>
-            <th style="padding:4px 14px;border:1px solid #e5e7eb;text-align:center;font-weight:600;color:#374151;">Cantidad</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style="padding:3px 14px;border:1px solid #e5e7eb;">Células ganglionares</td>
-            <td style="padding:3px 14px;border:1px solid #e5e7eb;text-align:center;font-weight:600;">{{ r.numCelulasGanglionares ?? '—' }}</td>
-          </tr>
-          <tr>
-            <td style="padding:3px 14px;border:1px solid #e5e7eb;">Células de Purkinje</td>
-            <td style="padding:3px 14px;border:1px solid #e5e7eb;text-align:center;font-weight:600;">{{ r.numCelulasPurkinje ?? '—' }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    }
   </section>
 
   <!-- ── POOL INOCULADO ── -->
   <section style="margin-bottom:20px;">
     <h2 style="font-size:9px;font-weight:700;color:#1d4ed8;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 8px 0;padding-bottom:3px;border-bottom:1px solid #e5e7eb;">Pool</h2>
     <div style="display:flex;gap:28px;font-size:11px;">
-      <div><span style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:1px;">Código</span><strong style="font-family:monospace;">{{ r.pool.codigo }}</strong></div>
-      <div><span style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:1px;">Tipo</span>{{ usoLabels[r.pool.uso] }}</div>
-      <div><span style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:1px;">Rango BTU</span>Rango {{ r.pool.rango }}</div>
-      <div><span style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:1px;">Fecha creación</span>{{ r.pool.fechaCreacion | fecha }}</div>
-      <div><span style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:1px;">Ubicación</span>Freezer {{ r.pool.freezer }} - Cajón {{ r.pool.cajon }} - Caja {{ r.pool.numeroCaja }}</div>
+      <div><span style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:2px;">Código</span><strong style="font-family:monospace;">{{ r.pool.codigo }}</strong>@if (!r.pool.poolActivo) {<span style="margin-left:4px;font-size:9px;color:#dc2626;font-weight:600;">(baja)</span>}</div>
+      <div><span style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:2px;">Tipo</span>{{ usoLabels[r.pool.uso] }}</div>
+      <div><span style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:2px;">Rango BTU</span>Rango {{ r.pool.rango }}</div>
+      <div><span style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:2px;">Fecha creación</span>{{ r.pool.fechaCreacion | fecha }}</div>
+      <div><span style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:2px;">Ubicación</span>Freezer {{ r.pool.freezer }} - Cajón {{ r.pool.cajon }} - Caja {{ r.pool.numeroCaja }}</div>
     </div>
   </section>
+
+  <!-- ── RESUMEN CLÍNICO ── -->
+  @if (r.sueros.length > 0) {
+  <section style="margin-bottom:20px;">
+    <h2 style="font-size:9px;font-weight:700;color:#1d4ed8;letter-spacing:0.08em;text-transform:uppercase;margin:0 0 8px 0;padding-bottom:3px;border-bottom:1px solid #e5e7eb;">Resumen clínico</h2>
+    <table style="width:100%;border-collapse:collapse;font-size:10px;">
+      <thead>
+        <tr style="background:#f9fafb;">
+          <th style="padding:5px 8px;border:1px solid #e5e7eb;text-align:left;font-weight:600;color:#374151;">Paciente</th>
+          <th style="padding:5px 8px;border:1px solid #e5e7eb;text-align:left;font-weight:600;color:#374151;">M-CHAT</th>
+          <th style="padding:5px 8px;border:1px solid #e5e7eb;text-align:left;font-weight:600;color:#374151;">CARS-2</th>
+          <th style="padding:5px 8px;border:1px solid #e5e7eb;text-align:center;font-weight:600;color:#374151;">Vineland ABC</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (suero of r.sueros; track $index) {
+          @if (suero.paciente; as p) {
+          <tr>
+            <td style="padding:5px 8px;border:1px solid #e5e7eb;font-family:monospace;font-weight:600;">{{ p.codigoNumerico }}</td>
+            <td style="padding:5px 8px;border:1px solid #e5e7eb;">
+              @if (p.mchatScoreTotal != null) { Score {{ p.mchatScoreTotal }} }
+              @else if (p.mchatSeguimientoFallas != null) { {{ p.mchatSeguimientoFallas }} falla/s }
+              @else { — }
+              @if (p.mchatRiesgo) {
+                <span [style]="mchatBadgeStyle(p.mchatRiesgo)">{{ mchatRiesgoLabels[p.mchatRiesgo] }}</span>
+              }
+            </td>
+            <td style="padding:5px 8px;border:1px solid #e5e7eb;">
+              @if (p.carsRawScore != null) { Raw {{ p.carsRawScore }} } @else { — }
+              @if (p.carsResultado) {
+                <span [style]="carsBadgeStyle(p.carsResultado)">{{ carsResultadoLabels[p.carsResultado] }}</span>
+              }
+            </td>
+            <td style="padding:5px 8px;border:1px solid #e5e7eb;text-align:center;font-weight:700;">{{ p.vinelandCocienteFinal ?? '—' }}</td>
+          </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </section>
+  }
 
   <!-- ── PROVENIENCIA — POR SUERO ── -->
   <section style="margin-bottom:20px;page-break-before:always;">
@@ -187,9 +236,9 @@
       <div style="background:#eff6ff;padding:10px 14px;border-radius:6px 6px 0 0;">
         <div style="font-size:9px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px;">Suero {{ $index + 1 }}</div>
         <div style="display:flex;gap:28px;font-size:11px;">
-          <div><span style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:1px;">Rango</span>{{ suero.rango != null ? suero.rango : '—' }}</div>
-          <div><span style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:1px;">BTU</span>{{ suero.valorAnticuerpos != null ? suero.valorAnticuerpos : '—' }}</div>
-          <div><span style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:1px;">Extracción</span>{{ suero.fechaExtraccion | fecha }}</div>
+          <div><span style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:2px;">Rango</span>{{ suero.rango != null ? suero.rango : '—' }}</div>
+          <div><span style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:2px;">BTU</span>{{ suero.valorAnticuerpos != null ? suero.valorAnticuerpos : '—' }}</div>
+          <div><span style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:2px;">Extracción</span>{{ suero.fechaExtraccion | fecha }}</div>
         </div>
       </div>
 
@@ -201,19 +250,29 @@
         <div style="margin-bottom:14px;">
           <div style="font-size:9px;font-weight:700;color:#1d4ed8;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid #e5e7eb;">Paciente</div>
           <div style="display:flex;gap:28px;font-size:11px;">
-            <div><span style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:1px;">Código</span><strong style="font-family:monospace;">{{ p.codigoNumerico }}</strong></div>
-            <div><span style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:1px;">Tipo</span>{{ tipoLabels[p.tipoPaciente] }}</div>
-            <div><span style="font-size:9px;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:1px;">Fecha primer visita</span>{{ p.fechaPrimeraVisita ? (p.fechaPrimeraVisita | fecha : 'date') : '—' }}</div>
+            <div><span style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:2px;">Código</span><strong style="font-family:monospace;">{{ p.codigoNumerico }}</strong></div>
+            <div><span style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:2px;">Tipo</span>{{ tipoLabels[p.tipoPaciente] }}</div>
+            <div><span style="font-size:10px;color:#555;text-transform:uppercase;letter-spacing:0.06em;display:block;margin-bottom:2px;">Fecha primer visita</span>{{ p.fechaPrimeraVisita ? (p.fechaPrimeraVisita | fecha : 'date') : '—' }}</div>
           </div>
         </div>
 
         <!-- ── M-CHAT ── -->
         @if (p.mchatSeguimientoItems || p.mchatFamiliaItems) {
         <div style="margin-bottom:14px;break-inside:avoid;page-break-inside:avoid;">
-          <div style="font-size:9px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid #f3f4f6;">
-            M-CHAT-R/F —
-            @if (p.mchatSeguimientoItems) { Seguimiento ({{ p.mchatSeguimientoFallas }} falla/s) }
-            @else { Familia — Score: {{ p.mchatScoreTotal }} · Riesgo: {{ p.mchatRiesgo ? mchatRiesgoLabels[p.mchatRiesgo] : '—' }} · Resultado: {{ p.mchatResultadoFinal ? mchatResultadoLabels[p.mchatResultadoFinal] : '—' }} }
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #f3f4f6;">
+            <span style="font-size:9px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.07em;">
+              @if (p.mchatSeguimientoItems) {
+                M-CHAT-R/F — Seguimiento &nbsp;·&nbsp; {{ p.mchatSeguimientoFallas }} falla/s
+              } @else {
+                M-CHAT-R/F — Familia &nbsp;·&nbsp; Score: {{ p.mchatScoreTotal ?? '—' }}
+              }
+            </span>
+            @if (p.mchatRiesgo) {
+              <span [style]="mchatBadgeStyle(p.mchatRiesgo)">{{ mchatRiesgoLabels[p.mchatRiesgo] }}</span>
+            }
+            @if (p.mchatResultadoFinal) {
+              <span [style]="mchatResultadoBadgeStyle(p.mchatResultadoFinal)">{{ mchatResultadoLabels[p.mchatResultadoFinal] }}</span>
+            }
           </div>
 
           <table style="width:100%;border-collapse:collapse;font-size:10px;">
@@ -227,20 +286,26 @@
             <tbody>
               @if (p.mchatSeguimientoItems; as items) {
                 @for (valor of items; track $index) {
-                <tr>
+                <tr [style.background]="!seguimientoPasa(valor, $index) ? '#fef2f2' : 'transparent'">
                   <td style="padding:3px 6px;border:1px solid #e5e7eb;text-align:center;color:#6b7280;">{{ $index + 1 }}</td>
                   <td style="padding:3px 8px;border:1px solid #e5e7eb;">{{ mchatPreguntas[$index] }}</td>
-                  <td style="padding:3px 6px;border:1px solid #e5e7eb;text-align:center;">
+                  <td style="padding:3px 6px;border:1px solid #e5e7eb;text-align:center;"
+                      [style.color]="!seguimientoPasa(valor, $index) ? '#dc2626' : 'inherit'"
+                      [style.fontWeight]="!seguimientoPasa(valor, $index) ? '700' : '400'">
                     {{ seguimientoPasa(valor, $index) ? 'Pasa' : 'Falla' }}
                   </td>
                 </tr>
                 }
               } @else if (p.mchatFamiliaItems; as items) {
                 @for (valor of items; track $index) {
-                <tr>
+                <tr [style.background]="familiaEsProblematica(valor, $index) ? '#fef2f2' : 'transparent'">
                   <td style="padding:3px 6px;border:1px solid #e5e7eb;text-align:center;color:#6b7280;">{{ $index + 1 }}</td>
                   <td style="padding:3px 8px;border:1px solid #e5e7eb;">{{ mchatPreguntas[$index] }}</td>
-                  <td style="padding:3px 6px;border:1px solid #e5e7eb;text-align:center;">{{ valor ? 'Sí' : 'No' }}</td>
+                  <td style="padding:3px 6px;border:1px solid #e5e7eb;text-align:center;"
+                      [style.color]="familiaEsProblematica(valor, $index) ? '#dc2626' : 'inherit'"
+                      [style.fontWeight]="familiaEsProblematica(valor, $index) ? '700' : '400'">
+                    {{ valor ? 'Sí' : 'No' }}
+                  </td>
                 </tr>
                 }
               }
@@ -254,26 +319,34 @@
 
         @if (p.carsItems) {
         <div style="margin-bottom:14px;break-inside:avoid;page-break-inside:avoid;">
-          <div style="font-size:9px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid #f3f4f6;">
-            CARS-2 — Raw Score: {{ p.carsRawScore ?? '—' }} · T-Score: {{ p.carsTScore ?? '—' }} · Percentil: {{ p.carsPercentil != null ? p.carsPercentil + 'º' : '—' }}
-            @if (p.carsResultado) { · {{ carsResultadoLabels[p.carsResultado] }} }
+          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid #f3f4f6;">
+            <span style="font-size:9px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.07em;">
+              CARS-2 &nbsp;·&nbsp; Raw: {{ p.carsRawScore ?? '—' }} &nbsp;·&nbsp; T-Score: {{ p.carsTScore ?? '—' }} &nbsp;·&nbsp; Percentil: {{ p.carsPercentil != null ? p.carsPercentil + 'º' : '—' }}
+            </span>
+            @if (p.carsResultado) {
+              <span [style]="carsBadgeStyle(p.carsResultado)">{{ carsResultadoLabels[p.carsResultado] }}</span>
+            }
           </div>
           <table style="width:100%;border-collapse:collapse;font-size:10px;">
             <thead>
               <tr style="background:#f9fafb;">
                 <th style="width:36px;padding:4px 6px;border:1px solid #e5e7eb;text-align:center;font-weight:600;color:#374151;">#</th>
-                <th style="width:160px;padding:4px 8px;border:1px solid #e5e7eb;text-align:left;font-weight:600;color:#374151;">Categoría</th>
+                <th style="padding:4px 8px;border:1px solid #e5e7eb;text-align:left;font-weight:600;color:#374151;">Categoría</th>
                 <th style="width:60px;padding:4px 6px;border:1px solid #e5e7eb;text-align:center;font-weight:600;color:#374151;">Puntaje</th>
+                @if (tieneObservacionesCars(p.carsItems!)) {
                 <th style="padding:4px 8px;border:1px solid #e5e7eb;text-align:left;font-weight:600;color:#374151;">Observaciones</th>
+                }
               </tr>
             </thead>
             <tbody>
-              @for (fila of carsToArray(p.carsItems); track $index) {
+              @for (fila of carsToArray(p.carsItems!); track $index) {
               <tr>
                 <td style="padding:3px 6px;border:1px solid #e5e7eb;text-align:center;color:#6b7280;">{{ $index + 1 }}</td>
                 <td style="padding:3px 8px;border:1px solid #e5e7eb;">{{ carsCategorias[$index] }}</td>
                 <td style="padding:3px 6px;border:1px solid #e5e7eb;text-align:center;font-weight:600;">{{ fila.puntaje ?? '—' }}</td>
+                @if (tieneObservacionesCars(p.carsItems!)) {
                 <td style="padding:3px 8px;border:1px solid #e5e7eb;color:#374151;font-size:9px;">{{ fila.obs || '—' }}</td>
+                }
               </tr>
               }
             </tbody>
@@ -284,7 +357,7 @@
         @if (p.vinelandCocienteFinal != null || p.vinelandComunicacion != null) {
         <div style="break-inside:avoid;page-break-inside:avoid;">
           <div style="font-size:9px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;padding-bottom:3px;border-bottom:1px solid #f3f4f6;">Vineland</div>
-          <table style="width:260px;border-collapse:collapse;font-size:10px;">
+          <table style="width:100%;max-width:400px;border-collapse:collapse;font-size:10px;">
             <thead>
               <tr style="background:#f9fafb;">
                 <th style="padding:4px 8px;border:1px solid #e5e7eb;text-align:left;font-weight:600;color:#374151;">Dominio</th>
@@ -317,7 +390,7 @@
   <!-- ── FOOTER ── -->
   <footer style="margin-top:32px;padding-top:12px;border-top:1px solid #e5e7eb;display:flex;justify-content:space-between;font-size:9px;color:#9ca3af;">
     <span>Proyecto MAG-TEA</span>
-    <span>{{ r.identificador }} · {{ fechaGeneracion }}</span>
+    <span class="page-num">{{ r.identificador }} · {{ fechaGeneracion }}</span>
   </footer>
 
 </div><!-- /reporte-pagina -->

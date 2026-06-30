@@ -59,6 +59,12 @@ import { BANDA_LABELS, SEXO_LABELS, SOCIALIZACION_LABELS } from '../../../shared
         box-shadow: 0 4px 24px rgba(0,0,0,0.12);
       }
     }
+
+    .page-num::after { content: ''; }
+    @media print {
+      @page { margin: 1cm 1.4cm; }
+      .page-num::after { content: ' · Pág. ' counter(page) ' de ' counter(pages); }
+    }
   `],
 })
 export class ModeloAnimalReporteComponent {
@@ -182,5 +188,37 @@ export class ModeloAnimalReporteComponent {
   seguimientoPasa(valor: boolean, itemIndex: number): boolean {
     const invertidos = [1, 4, 11]; // índices 0-based para ítems 2, 5, 12
     return invertidos.includes(itemIndex) ? !valor : valor;
+  }
+
+  familiaEsProblematica(valor: boolean, itemIndex: number): boolean {
+    const invertidos = [1, 4, 11];
+    return invertidos.includes(itemIndex) ? valor : !valor;
+  }
+
+  tieneObservacionesCars(items: CarsItemsResponse): boolean {
+    return this.carsToArray(items).some(f => f.obs && f.obs.trim() !== '' && f.obs !== 'Obs');
+  }
+
+  mchatBadgeStyle(riesgo: string | undefined): string {
+    const base = 'display:inline-block;font-size:9px;padding:2px 7px;border-radius:999px;font-weight:700;margin-left:6px;';
+    if (riesgo === 'ALTO_RIESGO')    return base + 'background:#fee2e2;color:#991b1b;';
+    if (riesgo === 'MEDIANO_RIESGO') return base + 'background:#fef9c3;color:#854d0e;';
+    if (riesgo === 'BAJO_RIESGO')    return base + 'background:#dcfce7;color:#166534;';
+    return base + 'background:#f3f4f6;color:#374151;';
+  }
+
+  mchatResultadoBadgeStyle(resultado: string | undefined): string {
+    const base = 'display:inline-block;font-size:9px;padding:2px 7px;border-radius:999px;font-weight:700;margin-left:4px;';
+    if (resultado === 'POSITIVA') return base + 'background:#fee2e2;color:#991b1b;';
+    if (resultado === 'NEGATIVA') return base + 'background:#dcfce7;color:#166534;';
+    return '';
+  }
+
+  carsBadgeStyle(resultado: string | undefined): string {
+    const base = 'display:inline-block;font-size:9px;padding:2px 7px;border-radius:999px;font-weight:700;margin-left:6px;';
+    if (resultado === 'SEVERO')        return base + 'background:#fee2e2;color:#991b1b;';
+    if (resultado === 'LEVE_MODERADO') return base + 'background:#fef9c3;color:#854d0e;';
+    if (resultado === 'MINIMO_NO_TEA') return base + 'background:#dcfce7;color:#166534;';
+    return base + 'background:#f3f4f6;color:#374151;';
   }
 }

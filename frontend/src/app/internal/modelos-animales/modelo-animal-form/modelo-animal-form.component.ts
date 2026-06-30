@@ -7,42 +7,40 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { EMPTY, catchError, filter, map, of, switchMap } from 'rxjs';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ModeloAnimalService } from '../../../core/services/modelo-animal.service';
-import { CamadaService } from '../../../core/services/camada.service';
 import { PoolService } from '../../../core/services/pool.service';
 import {
   ModeloAnimalCreate, ModeloAnimalUpdate,
 } from '../../../core/models/modelo-animal.model';
 import { PoolListItem } from '../../../core/models/pool.model';
-import { CamadaListItem, CamadaCreate } from '../../../core/models/camada.model';
 import { extractErrorMessage } from '../../../shared/utils/error.utils';
 import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 import { FirstFocusDirective } from '../../../shared/directives/first-focus.directive';
 import { ConfirmModalComponent } from '../../../shared/confirm-modal/confirm-modal.component';
 import { ToastService } from '../../../core/services/toast.service';
-import { IconComponent } from '../../../shared/icon/icon.component';
 import { StatusBadgeComponent } from '../../../shared/status-badge/status-badge.component';
 import { MlPipe } from '../../../core/pipes/ml.pipe';
 import { SueroUso } from '../../../core/models/suero.model';
 import { RANGO_COLORS, RANGO_LABELS, USO_COLORS, USO_LABELS } from '../../../shared/utils/btu.utils';
+import { CamadaPickerComponent } from '../../../shared/camada-picker/camada-picker.component';
 
 @Component({
   selector: 'app-modelo-animal-form',
   imports: [ReactiveFormsModule, PageHeaderComponent, FirstFocusDirective,
-            ConfirmModalComponent, IconComponent, StatusBadgeComponent, MlPipe],
+            ConfirmModalComponent, StatusBadgeComponent, MlPipe,
+            CamadaPickerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './modelo-animal-form.component.html',
   host: { '(keydown)': 'onKeydown($event)' },
 })
 export class ModeloAnimalFormComponent {
-  private readonly elRef          = inject<ElementRef<HTMLElement>>(ElementRef);
-  private readonly toast          = inject(ToastService);
-  private readonly fb             = inject(FormBuilder);
-  private readonly service        = inject(ModeloAnimalService);
-  private readonly poolService    = inject(PoolService);
-  private readonly camadaService  = inject(CamadaService);
-  private readonly router         = inject(Router);
-  private readonly route          = inject(ActivatedRoute);
-  private readonly destroyRef     = inject(DestroyRef);
+  private readonly elRef       = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly toast       = inject(ToastService);
+  private readonly fb          = inject(FormBuilder);
+  private readonly service     = inject(ModeloAnimalService);
+  private readonly poolService = inject(PoolService);
+  private readonly router      = inject(Router);
+  private readonly route       = inject(ActivatedRoute);
+  private readonly destroyRef  = inject(DestroyRef);
 
   readonly crumbs = toSignal(
     this.route.data.pipe(map(d => d['crumbs'] as Crumb[] ?? [])),
@@ -53,6 +51,8 @@ export class ModeloAnimalFormComponent {
   loading         = signal(false);
   error           = signal<string | null>(null);
   showExitConfirm = signal(false);
+  submitted       = signal(false);
+  initialCamadaId = signal<number | null>(null);
 
   step          = signal<1 | 2>(1);
   filterUso     = signal<SueroUso | null>(null);
@@ -73,22 +73,12 @@ export class ModeloAnimalFormComponent {
   readonly usoColors   = USO_COLORS;
   readonly usoLabels   = USO_LABELS;
 
-  showCamadaModal    = signal(false);
-  camadaModalLoading = signal(false);
-  camadaModalError   = signal<string | null>(null);
-  camadas            = signal<CamadaListItem[]>([]);
-
   private editId: number | null = null;
 
   form = this.fb.group({
     poolId:   [null as number | null, Validators.required],
     camadaId: [null as number | null, Validators.required],
     sexo:     ['',                    Validators.required],
-  });
-
-  camadaForm = this.fb.group({
-    nombre:          ['', [Validators.required, Validators.maxLength(50)]],
-    fechaNacimiento: ['',  Validators.required],
   });
 
   readonly pools = toSignal(
@@ -100,11 +90,9 @@ export class ModeloAnimalFormComponent {
   readonly isEdit = computed(() => !!this.identificador());
 
   constructor() {
-    this.loadCamadas();
-
     const uso   = this.route.snapshot.queryParamMap.get('uso');
     const rango = this.route.snapshot.queryParamMap.get('rango');
-    if (uso)                       this.filterUso.set(uso as SueroUso);
+    if (uso)                           this.filterUso.set(uso as SueroUso);
     if (rango != null && rango !== '') this.filterRango.set(Number(rango));
 
     toObservable(this.identificador).pipe(
@@ -115,55 +103,17 @@ export class ModeloAnimalFormComponent {
       takeUntilDestroyed(this.destroyRef),
     ).subscribe(ma => {
       this.editId = ma.id;
+      this.initialCamadaId.set(ma.camadaId);
       this.form.patchValue({ poolId: ma.poolId, camadaId: ma.camadaId, sexo: ma.sexo }, { emitEvent: false });
     });
-  }
-
-  private loadCamadas(): void {
-    this.camadaService.findAll({ size: 100, sortBy: 'fechaNacimiento', sortDir: 'desc' })
-      .pipe(map(r => r.content), catchError(() => of([] as CamadaListItem[])))
-      .subscribe(list => this.camadas.set(list));
   }
 
   poolLabel(pool: PoolListItem): string {
     return pool.codigo;
   }
 
-  camadaLabel(camada: CamadaListItem): string {
-    if (!camada.fechaNacimiento) return camada.nombre;
-    const d = new Date(camada.fechaNacimiento + 'T00:00:00');
-    return `${camada.nombre} — ${d.toLocaleDateString('es-AR')}`;
-  }
-
-  openCamadaModal(): void {
-    this.camadaForm.reset();
-    this.camadaModalError.set(null);
-    this.showCamadaModal.set(true);
-  }
-
-  closeCamadaModal(): void { this.showCamadaModal.set(false); }
-
-  guardarCamada(): void {
-    if (this.camadaForm.invalid) { this.camadaForm.markAllAsTouched(); return; }
-    this.camadaModalLoading.set(true);
-    this.camadaModalError.set(null);
-    const v = this.camadaForm.value;
-    const dto: CamadaCreate = {
-      nombre:          v.nombre!,
-      fechaNacimiento: v.fechaNacimiento!,
-    };
-    this.camadaService.create(dto).subscribe({
-      next: camada => {
-        this.loadCamadas();
-        this.form.patchValue({ camadaId: camada.id });
-        this.camadaModalLoading.set(false);
-        this.showCamadaModal.set(false);
-      },
-      error: err => {
-        this.camadaModalError.set(extractErrorMessage(err, 'Error al crear la camada'));
-        this.camadaModalLoading.set(false);
-      },
-    });
+  onCamadaChange(id: number | null): void {
+    this.form.patchValue({ camadaId: id });
   }
 
   selectPool(pool: PoolListItem): void {
@@ -200,6 +150,7 @@ export class ModeloAnimalFormComponent {
   }
 
   onSubmit(): void {
+    this.submitted.set(true);
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       const firstInvalid = this.elRef.nativeElement.querySelector<HTMLElement>('[aria-invalid="true"]');

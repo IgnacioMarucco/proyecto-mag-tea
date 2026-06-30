@@ -14,7 +14,6 @@ import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-hea
 import { MlPipe } from '../../../core/pipes/ml.pipe';
 import { FechaPipe } from '../../../core/pipes/fecha.pipe';
 import { RANGO_COLORS, RANGO_LABELS, USO_COLORS, USO_LABELS } from '../../../shared/utils/btu.utils';
-import { SEXO_COLORS, SEXO_LABELS } from '../../../shared/utils/modelo-animal.utils';
 
 @Component({
   selector: 'app-pool-detail',
@@ -47,9 +46,6 @@ export class PoolDetailComponent {
   readonly usoColors   = USO_COLORS;
   readonly usoLabels   = USO_LABELS;
 
-  readonly sexoLabels = SEXO_LABELS;
-  readonly sexoColors = SEXO_COLORS;
-
   constructor() {
     toObservable(this.codigo).pipe(
       filter(codigo => !!codigo),
@@ -63,7 +59,7 @@ export class PoolDetailComponent {
       this.loading.set(false);
       if (!pool) { this.loadError.set('No se pudo cargar el pool.'); return; }
 
-      this.modeloAnimalService.findAll({ poolId: pool.id, size: 50 }).pipe(
+      this.modeloAnimalService.findAll({ poolId: pool.id, size: 50, sortBy: 'createdAt', sortDir: 'desc' }).pipe(
         catchError(() => of(null)),
       ).subscribe(r => {
         if (r) this.modelosAnimales.set(r.content);

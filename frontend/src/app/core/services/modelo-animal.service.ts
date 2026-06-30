@@ -20,11 +20,11 @@ import {
 
 export interface ModeloAnimalListParams extends PageParams {
   poolId?: number;
-  sexo?: SexoRaton;
-  uso?: string;
-  rango?: number;
+  sexos?: SexoRaton[];
+  usos?: string[];
+  rangos?: string[];
   soloAlertas?: boolean;
-  estado?: EstadoProtocolo;
+  estados?: EstadoProtocolo[];
 }
 
 @Injectable({ providedIn: 'root' })
@@ -40,11 +40,11 @@ export class ModeloAnimalService {
     if (params.sortBy)      p = p.set('sortBy', params.sortBy);
     if (params.sortDir)     p = p.set('sortDir', params.sortDir);
     if (params.poolId)      p = p.set('poolId', params.poolId);
-    if (params.sexo)        p = p.set('sexo', params.sexo);
-    if (params.uso)         p = p.set('uso', params.uso);
-    if (params.rango != null) p = p.set('rango', params.rango);
+    params.sexos?.forEach(s  => { p = p.append('sexos',   s); });
+    params.usos?.forEach(u   => { p = p.append('usos',    u); });
+    params.rangos?.forEach(r => { p = p.append('rangos',  r); });
+    params.estados?.forEach(e => { p = p.append('estados', e); });
     if (params.soloAlertas) p = p.set('soloAlertas', params.soloAlertas);
-    if (params.estado)      p = p.set('estado', params.estado);
     return this.http.get<PageResponse<ModeloAnimalListItem>>(this.base, { params: p });
   }
 

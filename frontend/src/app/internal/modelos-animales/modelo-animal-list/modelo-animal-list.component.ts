@@ -13,6 +13,7 @@ import { RowActionsComponent, RowAction } from '../../../shared/row-actions/row-
 import { PaginatorComponent } from '../../../shared/paginator/paginator.component';
 import { IconComponent } from '../../../shared/icon/icon.component';
 import { SortState } from '../../../shared/utils/sort.utils';
+import { hasActiveSearch } from '../../../shared/utils/list.utils';
 import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-header.component';
 import { FechaPipe } from '../../../core/pipes/fecha.pipe';
 import { RANGO_COLORS, RANGO_LABELS, USO_COLORS, USO_LABELS } from '../../../shared/utils/btu.utils';
@@ -65,7 +66,7 @@ export class ModeloAnimalListComponent {
     {
       key: 'uso',
       label: 'Tipo',
-      multiSelect: false,
+      multiSelect: true,
       options: [
         { key: 'PROBLEMA', label: 'Caso Problema' },
         { key: 'CONTROL',  label: 'Caso Control'  },
@@ -74,7 +75,7 @@ export class ModeloAnimalListComponent {
     {
       key: 'rango',
       label: 'Rango',
-      multiSelect: false,
+      multiSelect: true,
       options: [
         { key: '1', label: 'Rango 1' },
         { key: '2', label: 'Rango 2' },
@@ -84,7 +85,7 @@ export class ModeloAnimalListComponent {
     {
       key: 'sexo',
       label: 'Sexo',
-      multiSelect: false,
+      multiSelect: true,
       options: [
         { key: 'MACHO',  label: 'Macho'  },
         { key: 'HEMBRA', label: 'Hembra' },
@@ -93,7 +94,7 @@ export class ModeloAnimalListComponent {
     {
       key: 'soloAlertas',
       label: 'Alertas',
-      multiSelect: false,
+      multiSelect: true,
       options: [
         { key: 'true',  label: 'Solo con alertas hoy' },
         { key: 'false', label: 'Todos'                },
@@ -102,7 +103,7 @@ export class ModeloAnimalListComponent {
     {
       key: 'estado',
       label: 'Estado',
-      multiSelect: false,
+      multiSelect: true,
       options: [
         { key: 'PENDIENTE_INOCULACION',    label: 'Pendiente inoculación'   },
         { key: 'INOCULACION_EN_CURSO',     label: 'Inoculación en curso'    },
@@ -165,19 +166,19 @@ export class ModeloAnimalListComponent {
 
   onFiltersChange(filters: Record<string, string | string[]>): void {
     this.activeFilters.set(filters);
-    const uso        = filters['uso']         as string | undefined;
-    const rangoVal   = filters['rango']       as string | undefined;
-    const sexo       = filters['sexo']        as string | undefined;
-    const alertasVal = filters['soloAlertas'] as string | undefined;
-    const estadoVal  = filters['estado']      as EstadoProtocolo | undefined;
+    const usos    = Array.isArray(filters['uso'])         ? filters['uso']         : [];
+    const rangos  = Array.isArray(filters['rango'])       ? filters['rango']       : [];
+    const sexos   = Array.isArray(filters['sexo'])        ? filters['sexo']        : [];
+    const alertas = Array.isArray(filters['soloAlertas']) ? filters['soloAlertas'] : [];
+    const estados = Array.isArray(filters['estado'])      ? filters['estado']      : [];
     this.params$.next({
       ...this.params$.value,
       page:        0,
-      uso:         (uso === 'PROBLEMA' || uso === 'CONTROL') ? uso : undefined,
-      rango:       rangoVal ? Number(rangoVal) : undefined,
-      sexo:        (sexo === 'MACHO' || sexo === 'HEMBRA') ? sexo : undefined,
-      soloAlertas: alertasVal === 'true' ? true : undefined,
-      estado:      estadoVal ?? undefined,
+      usos:        usos.length    ? usos    : undefined,
+      rangos:      rangos.length  ? rangos  : undefined,
+      sexos:       sexos.length   ? sexos as any : undefined,
+      soloAlertas: alertas.length === 1 && alertas[0] === 'true' ? true : undefined,
+      estados:     estados.length ? estados as EstadoProtocolo[] : undefined,
     });
   }
 
@@ -190,8 +191,7 @@ export class ModeloAnimalListComponent {
   private reload(): void       { this.params$.next({ ...this.params$.value }); }
 
   private hasActiveSearch(): boolean {
-    const p = this.params$.value;
-    return !!(p.q || p.uso || p.rango != null || p.sexo || p.soloAlertas || p.estado);
+    return hasActiveSearch(this.search, this.activeFilters, this.filterGroups);
   }
 
   getActionsFor(ma: ModeloAnimalListItem): RowAction[] {

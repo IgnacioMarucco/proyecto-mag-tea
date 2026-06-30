@@ -2,7 +2,6 @@ import {
   ChangeDetectionStrategy, Component, ElementRef, Injector,
   afterNextRender, effect, inject, input, output, signal, viewChild,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
 import { PacienteService } from '../../../../core/services/paciente.service';
 import { StorageService } from '../../../../core/services/storage.service';
 import { PacienteResponse } from '../../../../core/models/paciente.model';
@@ -20,7 +19,7 @@ const MAX_SIZE_MB   = 10;
 
 @Component({
   selector: 'app-datos-basicos-section',
-  imports: [RouterLink, StatusBadgeComponent, EdadPipe, FechaPipe, CriteriosSectionComponent, ConfirmModalComponent],
+  imports: [StatusBadgeComponent, EdadPipe, FechaPipe, CriteriosSectionComponent, ConfirmModalComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './datos-basicos-section.component.html',
 })

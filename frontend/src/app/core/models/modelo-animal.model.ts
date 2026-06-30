@@ -148,6 +148,7 @@ export interface PoolReporteItem {
   freezer: string;
   cajon: number;
   numeroCaja: number;
+  poolActivo: boolean;
 }
 
 export interface CarsItemsResponse {

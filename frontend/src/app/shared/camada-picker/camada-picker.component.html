@@ -1,0 +1,154 @@
+<div class="relative">
+
+  <!-- Estado: camada seleccionada -->
+  @if (selectedCamada()) {
+    <div class="flex items-stretch gap-2">
+      <div class="flex flex-1 items-center gap-2 px-3 py-2 text-sm bg-surface border border-border rounded-md min-w-0">
+        <span class="font-mono text-text font-medium truncate">{{ selectedCamada()!.nombre }}</span>
+        @if (selectedCamada()!.fechaNacimiento) {
+          <span class="text-text-muted text-xs shrink-0">— {{ formatFecha(selectedCamada()!.fechaNacimiento!) }}</span>
+        }
+        <button
+          type="button"
+          (click)="clearSelection()"
+          title="Cambiar camada"
+          class="ml-auto shrink-0 text-xs text-text-muted hover:text-text transition-colors underline cursor-pointer"
+        >
+          Cambiar
+        </button>
+      </div>
+      <button
+        type="button"
+        (click)="openModal()"
+        title="Nueva camada"
+        class="flex items-center justify-center px-3 py-2 bg-surface border border-border rounded-md text-text-muted
+               hover:border-primary hover:text-primary transition-colors"
+      >
+        <app-icon name="plus" class="w-4 h-4" />
+      </button>
+    </div>
+  }
+
+  <!-- Estado: sin selección / búsqueda -->
+  @if (!selectedCamada()) {
+    <div class="flex items-stretch gap-2">
+      <div class="relative flex-1">
+        <input
+          type="text"
+          [value]="filterText()"
+          (input)="filterText.set($any($event.target).value)"
+          (focus)="isOpen.set(true)"
+          (blur)="onBlur()"
+          placeholder="Buscar camada…"
+          autocomplete="off"
+          class="w-full px-3 py-2 text-sm bg-surface border rounded-md text-text font-mono
+                 focus:outline-none focus:ring-1 transition-colors"
+          [class]="showError() ? 'border-danger focus:border-danger focus:ring-danger' : 'border-border focus:border-primary focus:ring-primary'"
+          [attr.aria-invalid]="showError() || null"
+        />
+
+        @if (isOpen() && filteredCamadas().length > 0) {
+          <div
+            class="absolute top-full left-0 right-0 z-40 mt-1 bg-surface border border-border rounded-md shadow-lg
+                   max-h-52 overflow-y-auto"
+          >
+            @for (c of filteredCamadas(); track c.id) {
+              <button
+                type="button"
+                (mousedown)="select(c)"
+                class="w-full flex items-center gap-3 px-3 py-2.5 text-left text-sm hover:bg-accent/10 transition-colors"
+              >
+                <span class="font-mono text-text font-medium">{{ c.nombre }}</span>
+                @if (c.fechaNacimiento) {
+                  <span class="text-text-muted text-xs">{{ formatFecha(c.fechaNacimiento) }}</span>
+                }
+              </button>
+            }
+          </div>
+        }
+
+        @if (isOpen() && filterText().length > 0 && filteredCamadas().length === 0) {
+          <div class="absolute top-full left-0 right-0 z-40 mt-1 bg-surface border border-border rounded-md shadow-lg px-3 py-3 text-xs text-text-muted">
+            Sin resultados para "{{ filterText() }}"
+          </div>
+        }
+      </div>
+
+      <button
+        type="button"
+        (click)="openModal()"
+        title="Nueva camada"
+        class="flex items-center justify-center px-3 py-2 bg-surface border border-border rounded-md text-text-muted
+               hover:border-primary hover:text-primary transition-colors"
+      >
+        <app-icon name="plus" class="w-4 h-4" />
+      </button>
+    </div>
+
+    @if (showError()) {
+      <p role="alert" class="mt-1 text-xs text-danger">La camada es obligatoria</p>
+    }
+  }
+
+</div>
+
+<!-- ── Modal nueva camada ─────────────────────────────────────────────────── -->
+@if (showModal()) {
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
+       role="dialog" aria-modal="true" aria-labelledby="cp-modal-title">
+
+    <div class="absolute inset-0 bg-black/40" (click)="closeModal()"></div>
+
+    <div class="relative bg-surface border border-border rounded-lg shadow-xl w-full max-w-sm p-6">
+      <h2 id="cp-modal-title" class="text-sm font-semibold text-text mb-4">Nueva camada</h2>
+
+      <form [formGroup]="camadaForm" (ngSubmit)="guardarCamada()" novalidate class="space-y-4">
+
+        <div>
+          <label for="cp-nombre" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
+            Nombre <span class="text-danger">*</span>
+          </label>
+          <input
+            id="cp-nombre" type="text" formControlName="nombre"
+            placeholder="Ej: 2F0601"
+            class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text font-mono
+                   focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+            [class.border-danger]="camadaForm.get('nombre')?.invalid && camadaForm.get('nombre')?.touched"
+          />
+          @if (camadaForm.get('nombre')?.invalid && camadaForm.get('nombre')?.touched) {
+            <p role="alert" class="mt-1 text-xs text-danger">El nombre es obligatorio</p>
+          }
+        </div>
+
+        <div>
+          <label for="cp-fecha" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
+            Fecha de nacimiento <span class="text-danger">*</span>
+          </label>
+          <input
+            id="cp-fecha" type="date" formControlName="fechaNacimiento"
+            class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text
+                   focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+            [class.border-danger]="camadaForm.get('fechaNacimiento')?.invalid && camadaForm.get('fechaNacimiento')?.touched"
+          />
+          @if (camadaForm.get('fechaNacimiento')?.invalid && camadaForm.get('fechaNacimiento')?.touched) {
+            <p role="alert" class="mt-1 text-xs text-danger">La fecha de nacimiento es obligatoria</p>
+          }
+        </div>
+
+        @if (modalError()) {
+          <div role="alert" class="px-3 py-2 bg-danger/10 border border-danger/30 rounded text-xs text-danger">
+            {{ modalError() }}
+          </div>
+        }
+
+        <div class="flex justify-end gap-2 pt-1">
+          <button type="button" (click)="closeModal()" class="btn-ghost">Cancelar</button>
+          <button type="submit" [disabled]="modalLoading()" class="btn-primary">
+            {{ modalLoading() ? 'Guardando…' : 'Guardar' }}
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+}
