@@ -36,6 +36,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.persistence.criteria.Predicate;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -69,12 +70,12 @@ public class ModeloAnimalService {
 
     @Transactional(readOnly = true)
     public PageResponse<ModeloAnimalListDTO> findAll(int page, int size, String q, Long poolId,
-                                                     SexoRaton sexo, SueroUso uso, Integer rango,
-                                                     EstadoProtocolo estado,
+                                                     List<SexoRaton> sexos, List<SueroUso> usos, List<Integer> rangos,
+                                                     List<EstadoProtocolo> estados, Boolean soloAlertas,
                                                      String sortBy, String sortDir) {
         Sort sort = SpecificationUtils.buildSort(sortBy, sortDir, "fechaNacimiento", SORT_FIELDS_VALIDOS, SORT_ALIASES);
         Page<ModeloAnimal> result = repository.findAll(
-                buildSpec(q, poolId, sexo, uso, rango, estado), PageRequest.of(page, size, sort));
+                buildSpec(q, poolId, sexos, usos, rangos, estados, soloAlertas), PageRequest.of(page, size, sort));
         LocalDate hoy = LocalDate.now(clock);
         List<ModeloAnimalListDTO> content = result.getContent().stream()
                 .map(m -> mapper.toListDTO(m,
@@ -219,6 +220,19 @@ public class ModeloAnimalService {
     public ModeloAnimalResponseDTO registrarVocalizaciones(Long id, VocalizacionesDTO dto) {
         ModeloAnimal m = findActiveById(id);
 
+        if (m.getEstadoProtocolo() != EstadoProtocolo.PENDIENTE_VOCALIZACIONES) {
+            throw new BusinessRuleException(
+                    "Solo se pueden registrar vocalizaciones cuando el modelo está en estado PENDIENTE_VOCALIZACIONES");
+        }
+
+        LocalDate hoy = LocalDate.now(clock);
+        LocalDate fn = m.getCamada() != null ? m.getCamada().getFechaNacimiento() : null;
+        if (fn == null || hoy.isBefore(fn.plusDays(DomainConstants.DIA_VOCALIZACIONES))) {
+            throw new BusinessRuleException(
+                    "No se pueden registrar vocalizaciones antes del día "
+                    + DomainConstants.DIA_VOCALIZACIONES + " de vida del ratón");
+        }
+
         VocalizacionesUltrasonicas vus = m.getVocalizaciones() != null
                 ? m.getVocalizaciones()
                 : new VocalizacionesUltrasonicas();
@@ -229,7 +243,6 @@ public class ModeloAnimalService {
         m.setEstadoProtocolo(calcularEstado(m));
         m.setFechaProximoEvento(calcularFechaProximoEvento(m));
 
-        LocalDate hoy = LocalDate.now(clock);
         ModeloAnimal saved = repository.save(m);
         TresCamarasDTO tcDTO = saved.getTresCamaras() != null
                 ? mapper.toTresCamarasDTO(saved.getTresCamaras()) : null;
@@ -242,6 +255,19 @@ public class ModeloAnimalService {
     @Transactional
     public ModeloAnimalResponseDTO registrarTresCamaras(Long id, TresCamarasDTO dto) {
         ModeloAnimal m = findActiveById(id);
+
+        if (m.getEstadoProtocolo() != EstadoProtocolo.PENDIENTE_TRES_CAMARAS) {
+            throw new BusinessRuleException(
+                    "Solo se pueden registrar tres cámaras cuando el modelo está en estado PENDIENTE_TRES_CAMARAS");
+        }
+
+        LocalDate hoy = LocalDate.now(clock);
+        LocalDate fn = m.getCamada() != null ? m.getCamada().getFechaNacimiento() : null;
+        if (fn == null || hoy.isBefore(fn.plusDays(DomainConstants.DIA_TRES_CAMARAS))) {
+            throw new BusinessRuleException(
+                    "No se pueden registrar tres cámaras antes del día "
+                    + DomainConstants.DIA_TRES_CAMARAS + " de vida del ratón");
+        }
 
         TresCamaras tc = m.getTresCamaras() != null
                 ? m.getTresCamaras()
@@ -259,7 +285,6 @@ public class ModeloAnimalService {
         m.setEstadoProtocolo(calcularEstado(m));
         m.setFechaProximoEvento(calcularFechaProximoEvento(m));
 
-        LocalDate hoy = LocalDate.now(clock);
         ModeloAnimal saved = repository.save(m);
         VocalizacionesDTO vusDTO = saved.getVocalizaciones() != null
                 ? mapper.toVocalizacionesDTO(saved.getVocalizaciones()) : null;
@@ -396,7 +421,8 @@ public class ModeloAnimalService {
                 pool.getFechaCreacion(),
                 pool.getCaja().getFreezer(),
                 pool.getCaja().getCajon(),
-                pool.getCaja().getNumero()
+                pool.getCaja().getNumero(),
+                pool.isActivo()
         );
 
         List<ModeloAnimalReporteDTO.InoculacionReporteDTO> inoculaciones = m.getAportes().stream()
@@ -551,14 +577,16 @@ public class ModeloAnimalService {
                 && !fn.plusDays(DomainConstants.DIA_TRES_CAMARAS - DomainConstants.VENTANA_ALERTA_DIAS).isAfter(hoy);
     }
 
-    private Specification<ModeloAnimal> buildSpec(String q, Long poolId, SexoRaton sexo, SueroUso uso, Integer rango, EstadoProtocolo estado) {
+    private Specification<ModeloAnimal> buildSpec(String q, Long poolId, List<SexoRaton> sexos, List<SueroUso> usos,
+                                                   List<Integer> rangos, List<EstadoProtocolo> estados, Boolean soloAlertas) {
         Specification<ModeloAnimal> spec = SpecificationUtils.activoTrue();
-        if (q      != null && !q.isBlank()) spec = spec.and(searchCamada(q));
-        if (poolId != null) spec = spec.and(poolEquals(poolId));
-        if (sexo   != null) spec = spec.and(sexoEquals(sexo));
-        if (uso    != null) spec = spec.and(usoEquals(uso));
-        if (rango  != null) spec = spec.and(rangoEquals(rango));
-        if (estado != null) spec = spec.and(estadoEquals(estado));
+        if (q      != null && !q.isBlank())      spec = spec.and(searchCamada(q));
+        if (poolId != null)                      spec = spec.and(poolEquals(poolId));
+        if (sexos  != null && !sexos.isEmpty())  spec = spec.and(sexoIn(sexos));
+        if (usos   != null && !usos.isEmpty())   spec = spec.and(usoIn(usos));
+        if (rangos != null && !rangos.isEmpty()) spec = spec.and(rangoIn(rangos));
+        if (estados!= null && !estados.isEmpty())spec = spec.and(estadoIn(estados));
+        if (Boolean.TRUE.equals(soloAlertas))    spec = spec.and(conAlertasHoy(LocalDate.now(clock)));
         return spec;
     }
 
@@ -574,20 +602,40 @@ public class ModeloAnimalService {
         return (root, query, cb) -> cb.equal(root.get("pool").get("id"), poolId);
     }
 
-    private Specification<ModeloAnimal> sexoEquals(SexoRaton sexo) {
-        return (root, query, cb) -> cb.equal(root.get("sexo"), sexo);
+    private Specification<ModeloAnimal> sexoIn(List<SexoRaton> sexos) {
+        return (root, query, cb) -> root.get("sexo").in(sexos);
     }
 
-    private Specification<ModeloAnimal> usoEquals(SueroUso uso) {
-        return (root, query, cb) -> cb.equal(root.get("pool").get("uso"), uso);
+    private Specification<ModeloAnimal> usoIn(List<SueroUso> usos) {
+        return (root, query, cb) -> root.get("pool").get("uso").in(usos);
     }
 
-    private Specification<ModeloAnimal> rangoEquals(Integer rango) {
-        return (root, query, cb) -> cb.equal(root.get("pool").get("rango"), rango);
+    private Specification<ModeloAnimal> rangoIn(List<Integer> rangos) {
+        return (root, query, cb) -> root.get("pool").get("rango").in(rangos);
     }
 
-    private Specification<ModeloAnimal> estadoEquals(EstadoProtocolo estado) {
-        return (root, query, cb) -> cb.equal(root.get("estadoProtocolo"), estado);
+    private Specification<ModeloAnimal> estadoIn(List<EstadoProtocolo> estados) {
+        return (root, query, cb) -> root.get("estadoProtocolo").in(estados);
+    }
+
+    private Specification<ModeloAnimal> conAlertasHoy(LocalDate hoy) {
+        LocalDate umbralVoc = hoy.minusDays(DomainConstants.DIA_VOCALIZACIONES - DomainConstants.VENTANA_ALERTA_DIAS);
+        LocalDate umbralTc  = hoy.minusDays(DomainConstants.DIA_TRES_CAMARAS  - DomainConstants.VENTANA_ALERTA_DIAS);
+        return (root, query, cb) -> {
+            Predicate necesitaInoculacion = cb.and(
+                cb.equal(root.get("estadoProtocolo"), EstadoProtocolo.INOCULACION_EN_CURSO),
+                cb.lessThanOrEqualTo(root.get("fechaProximoEvento"), hoy)
+            );
+            Predicate necesitaVoc = cb.and(
+                cb.equal(root.get("estadoProtocolo"), EstadoProtocolo.PENDIENTE_VOCALIZACIONES),
+                cb.lessThanOrEqualTo(root.get("camada").get("fechaNacimiento"), umbralVoc)
+            );
+            Predicate necesitaTc = cb.and(
+                cb.equal(root.get("estadoProtocolo"), EstadoProtocolo.PENDIENTE_TRES_CAMARAS),
+                cb.lessThanOrEqualTo(root.get("camada").get("fechaNacimiento"), umbralTc)
+            );
+            return cb.or(necesitaInoculacion, necesitaVoc, necesitaTc);
+        };
     }
 
     @Transactional

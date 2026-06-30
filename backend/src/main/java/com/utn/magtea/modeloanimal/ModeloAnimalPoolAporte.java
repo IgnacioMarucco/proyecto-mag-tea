@@ -12,7 +12,13 @@ import java.math.BigDecimal;
 
 @Audited
 @Entity
-@Table(name = "modelo_animal_pool_aportes")
+@Table(
+    name = "modelo_animal_pool_aportes",
+    uniqueConstraints = @UniqueConstraint(
+        name = "uc_aporte_animal_dia",
+        columnNames = {"modelo_animal_id", "dia"}
+    )
+)
 @Getter
 @Setter
 @NoArgsConstructor

@@ -21,7 +21,7 @@ public class TresCamaras extends Auditable {
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "modelo_animal_id", nullable = false)
+    @JoinColumn(name = "modelo_animal_id", nullable = false, unique = true)
     private ModeloAnimal modeloAnimal;
 
     @Column(nullable = false)

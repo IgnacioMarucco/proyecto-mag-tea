@@ -15,6 +15,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.util.List;
+
 @RestController
 @RequestMapping(ApiConstants.V1 + "/modelos-animales")
 @Tag(name = "Modelos Animales")
@@ -30,13 +32,14 @@ public class ModeloAnimalController {
             @RequestParam(defaultValue = "20")            int size,
             @RequestParam(required = false)               String q,
             @RequestParam(required = false)               Long poolId,
-            @RequestParam(required = false)               SexoRaton sexo,
-            @RequestParam(required = false)               SueroUso uso,
-            @RequestParam(required = false)               Integer rango,
-            @RequestParam(required = false)               EstadoProtocolo estado,
+            @RequestParam(required = false)               List<SexoRaton> sexos,
+            @RequestParam(required = false)               List<SueroUso> usos,
+            @RequestParam(required = false)               List<Integer> rangos,
+            @RequestParam(required = false)               List<EstadoProtocolo> estados,
+            @RequestParam(required = false)               Boolean soloAlertas,
             @RequestParam(defaultValue = "fechaNacimiento") String sortBy,
             @RequestParam(defaultValue = "desc")          String sortDir) {
-        return service.findAll(page, size, q, poolId, sexo, uso, rango, estado, sortBy, sortDir);
+        return service.findAll(page, size, q, poolId, sexos, usos, rangos, estados, soloAlertas, sortBy, sortDir);
     }
 
     @GetMapping("/by-code/{identificador}")    @Operation(summary = "Obtener modelo animal por identificador alfanumérico")

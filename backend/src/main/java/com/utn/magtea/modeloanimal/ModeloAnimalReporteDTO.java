@@ -44,7 +44,8 @@ public record ModeloAnimalReporteDTO(
             LocalDate fechaCreacion,
             String freezer,
             Integer cajon,
-            Integer numeroCaja
+            Integer numeroCaja,
+            boolean poolActivo
     ) {}
 
     public record SueroReporteDTO(
