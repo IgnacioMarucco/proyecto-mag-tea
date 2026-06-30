@@ -1,5 +1,5 @@
 # Stage 1: build
-FROM eclipse-temurin:21-jdk-alpine AS builder
+FROM eclipse-temurin:21.0.11_10-jdk-alpine AS builder
 WORKDIR /app
 
 COPY .mvn/ .mvn/
@@ -12,7 +12,7 @@ RUN ./mvnw package -Dmaven.test.skip=true -q
 RUN java -Djarmode=layertools -jar target/*.jar extract --destination extracted
 
 # Stage 2: run
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:21.0.11_10-jre-alpine
 WORKDIR /app
 COPY --from=builder /app/extracted/dependencies/ ./
 COPY --from=builder /app/extracted/spring-boot-loader/ ./
