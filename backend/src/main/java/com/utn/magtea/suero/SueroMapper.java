@@ -3,6 +3,7 @@ package com.utn.magtea.suero;
 import com.utn.magtea.common.MapperHelper;
 import com.utn.magtea.tubo.Tubo;
 import com.utn.magtea.tubo.TuboDTO;
+import com.utn.magtea.tubo.TuboOrden;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.Named;
@@ -35,6 +36,7 @@ public interface SueroMapper {
     default List<TuboDTO> toTuboList(List<Tubo> tubos) {
         if (tubos == null) return List.of();
         return tubos.stream()
+                .sorted(TuboOrden.POR_POSICION)
                 .map(this::toTuboDTO)
                 .toList();
     }

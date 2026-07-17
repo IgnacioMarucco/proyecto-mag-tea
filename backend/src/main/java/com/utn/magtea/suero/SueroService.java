@@ -130,7 +130,7 @@ public class SueroService {
             tubo.setCaja(caja);
             tubo.setSuero(saved);
             tubo.setPosicion(t.posicion());
-            tubo.setCantidadInicial(t.cantidadInicial());
+            tubo.setCantidadInicial(t.cantidad());
             tuboRepository.save(tubo);
         }
 
@@ -163,15 +163,6 @@ public class SueroService {
             }
         }
 
-        for (TuboInputDTO t : dto.tubos()) {
-            Tubo existing = existingByPosicion.get(t.posicion());
-            if (existing != null && t.cantidadInicial().compareTo(existing.getCantidadUsada()) < 0) {
-                throw new BusinessRuleException(
-                        "El tubo " + t.posicion() + " ya tiene " + existing.getCantidadUsada()
-                        + " mL usados; la nueva cantidad inicial no puede ser menor");
-            }
-        }
-
         for (Tubo t : existingByPosicion.values()) {
             if (!newPosiciones.contains(t.getPosicion())) {
                 suero.getTubos().remove(t);
@@ -182,7 +173,9 @@ public class SueroService {
             Tubo existing = existingByPosicion.get(t.posicion());
             if (existing != null) {
                 existing.setCaja(caja);
-                existing.setCantidadInicial(t.cantidadInicial());
+                // El input es la cantidad ACTUAL deseada: preservamos lo ya consumido y
+                // recalculamos la inicial para que el restante quede en t.cantidad().
+                existing.setCantidadInicial(t.cantidad().add(existing.getCantidadUsada()));
                 tuboRepository.save(existing);
             } else {
                 Tubo newTubo = new Tubo();
@@ -190,7 +183,7 @@ public class SueroService {
                 newTubo.setCaja(caja);
                 newTubo.setSuero(suero);
                 newTubo.setPosicion(t.posicion());
-                newTubo.setCantidadInicial(t.cantidadInicial());
+                newTubo.setCantidadInicial(t.cantidad());
                 tuboRepository.save(newTubo);
                 suero.getTubos().add(newTubo);
             }

@@ -88,7 +88,7 @@ class ModeloAnimalServiceTest {
 
         when(repository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
 
-        var result = service.findAll(0, 10, null, 10L, SexoRaton.MACHO, null, null, null, null, "identificador", "asc");
+        var result = service.findAll(0, 10, null, 10L, List.of(SexoRaton.MACHO), null, null, null, null, "identificador", "asc");
 
         assertThat(result.content()).isEmpty();
     }
@@ -375,7 +375,6 @@ class ModeloAnimalServiceTest {
     @Test
     void deberia_registrarVocalizaciones_cuandoModeloExiste() {
         var m = buildBaseModelo();
-        m.setEstadoProtocolo(EstadoProtocolo.PENDIENTE_VOCALIZACIONES);
         m.setVocalizaciones(null);
         var dto = new VocalizacionesDTO(30.0, 60.0, null, null);
 
@@ -392,7 +391,6 @@ class ModeloAnimalServiceTest {
     @Test
     void deberia_actualizarVocalizaciones_cuandoYaExistian() {
         var m = buildBaseModelo();
-        m.setEstadoProtocolo(EstadoProtocolo.PENDIENTE_VOCALIZACIONES);
         var vusExistente = new VocalizacionesUltrasonicas();
         vusExistente.setId(5L);
         vusExistente.setMuestra1Khz(10.0);
@@ -411,16 +409,30 @@ class ModeloAnimalServiceTest {
     }
 
     @Test
-    void deberia_lanzarBusinessRuleException_cuandoVocalizacionesAntesDelDia7() {
+    void deberia_registrarVocalizaciones_cuandoEsAntesDelDia7() {
         var m = buildBaseModelo();
-        m.setEstadoProtocolo(EstadoProtocolo.PENDIENTE_VOCALIZACIONES);
         m.getCamada().setFechaNacimiento(LocalDate.now(FIXED_CLOCK).minusDays(5));
 
         when(repository.findById(1L)).thenReturn(Optional.of(m));
+        when(repository.save(m)).thenReturn(m);
 
-        assertThatThrownBy(() -> service.registrarVocalizaciones(1L, new VocalizacionesDTO(30.0, 60.0, null, null)))
-                .isInstanceOf(BusinessRuleException.class)
-                .hasMessageContaining("vocalizaciones");
+        var result = service.registrarVocalizaciones(1L, new VocalizacionesDTO(30.0, 60.0, null, null));
+
+        assertThat(result.vocalizaciones()).isNotNull();
+        assertThat(m.getVocalizaciones().getMuestra1Khz()).isEqualTo(30.0);
+    }
+
+    @Test
+    void deberia_registrarVocalizaciones_cuandoEstadoEsPendienteInoculacion() {
+        var m = buildBaseModelo();
+        // estadoProtocolo default = PENDIENTE_INOCULACION, sin forzar nada
+
+        when(repository.findById(1L)).thenReturn(Optional.of(m));
+        when(repository.save(m)).thenReturn(m);
+
+        var result = service.registrarVocalizaciones(1L, new VocalizacionesDTO(30.0, 60.0, null, null));
+
+        assertThat(result.vocalizaciones()).isNotNull();
     }
 
     // --- registrarTresCamaras ---
@@ -428,7 +440,6 @@ class ModeloAnimalServiceTest {
     @Test
     void deberia_registrarTresCamaras_cuandoModeloExiste() {
         var m = buildBaseModelo();
-        m.setEstadoProtocolo(EstadoProtocolo.PENDIENTE_TRES_CAMARAS);
         m.setTresCamaras(null);
         var dto = new TresCamarasDTO(10.0, 5.0, 8.0, 4.0, null, null);
 
@@ -443,40 +454,81 @@ class ModeloAnimalServiceTest {
     }
 
     @Test
-    void deberia_lanzarBusinessRuleException_cuandoTresCamarasAntesDelDia21() {
+    void deberia_registrarTresCamaras_cuandoEsAntesDelDia21() {
         var m = buildBaseModelo();
-        m.setEstadoProtocolo(EstadoProtocolo.PENDIENTE_TRES_CAMARAS);
         m.getCamada().setFechaNacimiento(LocalDate.now(FIXED_CLOCK).minusDays(15));
 
         when(repository.findById(1L)).thenReturn(Optional.of(m));
+        when(repository.save(m)).thenReturn(m);
 
-        assertThatThrownBy(() -> service.registrarTresCamaras(1L, new TresCamarasDTO(10.0, 5.0, 8.0, 4.0, null, null)))
-                .isInstanceOf(BusinessRuleException.class)
-                .hasMessageContaining("tres cámaras");
+        var result = service.registrarTresCamaras(1L, new TresCamarasDTO(10.0, 5.0, 8.0, 4.0, null, null));
+
+        assertThat(result.tresCamaras()).isNotNull();
+        assertThat(m.getTresCamaras().getM1TiempoRatonNovedad()).isEqualTo(10.0);
     }
 
     @Test
-    void deberia_lanzarBusinessRuleException_cuandoEstadoNoEsPendienteVocalizaciones() {
+    void deberia_registrarTresCamaras_cuandoEstadoEsPendienteInoculacion() {
         var m = buildBaseModelo();
-        // estadoProtocolo default = PENDIENTE_INOCULACION
+        // estadoProtocolo default = PENDIENTE_INOCULACION, sin forzar nada
 
         when(repository.findById(1L)).thenReturn(Optional.of(m));
+        when(repository.save(m)).thenReturn(m);
 
-        assertThatThrownBy(() -> service.registrarVocalizaciones(1L, new VocalizacionesDTO(30.0, 60.0, null, null)))
-                .isInstanceOf(BusinessRuleException.class)
-                .hasMessageContaining("PENDIENTE_VOCALIZACIONES");
+        var result = service.registrarTresCamaras(1L, new TresCamarasDTO(10.0, 5.0, 8.0, 4.0, null, null));
+
+        assertThat(result.tresCamaras()).isNotNull();
     }
 
     @Test
-    void deberia_lanzarBusinessRuleException_cuandoEstadoNoEsPendienteTresCamaras() {
+    void deberia_registrarTresCamaras_secuencialmente_sinForzarEstado() {
         var m = buildBaseModelo();
-        // estadoProtocolo default = PENDIENTE_INOCULACION
+        // sin m.setEstadoProtocolo(...) manual: reproduce la secuencia real de uso
 
         when(repository.findById(1L)).thenReturn(Optional.of(m));
+        when(repository.save(m)).thenReturn(m);
 
-        assertThatThrownBy(() -> service.registrarTresCamaras(1L, new TresCamarasDTO(10.0, 5.0, 8.0, 4.0, null, null)))
-                .isInstanceOf(BusinessRuleException.class)
-                .hasMessageContaining("PENDIENTE_TRES_CAMARAS");
+        service.registrarTresCamaras(1L, new TresCamarasDTO(10.0, 5.0, null, null, null, null)); // solo M1
+        assertThat(m.getTresCamaras().getM1TiempoRatonNovedad()).isEqualTo(10.0);
+        assertThat(m.getTresCamaras().getM2TiempoRatonDesconocido()).isNull();
+
+        // El estado ya avanzó más allá de PENDIENTE_TRES_CAMARAS (m.getTresCamaras() != null);
+        // antes de esta corrección, esta segunda llamada hubiera sido rechazada.
+        service.registrarTresCamaras(1L, new TresCamarasDTO(null, null, 8.0, 4.0, null, null)); // solo M2
+        assertThat(m.getTresCamaras().getM1TiempoRatonNovedad()).isEqualTo(10.0); // preservado
+        assertThat(m.getTresCamaras().getM2TiempoRatonDesconocido()).isEqualTo(8.0);
+    }
+
+    @Test
+    void deberia_permitirEditarVocalizaciones_cuandoEstadoYaEsCompleto() {
+        var m = buildBaseModelo();
+        m.setFechaDia1Inoculacion(LocalDate.now(FIXED_CLOCK).minusDays(21));
+        for (int dia = 1; dia <= 4; dia++) {
+            var aporte = new ModeloAnimalPoolAporte();
+            aporte.setDia(dia);
+            m.getAportes().add(aporte);
+        }
+        var vus = new VocalizacionesUltrasonicas();
+        vus.setMuestra1Khz(30.0);
+        vus.setMuestra2Khz(60.0);
+        m.setVocalizaciones(vus);
+        var tc = new TresCamaras();
+        tc.setM1TiempoRatonNovedad(10.0);
+        tc.setM1TiempoObjetoNovedoso(5.0);
+        tc.setM2TiempoRatonDesconocido(8.0);
+        tc.setM2TiempoRatonFamiliar(4.0);
+        m.setTresCamaras(tc);
+        m.setNumCelulasGanglionares(100);
+        m.setNumCelulasPurkinje(50);
+        m.setEstadoProtocolo(EstadoProtocolo.COMPLETO);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(m));
+        when(repository.save(m)).thenReturn(m);
+
+        var result = service.registrarVocalizaciones(1L, new VocalizacionesDTO(99.0, 60.0, null, null));
+
+        assertThat(m.getVocalizaciones().getMuestra1Khz()).isEqualTo(99.0);
+        assertThat(result.estadoProtocolo()).isEqualTo(EstadoProtocolo.COMPLETO);
     }
 
     // --- registrarMicroscopia ---
@@ -668,7 +720,7 @@ class ModeloAnimalServiceTest {
 
         var tuboPool = buildTuboPool(100L, 10L, BigDecimal.valueOf(1.0), BigDecimal.valueOf(0.05));
 
-        // Aporte previo existente en día 1
+        // Aporte previo existente en día 1 (consumió 0.05 del mismo tubo)
         var prevAporte = new ModeloAnimalPoolAporte();
         prevAporte.setId(99L);
         prevAporte.setTubo(tuboPool);
@@ -682,8 +734,42 @@ class ModeloAnimalServiceTest {
 
         service.registrarInoculacion(1L, dto);
 
-        verify(modeloAnimalPoolAporteRepository).delete(prevAporte);
-        verify(modeloAnimalPoolAporteRepository).save(any(ModeloAnimalPoolAporte.class));
+        // Reutiliza la MISMA fila (no delete + insert) para no violar uc_aporte_animal_dia.
+        verify(modeloAnimalPoolAporteRepository, never()).delete(any());
+        verify(modeloAnimalPoolAporteRepository).save(prevAporte);
+        assertThat(prevAporte.getCantidadConsumida()).isEqualByComparingTo(BigDecimal.valueOf(0.1));
+        // Revierte el consumo viejo (0.05) y aplica el nuevo (0.1) → usada neta 0.1.
+        assertThat(tuboPool.getCantidadUsada()).isEqualByComparingTo(BigDecimal.valueOf(0.1));
+    }
+
+    @Test
+    void deberia_editarInoculacion_revirtiendoTuboAnterior_cuandoCambiaDeTubo() {
+        var m = buildBaseModelo(); // pool.id = 10L
+        // Se edita el día 1: antes se usó el tubo 100 (0.05), ahora se usa el tubo 101 (0.1)
+        var aporte = new ModeloAnimalPoolAporteInputDTO(101L, BigDecimal.valueOf(0.1), 1);
+        var dto = new ModeloAnimalInoculacionDTO(LocalDate.now(FIXED_CLOCK), List.of(aporte));
+
+        var tuboAnterior = buildTuboPool(100L, 10L, BigDecimal.valueOf(1.0), BigDecimal.valueOf(0.05));
+        var tuboNuevo    = buildTuboPool(101L, 10L, BigDecimal.valueOf(1.0), BigDecimal.ZERO);
+
+        var prevAporte = new ModeloAnimalPoolAporte();
+        prevAporte.setId(99L);
+        prevAporte.setTubo(tuboAnterior);
+        prevAporte.setCantidadConsumida(BigDecimal.valueOf(0.05));
+        prevAporte.setDia(1);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(m));
+        when(modeloAnimalPoolAporteRepository.findByModeloAnimal_IdAndDia(1L, 1)).thenReturn(Optional.of(prevAporte));
+        when(tuboRepository.findById(101L)).thenReturn(Optional.of(tuboNuevo));
+        when(repository.save(m)).thenReturn(m);
+
+        service.registrarInoculacion(1L, dto);
+
+        verify(modeloAnimalPoolAporteRepository, never()).delete(any());
+        // El tubo anterior recupera su volumen (0.05 → 0.0) y el nuevo lo descuenta (0.0 → 0.1).
+        assertThat(tuboAnterior.getCantidadUsada()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(tuboNuevo.getCantidadUsada()).isEqualByComparingTo(BigDecimal.valueOf(0.1));
+        assertThat(prevAporte.getTubo()).isEqualTo(tuboNuevo);
     }
 
     @Test
@@ -926,7 +1012,6 @@ class ModeloAnimalServiceTest {
     @Test
     void deberia_actualizarTresCamaras_cuandoYaExistian() {
         var m = buildBaseModelo();
-        m.setEstadoProtocolo(EstadoProtocolo.PENDIENTE_TRES_CAMARAS);
         var tcExistente = new TresCamaras();
         tcExistente.setId(7L);
         tcExistente.setM1TiempoRatonNovedad(5.0);
@@ -946,7 +1031,6 @@ class ModeloAnimalServiceTest {
     @Test
     void deberia_registrarTresCamaras_cuandoSoloM2NonNull() {
         var m = buildBaseModelo();
-        m.setEstadoProtocolo(EstadoProtocolo.PENDIENTE_TRES_CAMARAS);
         var dto = new TresCamarasDTO(null, null, 8.0, 4.0, null, null);
 
         when(repository.findById(1L)).thenReturn(Optional.of(m));
