@@ -220,18 +220,7 @@ public class ModeloAnimalService {
     public ModeloAnimalResponseDTO registrarVocalizaciones(Long id, VocalizacionesDTO dto) {
         ModeloAnimal m = findActiveById(id);
 
-        if (m.getEstadoProtocolo() != EstadoProtocolo.PENDIENTE_VOCALIZACIONES) {
-            throw new BusinessRuleException(
-                    "Solo se pueden registrar vocalizaciones cuando el modelo está en estado PENDIENTE_VOCALIZACIONES");
-        }
-
         LocalDate hoy = LocalDate.now(clock);
-        LocalDate fn = m.getCamada() != null ? m.getCamada().getFechaNacimiento() : null;
-        if (fn == null || hoy.isBefore(fn.plusDays(DomainConstants.DIA_VOCALIZACIONES))) {
-            throw new BusinessRuleException(
-                    "No se pueden registrar vocalizaciones antes del día "
-                    + DomainConstants.DIA_VOCALIZACIONES + " de vida del ratón");
-        }
 
         VocalizacionesUltrasonicas vus = m.getVocalizaciones() != null
                 ? m.getVocalizaciones()
@@ -256,18 +245,7 @@ public class ModeloAnimalService {
     public ModeloAnimalResponseDTO registrarTresCamaras(Long id, TresCamarasDTO dto) {
         ModeloAnimal m = findActiveById(id);
 
-        if (m.getEstadoProtocolo() != EstadoProtocolo.PENDIENTE_TRES_CAMARAS) {
-            throw new BusinessRuleException(
-                    "Solo se pueden registrar tres cámaras cuando el modelo está en estado PENDIENTE_TRES_CAMARAS");
-        }
-
         LocalDate hoy = LocalDate.now(clock);
-        LocalDate fn = m.getCamada() != null ? m.getCamada().getFechaNacimiento() : null;
-        if (fn == null || hoy.isBefore(fn.plusDays(DomainConstants.DIA_TRES_CAMARAS))) {
-            throw new BusinessRuleException(
-                    "No se pueden registrar tres cámaras antes del día "
-                    + DomainConstants.DIA_TRES_CAMARAS + " de vida del ratón");
-        }
 
         TresCamaras tc = m.getTresCamaras() != null
                 ? m.getTresCamaras()
@@ -369,15 +347,15 @@ public class ModeloAnimalService {
             for (ModeloAnimalPoolAporteInputDTO a : dto.aportes()) {
                 Tubo tubo = tubosMap.get(a.poolTuboId());
                 ModeloAnimalPoolAporte prev = prevAportes.get(a.dia());
-                if (prev != null) {
-                    if (prev.getCantidadConsumida() != null) {
-                        Tubo tuboAnterior = prev.getTubo();
-                        tuboAnterior.setCantidadUsada(tuboAnterior.getCantidadUsada().subtract(prev.getCantidadConsumida()));
-                        tuboRepository.save(tuboAnterior);
-                    }
-                    modeloAnimalPoolAporteRepository.delete(prev);
+                // Revertir el consumo anterior sobre su tubo (puede ser otro tubo si se editó).
+                if (prev != null && prev.getCantidadConsumida() != null) {
+                    Tubo tuboAnterior = prev.getTubo();
+                    tuboAnterior.setCantidadUsada(tuboAnterior.getCantidadUsada().subtract(prev.getCantidadConsumida()));
+                    tuboRepository.save(tuboAnterior);
                 }
-                ModeloAnimalPoolAporte aporte = new ModeloAnimalPoolAporte();
+                // Upsert sobre la MISMA fila (animal, dia): evita violar uc_aporte_animal_dia
+                // con el orden INSERT-antes-de-DELETE del flush de Hibernate.
+                ModeloAnimalPoolAporte aporte = (prev != null) ? prev : new ModeloAnimalPoolAporte();
                 aporte.setModeloAnimal(m);
                 aporte.setTubo(tubo);
                 aporte.setCantidadConsumida(a.cantidadConsumida());
