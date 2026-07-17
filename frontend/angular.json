@@ -36,7 +36,8 @@
               }
             ],
             "styles": [
-              "src/styles.css"
+              "src/styles.css",
+              "driver.js/dist/driver.css"
             ]
           },
           "configurations": {
@@ -66,7 +67,7 @@
         "serve": {
           "builder": "@angular/build:dev-server",
           "options": {
-            "allowedHosts": [".ngrok-free.dev", ".ngrok-free.app", ".loca.lt"]
+            "allowedHosts": [".ngrok-free.dev", ".ngrok-free.app", ".ngrok-free.dev"]
           },
           "configurations": {
             "production": {
