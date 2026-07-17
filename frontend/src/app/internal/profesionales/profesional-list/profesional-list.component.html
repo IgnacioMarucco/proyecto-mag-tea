@@ -3,12 +3,14 @@
   <div class="flex items-center justify-between mb-6">
     <app-page-header [crumbs]="crumbs()" />
     <a routerLink="/internal/profesionales/nuevo"
+      data-tour="profesionales-nuevo"
       class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors whitespace-nowrap">
       <app-icon name="plus" class="w-4 h-4" /> Registrar profesional
     </a>
   </div>
 
   <app-list-toolbar
+    data-tour="profesionales-toolbar"
     placeholder="Buscar por nombre o email…"
     [filterGroups]="filterGroups"
     [activeFilters]="activeFilters()"
@@ -21,6 +23,7 @@
   </span>
 
   <app-data-table
+    data-tour="profesionales-tabla"
     [columns]="columns"
     [rows]="profesionales().length"
     ariaLabel="Listado de profesionales"
@@ -37,7 +40,7 @@
         <td class="px-5 py-3.5">
           <app-status-badge [value]="p.role" [labels]="roleLabels" [colorMap]="rolColors" />
         </td>
-        <td class="px-5 py-3.5">
+        <td class="px-5 py-3.5" data-tour="profesionales-acciones">
           <app-row-actions [actions]="getActionsFor(p)" />
         </td>
       </tr>
@@ -45,6 +48,7 @@
   </app-data-table>
 
   <app-paginator
+    data-tour="profesionales-paginador"
     [currentPage]="currentPage()"
     [totalPages]="totalPages()"
     [totalElements]="totalElements()"

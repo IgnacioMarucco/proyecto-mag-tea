@@ -10,6 +10,7 @@ import { Crumb, PageHeaderComponent } from '../../../shared/page-header/page-hea
 import { FirstFocusDirective } from '../../../shared/directives/first-focus.directive';
 import { ConfirmModalComponent } from '../../../shared/confirm-modal/confirm-modal.component';
 import { ToastService } from '../../../core/services/toast.service';
+import { passwordsMatchValidator } from '../../../shared/validators/passwords-match.validator';
 
 @Component({
   selector: 'app-profesional-form',
@@ -42,8 +43,9 @@ export class ProfesionalFormComponent {
     email: ['', [Validators.required, Validators.email]],
     telefono: ['', Validators.required],
     password: ['', [Validators.minLength(8)]],
+    passwordConfirmar: [''],
     role: ['', Validators.required],
-  });
+  }, { validators: passwordsMatchValidator('password', 'passwordConfirmar') });
 
   loading         = signal(false);
   error           = signal<string | null>(null);
@@ -54,11 +56,7 @@ export class ProfesionalFormComponent {
       const id = this.id();
       if (id) {
         this.service.findById(+id).subscribe({
-          next: p => {
-            this.form.patchValue(p);
-            this.form.get('password')?.clearValidators();
-            this.form.get('password')?.updateValueAndValidity();
-          },
+          next: p => this.form.patchValue(p),
           error: () => this.error.set('No se pudo cargar el profesional'),
         });
       }
@@ -99,8 +97,8 @@ export class ProfesionalFormComponent {
 
     const id = this.id();
     const request$ = id
-      ? this.service.update(+id, this.form.value as ProfesionalUpdate)
-      : this.service.create(this.form.value as ProfesionalCreate);
+      ? this.service.update(+id, this.buildUpdatePayload())
+      : this.service.create(this.buildCreatePayload());
 
     request$.subscribe({
       next: () => { this.toast.show(this.isEdit() ? 'Profesional actualizado' : 'Profesional creado'); this.router.navigate(['/internal/profesionales']); },
@@ -109,6 +107,31 @@ export class ProfesionalFormComponent {
         this.loading.set(false);
       },
     });
+  }
+
+  private buildCreatePayload(): ProfesionalCreate {
+    const raw = this.form.getRawValue();
+    return {
+      nombre: raw.nombre,
+      apellido: raw.apellido,
+      email: raw.email,
+      telefono: raw.telefono,
+      password: raw.password,
+      role: raw.role,
+    } as ProfesionalCreate;
+  }
+
+  private buildUpdatePayload(): ProfesionalUpdate {
+    const raw = this.form.getRawValue();
+    const password = raw.password?.trim();
+    return {
+      nombre: raw.nombre,
+      apellido: raw.apellido,
+      email: raw.email,
+      telefono: raw.telefono,
+      role: raw.role,
+      ...(password ? { password } : {}),
+    } as ProfesionalUpdate;
   }
 
   cancel(): void {

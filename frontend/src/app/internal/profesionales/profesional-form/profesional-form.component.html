@@ -69,22 +69,42 @@
       }
     </div>
 
-    <!-- Contraseña (solo en creación) -->
-    @if (!isEdit()) {
-      <div>
-        <label for="password" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">Contraseña</label>
-        <input
-          id="password" type="password" formControlName="password" autocomplete="new-password"
-          class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text
-                 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
-          [class.border-danger]="form.get('password')?.invalid && form.get('password')?.touched"
-          [attr.aria-invalid]="form.get('password')?.invalid && form.get('password')?.touched"
-        />
-        @if (form.get('password')?.invalid && form.get('password')?.touched) {
-          <p role="alert" class="mt-1 text-xs text-danger">Mínimo 8 caracteres</p>
-        }
-      </div>
-    }
+    <!-- Contraseña -->
+    <div>
+      <label for="password" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
+        {{ isEdit() ? 'Nueva contraseña' : 'Contraseña' }}
+      </label>
+      <input
+        id="password" type="password" formControlName="password" autocomplete="new-password"
+        class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text
+               focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+        [class.border-danger]="form.get('password')?.invalid && form.get('password')?.touched"
+        [attr.aria-invalid]="form.get('password')?.invalid && form.get('password')?.touched"
+      />
+      @if (form.get('password')?.invalid && form.get('password')?.touched) {
+        <p role="alert" class="mt-1 text-xs text-danger">Mínimo 8 caracteres</p>
+      }
+      @if (isEdit()) {
+        <p class="mt-1 text-xs text-text-muted">Dejar en blanco para no modificarla.</p>
+      }
+    </div>
+
+    <!-- Confirmar contraseña -->
+    <div>
+      <label for="passwordConfirmar" class="block text-xs font-mono text-text-muted uppercase tracking-wider mb-1.5">
+        Confirmar {{ isEdit() ? 'nueva contraseña' : 'contraseña' }}
+      </label>
+      <input
+        id="passwordConfirmar" type="password" formControlName="passwordConfirmar" autocomplete="new-password"
+        class="w-full px-3 py-2 text-sm bg-surface border border-border rounded-md text-text
+               focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+        [class.border-danger]="form.get('passwordConfirmar')?.touched && form.hasError('passwordsMismatch')"
+        [attr.aria-invalid]="form.get('passwordConfirmar')?.touched && form.hasError('passwordsMismatch')"
+      />
+      @if (form.hasError('passwordsMismatch') && form.get('passwordConfirmar')?.touched) {
+        <p role="alert" class="mt-1 text-xs text-danger">Las contraseñas no coinciden</p>
+      }
+    </div>
 
     <!-- Rol -->
     <div>
