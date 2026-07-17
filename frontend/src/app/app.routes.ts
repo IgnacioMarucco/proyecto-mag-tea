@@ -28,6 +28,11 @@ export const routes: Routes = [
           import('./internal/inicio/inicio.component').then(m => m.InicioComponent),
       },
       {
+        path: 'perfil',
+        loadComponent: () =>
+          import('./internal/perfil/perfil.component').then(m => m.PerfilComponent),
+      },
+      {
         path: 'bandeja',
         data: { crumbs: [{ label: 'Etapa Clínica' }, { label: 'Bandeja de formularios' }] },
         loadComponent: () =>
