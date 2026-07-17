@@ -3,6 +3,7 @@
   <div class="flex items-center justify-between mb-6">
     <app-page-header [crumbs]="crumbs()" />
     <a routerLink="/internal/pacientes/nuevo"
+      data-tour="pacientes-nuevo"
       class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors whitespace-nowrap">
       <app-icon name="plus" class="w-4 h-4" /> Registrar paciente
     </a>
@@ -20,6 +21,7 @@
   }
 
   <app-list-toolbar
+    data-tour="pacientes-toolbar"
     placeholder="Buscar por nombre, apellido o código…"
     [filterGroups]="filterGroups"
     [activeFilters]="activeFilters()"
@@ -41,6 +43,7 @@
   </span>
 
   <app-data-table
+    data-tour="pacientes-tabla"
     [columns]="columns"
     [rows]="pacientes().length"
     [loading]="loading()"
@@ -86,7 +89,7 @@
           }
         </td>
 
-        <td class="px-5 py-3.5">
+        <td class="px-5 py-3.5" data-tour="pacientes-acciones">
           <app-row-actions [actions]="getActionsFor(p)" />
         </td>
 
@@ -95,6 +98,7 @@
   </app-data-table>
 
   <app-paginator
+    data-tour="pacientes-paginador"
     [currentPage]="currentPage()"
     [totalPages]="totalPages()"
     [totalElements]="totalElements()"
