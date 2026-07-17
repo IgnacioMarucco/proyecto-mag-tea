@@ -46,7 +46,7 @@ export class SueroListComponent {
   );
 
   private readonly params$ = new BehaviorSubject<SueroListParams>({
-    page: 0, size: PAGE_SIZE, sortBy: 'codigoNumerico', sortDir: 'asc',
+    page: 0, size: PAGE_SIZE, sortBy: 'fechaExtraccion', sortDir: 'desc',
     codigoPaciente: this.route.snapshot.queryParamMap.get('codigoPaciente') || undefined,
   });
 
@@ -70,7 +70,7 @@ export class SueroListComponent {
   readonly currentPage   = computed(() => this.response()?.page ?? 0);
 
   search          = signal('');
-  sortState       = signal<SortState>({ key: 'codigoNumerico', direction: 'asc' });
+  sortState       = signal<SortState>({ key: 'fechaExtraccion', direction: 'desc' });
   activeFilters   = signal<Record<string, string | string[]>>({});
   deleting        = signal<number | null>(null);
   pendingDeleteId = signal<number | null>(null);
@@ -194,7 +194,7 @@ export class SueroListComponent {
     const tag = (event.target as HTMLElement).tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
     if (event.key === '/') { event.preventDefault(); this.toolbar()?.focusSearch(); }
-    if ((event.ctrlKey || event.metaKey) && event.key === 'n') {
+    if (event.altKey && event.key === 'n') {
       event.preventDefault();
       this.router.navigate(['/internal/sueros/nuevo']);
     }

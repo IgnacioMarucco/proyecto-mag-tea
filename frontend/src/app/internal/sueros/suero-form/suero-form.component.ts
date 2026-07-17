@@ -81,7 +81,7 @@ export class SueroFormComponent {
 
   readonly ocupadasStr    = computed(() => this.ocupadas().join(', '));
   readonly totalCalculado = computed(() =>
-    this.tubosConCantidad().reduce((s, t) => s + (t.cantidadInicial || 0), 0)
+    this.tubosConCantidad().reduce((s, t) => s + (t.cantidad || 0), 0)
   );
 
   // ── Preview rango ─────────────────────────────────────────────────────────
@@ -113,7 +113,7 @@ export class SueroFormComponent {
         this.sueroLoaded.set(suero);
         this.tubosValue.set(suero.tubos.map(t => t.posicion).join(', '));
         this.tubosConCantidad.set(
-          suero.tubos.map(t => ({ posicion: t.posicion, cantidadInicial: t.cantidadInicial }))
+          suero.tubos.map(t => ({ posicion: t.posicion, cantidad: t.cantidadRestante }))
         );
         this.form.patchValue({
           cajaId:           suero.cajaId,
@@ -176,10 +176,10 @@ export class SueroFormComponent {
     this.tubosValue.set(val);
     const posiciones = val ? val.split(',').map(s => s.trim()).filter(Boolean) : [];
     this.tubosConCantidad.update(prev => {
-      const prevMap = new Map(prev.map(t => [t.posicion, t.cantidadInicial]));
+      const prevMap = new Map(prev.map(t => [t.posicion, t.cantidad]));
       return posiciones.map(pos => ({
         posicion: pos,
-        cantidadInicial: prevMap.get(pos) ?? 0,
+        cantidad: prevMap.get(pos) ?? 0,
       }));
     });
   }
@@ -219,7 +219,7 @@ export class SueroFormComponent {
       }
       return;
     }
-    if (tubos.some(t => !t.cantidadInicial || t.cantidadInicial <= 0)) {
+    if (tubos.some(t => !t.cantidad || t.cantidad <= 0)) {
       this.error.set('Todos los tubos deben tener una cantidad mayor a 0');
       return;
     }

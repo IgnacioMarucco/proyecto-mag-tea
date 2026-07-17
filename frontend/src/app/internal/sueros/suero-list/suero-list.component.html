@@ -3,7 +3,7 @@
   <div class="flex items-center justify-between mb-6">
     <app-page-header [crumbs]="crumbs()" />
     <div class="flex items-center gap-2">
-      <div class="relative group/pool inline-flex">
+      <div class="relative group/pool inline-flex" data-tour="sueros-crear-pool">
         <button
           type="button"
           [disabled]="!canCreatePool()"
@@ -23,6 +23,7 @@
         }
       </div>
       <a routerLink="/internal/sueros/nuevo"
+        data-tour="sueros-nuevo"
         class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors whitespace-nowrap">
         <app-icon name="plus" class="w-4 h-4" /> Registrar suero
       </a>
@@ -39,6 +40,7 @@
   }
 
   <app-list-toolbar
+    data-tour="sueros-toolbar"
     placeholder="Buscar por código…"
     [filterGroups]="filterGroups"
     [activeFilters]="activeFilters()"
@@ -60,6 +62,7 @@
   </span>
 
   <app-data-table
+    data-tour="sueros-tabla"
     [columns]="columns"
     [rows]="sueros().length"
     [loading]="loading()"
@@ -101,7 +104,7 @@
           <app-volume-bar [value]="suero.cantidadRestante" [total]="suero.cantidadTotal" />
         </td>
 
-        <td class="px-5 py-3.5">
+        <td class="px-5 py-3.5" data-tour="sueros-acciones">
           <app-row-actions [actions]="getActionsFor(suero)" />
         </td>
 
@@ -110,6 +113,7 @@
   </app-data-table>
 
   <app-paginator
+    data-tour="sueros-paginador"
     [currentPage]="currentPage()"
     [totalPages]="totalPages()"
     [totalElements]="totalElements()"
