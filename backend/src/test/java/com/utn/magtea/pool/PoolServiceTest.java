@@ -252,6 +252,35 @@ class PoolServiceTest {
     }
 
     @Test
+    void deberia_editarCantidadActual_preservandoLoConsumido_cuandoTuboPoolTieneUso() {
+        var pool = buildPool(1L);
+        var caja = buildCaja(1L);
+        // El input es la cantidad ACTUAL deseada (0.5), el tubo ya consumió 0.1
+        var tubosInput = List.of(new TuboInputDTO("P1", BigDecimal.valueOf(0.5)));
+        var dto = new PoolUpdateDTO(1L, LocalDate.now(), tubosInput);
+
+        var tuboExistente = new Tubo();
+        tuboExistente.setTipo(TipoTubo.POOL);
+        tuboExistente.setPosicion("P1");
+        tuboExistente.setCantidadInicial(BigDecimal.valueOf(0.3));
+        tuboExistente.setCantidadUsada(BigDecimal.valueOf(0.1));
+        tuboExistente.setPool(pool);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(pool));
+        when(cajaRepository.findById(1L)).thenReturn(Optional.of(caja));
+        when(tuboRepository.findByPoolId(1L)).thenReturn(List.of(tuboExistente));
+        when(repository.save(pool)).thenReturn(pool);
+        when(mapper.toDTO(pool)).thenReturn(buildResponseDTO(1L));
+
+        service.update(1L, dto);
+
+        // inicial = actual (0.5) + usado (0.1); restante = actual (0.5)
+        assertThat(tuboExistente.getCantidadInicial()).isEqualByComparingTo(BigDecimal.valueOf(0.6));
+        assertThat(tuboExistente.getCantidadRestante()).isEqualByComparingTo(BigDecimal.valueOf(0.5));
+        assertThat(tuboExistente.getCantidadUsada()).isEqualByComparingTo(BigDecimal.valueOf(0.1));
+    }
+
+    @Test
     void deberia_lanzarBusinessRuleException_cuandoTuboPoolConVolumenUsadoEliminado() {
         var pool = buildPool(1L);
         var caja = buildCaja(1L);

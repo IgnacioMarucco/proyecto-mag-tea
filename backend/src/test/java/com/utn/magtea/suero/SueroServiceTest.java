@@ -294,6 +294,33 @@ class SueroServiceTest {
     }
 
     @Test
+    void deberia_editarCantidadActual_preservandoLoConsumido_cuandoTuboTieneUso() {
+        var suero = buildSuero(1L, TipoPaciente.PROBLEMA);
+        var caja = buildCaja(1L);
+        // El input es la cantidad ACTUAL deseada (2.0), el tubo ya consumió 0.3
+        var tubosInput = List.of(new TuboInputDTO("A1", BigDecimal.valueOf(2.0)));
+        var dto = new SueroUpdateDTO(1L, tubosInput, LocalDate.now(), new BigDecimal("2000"));
+
+        var tuboExistente = new Tubo();
+        tuboExistente.setPosicion("A1");
+        tuboExistente.setCantidadInicial(BigDecimal.valueOf(1.0));
+        tuboExistente.setCantidadUsada(BigDecimal.valueOf(0.3));
+
+        when(repository.findById(1L)).thenReturn(Optional.of(suero));
+        when(cajaRepository.findById(1L)).thenReturn(Optional.of(caja));
+        when(tuboRepository.findBySueroId(1L)).thenReturn(List.of(tuboExistente));
+        when(repository.save(suero)).thenReturn(suero);
+        when(mapper.toDTO(suero)).thenReturn(buildResponseDTO(1L));
+
+        service.update(1L, dto);
+
+        // inicial = actual (2.0) + usado (0.3); restante = actual (2.0)
+        assertThat(tuboExistente.getCantidadInicial()).isEqualByComparingTo(BigDecimal.valueOf(2.3));
+        assertThat(tuboExistente.getCantidadRestante()).isEqualByComparingTo(BigDecimal.valueOf(2.0));
+        assertThat(tuboExistente.getCantidadUsada()).isEqualByComparingTo(BigDecimal.valueOf(0.3));
+    }
+
+    @Test
     void deberia_lanzarBusinessRuleException_cuandoTuboConVolumenUsadoEliminado() {
         var suero = buildSuero(1L, TipoPaciente.PROBLEMA);
         var caja = buildCaja(1L);

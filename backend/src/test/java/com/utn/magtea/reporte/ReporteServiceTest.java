@@ -1,5 +1,8 @@
 package com.utn.magtea.reporte;
 
+import com.utn.magtea.donacion.Donacion;
+import com.utn.magtea.donacion.DonacionRepository;
+import com.utn.magtea.donacion.EstadoDonacion;
 import com.utn.magtea.formulariointeres.ComoConocioProyecto;
 import com.utn.magtea.formulariointeres.EstadoFormulario;
 import com.utn.magtea.formulariointeres.FormularioInteres;
@@ -23,11 +26,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 
@@ -47,6 +52,9 @@ class ReporteServiceTest {
     @Mock
     private SueroRepository sueroRepository;
 
+    @Mock
+    private DonacionRepository donacionRepository;
+
     private final Clock clock = Clock.fixed(
         Instant.parse("2025-06-01T12:00:00Z"), ZoneId.of("America/Argentina/Cordoba"));
 
@@ -54,7 +62,8 @@ class ReporteServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ReporteService(pacienteRepository, formularioRepository, sueroRepository, clock);
+        service = new ReporteService(
+            pacienteRepository, formularioRepository, sueroRepository, donacionRepository, clock);
     }
 
     @Test
@@ -169,7 +178,7 @@ class ReporteServiceTest {
         when(sueroRepository.findAllByPacienteIdInAndActivoTrue(any())).thenReturn(List.of());
 
         // Ejecutar
-        DashboardAnaliticaDTO result = service.getDashboard("TODOS", List.of());
+        DashboardAnaliticaDTO result = service.getDashboard();
 
         // Verificaciones
         assertThat(result).isNotNull();
@@ -217,13 +226,10 @@ class ReporteServiceTest {
     @SuppressWarnings("unchecked")
     void deberia_retornarCorrelaciones_cuandoEjesValidos() {
         var paciente = new Paciente();
+        paciente.setId(1L);
         paciente.setCodigoNumerico("P001");
         paciente.setTipoPaciente(TipoPaciente.PROBLEMA);
         paciente.setFechaNacimientoNino(LocalDate.now().minusYears(3));
-
-        var mchat = new MchatFamilia();
-        mchat.setScoreTotal(5);
-        paciente.setMchatFamilia(mchat);
 
         var cars = new EvaluacionCars();
         cars.setRawScore(new BigDecimal("35.0"));
@@ -231,58 +237,43 @@ class ReporteServiceTest {
 
         when(pacienteRepository.findAll(any(Specification.class))).thenReturn(List.of(paciente));
 
-        var resultado = service.getCorrelaciones("MCHAT_SCORE", "CARS_RAW", "TODOS", List.of());
+        var suero = new com.utn.magtea.suero.Suero();
+        suero.setValorAnticuerpos(new BigDecimal("120.0"));
+        suero.setPaciente(paciente);
+        when(sueroRepository.findAllByPacienteIdInAndActivoTrue(any())).thenReturn(List.of(suero));
+
+        var resultado = service.getCorrelaciones("BTU_VALUE", "CARS_RAW");
 
         assertThat(resultado.puntos()).hasSize(1);
-        assertThat(resultado.puntos().get(0).x()).isEqualTo(5.0);
+        assertThat(resultado.puntos().get(0).x()).isEqualTo(120.0);
         assertThat(resultado.puntos().get(0).y()).isEqualTo(35.0);
         assertThat(resultado.puntos().get(0).codigoNumerico()).isEqualTo("P001");
     }
 
-
-
     @Test
     @SuppressWarnings("unchecked")
     void deberia_retornarListaVacia_cuandoPacientesSinValoresEnEjes() {
-        // Paciente sin M-CHAT ni CARS → x y y serán null → no se incluye en puntos
+        // Paciente sin CARS ni suero → x y y serán null → no se incluye en puntos
         var paciente = new Paciente();
+        paciente.setId(2L);
         paciente.setCodigoNumerico("P002");
         paciente.setTipoPaciente(TipoPaciente.PROBLEMA);
         paciente.setFechaNacimientoNino(LocalDate.now().minusYears(2));
 
         when(pacienteRepository.findAll(any(Specification.class))).thenReturn(List.of(paciente));
+        when(sueroRepository.findAllByPacienteIdInAndActivoTrue(any())).thenReturn(List.of());
 
-        var resultado = service.getCorrelaciones("MCHAT_SCORE", "CARS_RAW", "TODOS", List.of());
+        var resultado = service.getCorrelaciones("BTU_VALUE", "CARS_RAW");
 
         assertThat(resultado.puntos()).isEmpty();
         assertThat(resultado.n()).isEqualTo(0);
     }
 
     @Test
-    @SuppressWarnings("unchecked")
-    void deberia_filtrarPorTipoPaciente_cuandoDashboardConFiltroPROBLEMA() {
-        var pacienteProblema = new Paciente();
-        pacienteProblema.setId(1L);
-        pacienteProblema.setSexo(Sexo.MASCULINO);
-        pacienteProblema.setTipoPaciente(TipoPaciente.PROBLEMA);
-        pacienteProblema.setEstadoClinico(PacienteEstado.ADMITIDO);
-
-        var pacienteControl = new Paciente();
-        pacienteControl.setId(2L);
-        pacienteControl.setSexo(Sexo.FEMENINO);
-        pacienteControl.setTipoPaciente(TipoPaciente.CONTROL);
-        pacienteControl.setEstadoClinico(PacienteEstado.ADMITIDO);
-
-        when(pacienteRepository.findAll(any(Specification.class))).thenReturn(List.of(pacienteProblema, pacienteControl));
-        when(formularioRepository.findAll(any(Specification.class))).thenReturn(List.of());
-        when(sueroRepository.findAllByPacienteIdInAndActivoTrue(any())).thenReturn(List.of());
-
-        var result = service.getDashboard("PROBLEMA", List.of());
-
-        assertThat(result).isNotNull();
-        // Solo el paciente PROBLEMA es incluido en filtrados
-        assertThat(result.resumen().pacientesTotal()).isEqualTo(1);
-        assertThat(result.resumen().pacientesProblema()).isEqualTo(1);
+    void deberia_lanzarBusinessRuleException_cuandoParNoIncluyeAnticuerpos() {
+        assertThatThrownBy(() -> service.getCorrelaciones("MCHAT_SCORE", "CARS_RAW"))
+                .isInstanceOf(com.utn.magtea.common.exception.BusinessRuleException.class)
+                .hasMessageContaining("BTU_VALUE");
     }
 
     @Test
@@ -291,7 +282,7 @@ class ReporteServiceTest {
         when(pacienteRepository.findAll(any(Specification.class))).thenReturn(List.of());
         when(formularioRepository.findAll(any(Specification.class))).thenReturn(List.of());
 
-        var result = service.getDashboard("TODOS", List.of());
+        var result = service.getDashboard();
 
         assertThat(result).isNotNull();
         assertThat(result.resumen().pacientesTotal()).isEqualTo(0);
@@ -301,14 +292,14 @@ class ReporteServiceTest {
 
     @Test
     void deberia_lanzarBusinessRuleException_cuandoEjeXNoValido() {
-        assertThatThrownBy(() -> service.getCorrelaciones("EJE_INVALIDO", "CARS_RAW", "TODOS", List.of()))
+        assertThatThrownBy(() -> service.getCorrelaciones("EJE_INVALIDO", "CARS_RAW"))
                 .isInstanceOf(com.utn.magtea.common.exception.BusinessRuleException.class)
                 .hasMessageContaining("Eje no válido");
     }
 
     @Test
     void deberia_lanzarBusinessRuleException_cuandoEjeYNoValido() {
-        assertThatThrownBy(() -> service.getCorrelaciones("MCHAT_SCORE", "EJE_INVALIDO", "TODOS", List.of()))
+        assertThatThrownBy(() -> service.getCorrelaciones("MCHAT_SCORE", "EJE_INVALIDO"))
                 .isInstanceOf(com.utn.magtea.common.exception.BusinessRuleException.class)
                 .hasMessageContaining("Eje no válido");
     }
@@ -334,7 +325,7 @@ class ReporteServiceTest {
 
         when(sueroRepository.findAllByPacienteIdInAndActivoTrue(any())).thenReturn(List.of(suero));
 
-        var resultado = service.getCorrelaciones("BTU_VALUE", "MCHAT_SCORE", "TODOS", List.of());
+        var resultado = service.getCorrelaciones("BTU_VALUE", "MCHAT_SCORE");
 
         assertThat(resultado.puntos()).hasSize(1);
         assertThat(resultado.puntos().get(0).x()).isEqualTo(120.0);
@@ -343,26 +334,33 @@ class ReporteServiceTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void deberia_retornarDashboard_cuandoTipoPacienteNulo() {
-        when(pacienteRepository.findAll(any(Specification.class))).thenReturn(List.of());
-        when(formularioRepository.findAll(any(Specification.class))).thenReturn(List.of());
+    void deberia_usarScoreDeSeguimiento_cuandoCorrelacionMchatConSeguimiento() {
+        var paciente = new Paciente();
+        paciente.setId(1L);
+        paciente.setCodigoNumerico("P001");
+        paciente.setTipoPaciente(TipoPaciente.PROBLEMA);
+        paciente.setFechaNacimientoNino(LocalDate.now().minusYears(3));
 
-        var result = service.getDashboard(null, List.of());
+        var mchat = new MchatFamilia();
+        mchat.setScoreTotal(5); // riesgo mediano → requirió seguimiento
+        paciente.setMchatFamilia(mchat);
 
-        assertThat(result).isNotNull();
-        assertThat(result.resumen().pacientesTotal()).isEqualTo(0);
-    }
+        var seguimiento = new MchatSeguimiento();
+        seguimiento.setFallas(1); // seguimiento reevaluó a riesgo negativo
+        paciente.setMchatSeguimiento(seguimiento);
 
-    @Test
-    @SuppressWarnings("unchecked")
-    void deberia_retornarDashboard_cuandoTipoPacienteBlanco() {
-        when(pacienteRepository.findAll(any(Specification.class))).thenReturn(List.of());
-        when(formularioRepository.findAll(any(Specification.class))).thenReturn(List.of());
+        when(pacienteRepository.findAll(any(Specification.class))).thenReturn(List.of(paciente));
 
-        var result = service.getDashboard("  ", List.of());
+        var suero = new com.utn.magtea.suero.Suero();
+        suero.setValorAnticuerpos(new java.math.BigDecimal("120.0"));
+        suero.setPaciente(paciente);
 
-        assertThat(result).isNotNull();
-        assertThat(result.resumen().pacientesTotal()).isEqualTo(0);
+        when(sueroRepository.findAllByPacienteIdInAndActivoTrue(any())).thenReturn(List.of(suero));
+
+        var resultado = service.getCorrelaciones("BTU_VALUE", "MCHAT_SCORE");
+
+        assertThat(resultado.puntos()).hasSize(1);
+        assertThat(resultado.puntos().get(0).y()).isEqualTo(1.0); // usa fallas del seguimiento, no scoreTotal
     }
 
     @Test
@@ -393,11 +391,13 @@ class ReporteServiceTest {
 
         when(sueroRepository.findAllByPacienteIdInAndActivoTrue(any())).thenReturn(List.of(suero1, suero2));
 
-        var result = service.getDashboard("TODOS", List.of());
+        var result = service.getDashboard();
 
-        assertThat(result.anticuerpos().totalConSuero()).isEqualTo(2);
-        assertThat(result.anticuerpos().totalSinSuero()).isEqualTo(0);
-        assertThat(result.anticuerpos().mediaBtu()).isEqualTo(150.0);
+        var distribucion = result.anticuerpos().distribucionRangos();
+        assertThat(distribucion.get(2).n()).isEqualTo(1);
+        assertThat(distribucion.get(2).porcentaje()).isEqualTo(50.0);
+        assertThat(distribucion.get(3).n()).isEqualTo(1);
+        assertThat(distribucion.get(3).porcentaje()).isEqualTo(50.0);
     }
 
     @Test
@@ -422,7 +422,7 @@ class ReporteServiceTest {
         when(formularioRepository.findAll(any(Specification.class))).thenReturn(List.of());
         when(sueroRepository.findAllByPacienteIdInAndActivoTrue(any())).thenReturn(List.of());
 
-        var result = service.getDashboard("TODOS", List.of());
+        var result = service.getDashboard();
 
         assertThat(result.vineland().mediaCocienteFinal()).isEqualTo(78.0);
         assertThat(result.vineland().mediaConductaDesadaptativa()).isNull();
@@ -434,6 +434,7 @@ class ReporteServiceTest {
     @SuppressWarnings("unchecked")
     void deberia_retornarRNulo_cuandoMenosDeDosCorrelaciones() {
         var paciente = new Paciente();
+        paciente.setId(1L);
         paciente.setCodigoNumerico("P001");
         paciente.setTipoPaciente(TipoPaciente.PROBLEMA);
         paciente.setFechaNacimientoNino(LocalDate.now().minusYears(3));
@@ -442,18 +443,115 @@ class ReporteServiceTest {
         mchat.setScoreTotal(5);
         paciente.setMchatFamilia(mchat);
 
-        var cars = new EvaluacionCars();
-        cars.setRawScore(new java.math.BigDecimal("35.0"));
-        paciente.setEvaluacionCars(cars);
-
         // Solo 1 punto → Pearson retorna null
         when(pacienteRepository.findAll(any(Specification.class))).thenReturn(List.of(paciente));
 
-        var resultado = service.getCorrelaciones("MCHAT_SCORE", "CARS_RAW", "TODOS", List.of());
+        var suero = new com.utn.magtea.suero.Suero();
+        suero.setValorAnticuerpos(new java.math.BigDecimal("120.0"));
+        suero.setPaciente(paciente);
+        when(sueroRepository.findAllByPacienteIdInAndActivoTrue(any())).thenReturn(List.of(suero));
+
+        var resultado = service.getCorrelaciones("BTU_VALUE", "MCHAT_SCORE");
 
         assertThat(resultado.n()).isEqualTo(1);
         assertThat(resultado.r()).isNull();
-        assertThat(resultado.pValue()).isNull();
+    }
+
+    @Test
+    void deberia_calcularDonaciones_cuandoHayDonacionesEnDistintosEstados() {
+        var aprobada1 = new Donacion();
+        aprobada1.setMonto(5000L);
+        aprobada1.setEstado(EstadoDonacion.APROBADO);
+        ReflectionTestUtils.setField(aprobada1, "createdAt", LocalDateTime.of(2025, 5, 10, 10, 0));
+
+        var aprobada2 = new Donacion();
+        aprobada2.setMonto(3000L);
+        aprobada2.setEstado(EstadoDonacion.APROBADO);
+        ReflectionTestUtils.setField(aprobada2, "createdAt", LocalDateTime.of(2025, 5, 20, 10, 0));
+
+        var aprobada3 = new Donacion();
+        aprobada3.setMonto(2000L);
+        aprobada3.setEstado(EstadoDonacion.APROBADO);
+        ReflectionTestUtils.setField(aprobada3, "createdAt", LocalDateTime.of(2025, 6, 1, 10, 0));
+
+        var pendiente = new Donacion();
+        pendiente.setMonto(1000L);
+        pendiente.setEstado(EstadoDonacion.PENDIENTE);
+        ReflectionTestUtils.setField(pendiente, "createdAt", LocalDateTime.of(2025, 6, 1, 10, 0));
+
+        when(donacionRepository.findAll())
+            .thenReturn(List.of(aprobada1, aprobada2, aprobada3, pendiente));
+
+        var resultado = service.getDonaciones();
+
+        assertThat(resultado.totalRecaudado()).isEqualTo(10000L);
+        assertThat(resultado.cantidadAprobadas()).isEqualTo(3);
+        assertThat(resultado.montoPromedio()).isCloseTo(3333.33, within(0.01));
+
+        assertThat(resultado.recaudacionPorMes()).hasSize(2);
+        assertThat(resultado.recaudacionPorMes().get(0).periodo()).isEqualTo("2025-05");
+        assertThat(resultado.recaudacionPorMes().get(0).monto()).isEqualTo(8000L);
+        assertThat(resultado.recaudacionPorMes().get(1).periodo()).isEqualTo("2025-06");
+        assertThat(resultado.recaudacionPorMes().get(1).monto()).isEqualTo(2000L);
+
+        assertThat(resultado.porEstado()).hasSize(EstadoDonacion.values().length);
+        assertThat(resultado.porEstado().stream()
+            .filter(d -> d.label().equals("APROBADO")).findFirst().orElseThrow().n()).isEqualTo(3);
+        assertThat(resultado.porEstado().stream()
+            .filter(d -> d.label().equals("PENDIENTE")).findFirst().orElseThrow().n()).isEqualTo(1);
+    }
+
+    @Test
+    void deberia_retornarCeros_cuandoNoHayDonaciones() {
+        when(donacionRepository.findAll()).thenReturn(List.of());
+
+        var resultado = service.getDonaciones();
+
+        assertThat(resultado.totalRecaudado()).isZero();
+        assertThat(resultado.cantidadAprobadas()).isZero();
+        assertThat(resultado.montoPromedio()).isZero();
+        assertThat(resultado.recaudacionPorMes()).isEmpty();
+        assertThat(resultado.porEstado()).allSatisfy(d -> assertThat(d.n()).isZero());
+    }
+
+    @Test
+    void deberia_listarDonantes_soloAprobadosConAlMenosUnDatoDeContacto() {
+        var conAmbos = new Donacion();
+        conAmbos.setMonto(1000L);
+        conAmbos.setEstado(EstadoDonacion.APROBADO);
+        conAmbos.setDonante("Ana Pérez");
+        conAmbos.setCorreo("ana@mail.com");
+        ReflectionTestUtils.setField(conAmbos, "createdAt", LocalDateTime.of(2025, 5, 10, 10, 0));
+
+        var soloCorreo = new Donacion();
+        soloCorreo.setMonto(500L);
+        soloCorreo.setEstado(EstadoDonacion.APROBADO);
+        soloCorreo.setCorreo("anonimo@mail.com");
+        ReflectionTestUtils.setField(soloCorreo, "createdAt", LocalDateTime.of(2025, 5, 11, 10, 0));
+
+        var sinDatos = new Donacion();
+        sinDatos.setMonto(200L);
+        sinDatos.setEstado(EstadoDonacion.APROBADO);
+        ReflectionTestUtils.setField(sinDatos, "createdAt", LocalDateTime.of(2025, 5, 12, 10, 0));
+
+        var pendienteConDatos = new Donacion();
+        pendienteConDatos.setMonto(300L);
+        pendienteConDatos.setEstado(EstadoDonacion.PENDIENTE);
+        pendienteConDatos.setDonante("No Confirmado");
+        pendienteConDatos.setCorreo("noconfirmado@mail.com");
+        ReflectionTestUtils.setField(pendienteConDatos, "createdAt", LocalDateTime.of(2025, 5, 13, 10, 0));
+
+        when(donacionRepository.findAll())
+            .thenReturn(List.of(conAmbos, soloCorreo, sinDatos, pendienteConDatos));
+
+        var resultado = service.getDonaciones();
+
+        assertThat(resultado.donantes()).hasSize(2);
+        assertThat(resultado.donantes()).extracting("donante", "correo")
+            .containsExactlyInAnyOrder(
+                tuple("Ana Pérez", "ana@mail.com"),
+                tuple(null, "anonimo@mail.com")
+            );
     }
 }
 
