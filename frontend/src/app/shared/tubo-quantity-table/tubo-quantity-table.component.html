@@ -4,7 +4,7 @@
       <thead class="bg-background border-b border-border">
         <tr>
           <th class="px-4 py-2.5 text-left text-xs font-mono text-text-muted uppercase tracking-wider w-24">Posición</th>
-          <th class="px-4 py-2.5 text-left text-xs font-mono text-text-muted uppercase tracking-wider">Cantidad (ml)</th>
+          <th class="px-4 py-2.5 text-left text-xs font-mono text-text-muted uppercase tracking-wider">Cantidad actual (ml)</th>
         </tr>
       </thead>
       <tbody>
@@ -16,7 +16,7 @@
                 type="number"
                 step="0.01"
                 min="0.01"
-                [value]="tubo.cantidadInicial || ''"
+                [value]="tubo.cantidad || ''"
                 placeholder="0.00"
                 (input)="update(tubo.posicion, $any($event.target).value)"
                 class="w-32 px-2.5 py-1.5 text-sm bg-surface border border-border rounded-md text-text font-mono

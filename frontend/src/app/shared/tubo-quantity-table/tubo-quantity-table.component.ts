@@ -11,13 +11,13 @@ export class TuboQuantityTableComponent {
   tubosChange = output<SueroTuboInput[]>();
 
   readonly total = computed(() =>
-    this.tubos().reduce((s, t) => s + (t.cantidadInicial || 0), 0)
+    this.tubos().reduce((s, t) => s + (t.cantidad || 0), 0)
   );
 
   update(posicion: string, rawValue: string): void {
-    const cantidadInicial = parseFloat(rawValue) || 0;
+    const cantidad = parseFloat(rawValue) || 0;
     this.tubosChange.emit(
-      this.tubos().map(t => t.posicion === posicion ? { ...t, cantidadInicial } : t)
+      this.tubos().map(t => t.posicion === posicion ? { ...t, cantidad } : t)
     );
   }
 }
