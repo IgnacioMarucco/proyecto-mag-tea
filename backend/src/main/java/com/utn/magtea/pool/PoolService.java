@@ -126,7 +126,7 @@ public class PoolService {
                 .map(SueroTuboAporteInputDTO::cantidadAportada)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal totalPoolTubos = dto.tubos().stream()
-                .map(TuboInputDTO::cantidadInicial)
+                .map(TuboInputDTO::cantidad)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         if (totalAportes.compareTo(totalPoolTubos) != 0) {
             throw new BusinessRuleException(
@@ -176,7 +176,7 @@ public class PoolService {
             tubo.setCaja(caja);
             tubo.setPool(saved);
             tubo.setPosicion(t.posicion());
-            tubo.setCantidadInicial(t.cantidadInicial());
+            tubo.setCantidadInicial(t.cantidad());
             tuboRepository.save(tubo);
         }
 
@@ -221,15 +221,6 @@ public class PoolService {
             }
         }
 
-        for (TuboInputDTO t : dto.tubos()) {
-            Tubo existing = existingByPosicion.get(t.posicion());
-            if (existing != null && t.cantidadInicial().compareTo(existing.getCantidadUsada()) < 0) {
-                throw new BusinessRuleException(
-                        "El tubo " + t.posicion() + " ya tiene " + existing.getCantidadUsada()
-                        + " mL usados; la nueva cantidad inicial no puede ser menor");
-            }
-        }
-
         for (Tubo t : existingByPosicion.values()) {
             if (!newPosiciones.contains(t.getPosicion())) {
                 pool.getTubos().remove(t);
@@ -240,7 +231,9 @@ public class PoolService {
             Tubo existing = existingByPosicion.get(t.posicion());
             if (existing != null) {
                 existing.setCaja(caja);
-                existing.setCantidadInicial(t.cantidadInicial());
+                // El input es la cantidad ACTUAL deseada: preservamos lo ya consumido y
+                // recalculamos la inicial para que el restante quede en t.cantidad().
+                existing.setCantidadInicial(t.cantidad().add(existing.getCantidadUsada()));
                 tuboRepository.save(existing);
             } else {
                 Tubo newTubo = new Tubo();
@@ -248,7 +241,7 @@ public class PoolService {
                 newTubo.setCaja(caja);
                 newTubo.setPool(pool);
                 newTubo.setPosicion(t.posicion());
-                newTubo.setCantidadInicial(t.cantidadInicial());
+                newTubo.setCantidadInicial(t.cantidad());
                 tuboRepository.save(newTubo);
                 pool.getTubos().add(newTubo);
             }

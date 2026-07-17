@@ -4,8 +4,10 @@ import com.utn.magtea.common.MapperHelper;
 import com.utn.magtea.suero.Suero;
 import com.utn.magtea.tubo.Tubo;
 import com.utn.magtea.tubo.TuboDTO;
+import com.utn.magtea.tubo.TuboOrden;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.Named;
 
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
@@ -31,10 +33,20 @@ public interface PoolMapper {
     @Mapping(target = "cajaNumero",  source = "caja.numero")
     @Mapping(target = "cantidadTotal",    source = "tubos", qualifiedByName = "sumCantidadInicial")
     @Mapping(target = "cantidadRestante", source = "tubos", qualifiedByName = "sumCantidadRestante")
+    @Mapping(target = "tubos", source = "tubos", qualifiedByName = "toTuboList")
     @Mapping(target = "aportes", expression = "java(toAporteDTOs(pool.getAportes()))")
     PoolResponseDTO toDTO(Pool pool);
 
     TuboDTO toTuboDTO(Tubo tubo);
+
+    @Named("toTuboList")
+    default List<TuboDTO> toTuboList(List<Tubo> tubos) {
+        if (tubos == null) return List.of();
+        return tubos.stream()
+                .sorted(TuboOrden.POR_POSICION)
+                .map(this::toTuboDTO)
+                .toList();
+    }
 
     default List<PoolSueroAporteDTO> toAporteDTOs(List<PoolSueroAporte> aportes) {
         if (aportes == null) return List.of();
