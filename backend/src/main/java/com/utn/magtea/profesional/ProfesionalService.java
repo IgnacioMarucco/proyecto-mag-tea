@@ -1,6 +1,7 @@
 package com.utn.magtea.profesional;
 
 import com.utn.magtea.common.PageResponse;
+import com.utn.magtea.common.exception.BusinessRuleException;
 import com.utn.magtea.common.exception.DuplicateResourceException;
 import com.utn.magtea.common.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -70,7 +71,35 @@ public class ProfesionalService {
         profesional.setEmail(dto.email());
         profesional.setTelefono(dto.telefono());
         profesional.setRole(dto.role());
+        if (dto.password() != null && !dto.password().isBlank()) {
+            profesional.setPassword(passwordEncoder.encode(dto.password()));
+        }
         return mapper.toDTO(repository.save(profesional));
+    }
+
+    @Transactional
+    public ProfesionalResponseDTO updateSelf(String email, PerfilUpdateDTO dto) {
+        Profesional profesional = repository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Profesional no encontrado"));
+        if (!profesional.getEmail().equals(dto.email()) && repository.existsByEmail(dto.email())) {
+            throw new DuplicateResourceException("Email ya registrado: " + dto.email());
+        }
+        profesional.setNombre(dto.nombre());
+        profesional.setApellido(dto.apellido());
+        profesional.setEmail(dto.email());
+        profesional.setTelefono(dto.telefono());
+        return mapper.toDTO(repository.save(profesional));
+    }
+
+    @Transactional
+    public void changePassword(String email, CambiarPasswordDTO dto) {
+        Profesional profesional = repository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Profesional no encontrado"));
+        if (!passwordEncoder.matches(dto.passwordActual(), profesional.getPassword())) {
+            throw new BusinessRuleException("La contraseña actual es incorrecta");
+        }
+        profesional.setPassword(passwordEncoder.encode(dto.passwordNueva()));
+        repository.save(profesional);
     }
 
     @Transactional
