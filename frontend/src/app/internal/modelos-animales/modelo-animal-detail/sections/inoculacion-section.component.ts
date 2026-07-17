@@ -35,7 +35,11 @@ export class InoculacionSectionComponent implements OnInit {
 
   savingDia    = signal<number | null>(null);
   saveError    = signal<string | null>(null);
-  tubosPools   = signal<PoolTuboItem[]>([]);
+  allTubos     = signal<PoolTuboItem[]>([]);
+  editingDia   = signal<number | null>(null);
+
+  // Tubos con volumen disponible (para elegir en un alta).
+  readonly tubosPools = computed(() => this.allTubos().filter(t => t.cantidadRestante > 0));
 
   // Form control solo para fecha del día 1
   formFechaDia1 = this.fb.control('', Validators.required);
@@ -72,11 +76,55 @@ export class InoculacionSectionComponent implements OnInit {
     return this.modeloAnimal().aportes.some(a => a.dia === dia);
   }
 
+  // Opciones de tubo para un día: los disponibles + el tubo ya asignado a ese día
+  // (aunque haya quedado en 0), para que siga siendo re-seleccionable al editar.
+  tubosParaDia(dia: number): PoolTuboItem[] {
+    const disponibles = this.tubosPools();
+    const asignadoId = this.diaRows().find(r => r.dia === dia)?.tuboId ?? null;
+    if (asignadoId === null || disponibles.some(t => t.id === asignadoId)) {
+      return disponibles;
+    }
+    const asignado = this.allTubos().find(t => t.id === asignadoId);
+    return asignado ? [...disponibles, asignado] : disponibles;
+  }
+
+  selectedTubo(dia: number): number | null {
+    return this.perDiaState()[dia - 1].tuboId;
+  }
+
+  selectedCantidad(dia: number): number | null {
+    return this.perDiaState()[dia - 1].cantidad;
+  }
+
+  startEdit(dia: number): void {
+    const row = this.diaRows().find(r => r.dia === dia);
+    this.perDiaState.update(arr => {
+      const next = [...arr];
+      next[dia - 1] = { tuboId: row?.tuboId ?? null, cantidad: row?.cantidadConsumida ?? null };
+      return next;
+    });
+    if (dia === 1) {
+      this.formFechaDia1.setValue(this.modeloAnimal().fechaDia1Inoculacion ?? '');
+    }
+    this.saveError.set(null);
+    this.editingDia.set(dia);
+  }
+
+  cancelEdit(dia: number): void {
+    this.editingDia.set(null);
+    this.perDiaState.update(arr => {
+      const next = [...arr];
+      next[dia - 1] = { tuboId: null, cantidad: null };
+      return next;
+    });
+    this.saveError.set(null);
+  }
+
   ngOnInit(): void {
     this.poolService.findById(this.modeloAnimal().poolId)
       .pipe(catchError(() => of(null)))
       .subscribe(pool => {
-        if (pool) this.tubosPools.set(pool.tubos.filter(t => t.cantidadRestante > 0));
+        if (pool) this.allTubos.set(pool.tubos);
       });
   }
 
@@ -129,6 +177,7 @@ export class InoculacionSectionComponent implements OnInit {
         this.toast.show('Inoculación guardada');
         this.updated.emit(ma);
         this.savingDia.set(null);
+        this.editingDia.set(null);
         this.perDiaState.update(arr => {
           const next = [...arr];
           next[dia - 1] = { tuboId: null, cantidad: null };
@@ -137,7 +186,7 @@ export class InoculacionSectionComponent implements OnInit {
         this.poolService.findById(ma.poolId)
           .pipe(catchError(() => of(null)))
           .subscribe(pool => {
-            if (pool) this.tubosPools.set(pool.tubos.filter(t => t.cantidadRestante > 0));
+            if (pool) this.allTubos.set(pool.tubos);
           });
       },
       error: err => {

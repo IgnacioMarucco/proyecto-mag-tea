@@ -23,6 +23,7 @@ export class VocalizacionesSectionComponent {
 
   saving    = signal(false);
   saveError = signal<string | null>(null);
+  editMode  = signal(false);
 
   form = this.fb.group({
     muestra1Khz: [null as number | null, [Validators.required, Validators.min(0)]],
@@ -31,6 +32,18 @@ export class VocalizacionesSectionComponent {
 
   readonly bandaColors = BANDA_COLORS;
   readonly bandaLabels = BANDA_LABELS;
+
+  startEdit(): void {
+    const v = this.modeloAnimal().vocalizaciones;
+    this.form.patchValue({ muestra1Khz: v?.muestra1Khz ?? null, muestra2Khz: v?.muestra2Khz ?? null });
+    this.saveError.set(null);
+    this.editMode.set(true);
+  }
+
+  cancelEdit(): void {
+    this.editMode.set(false);
+    this.saveError.set(null);
+  }
 
   save(): void {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
@@ -42,7 +55,12 @@ export class VocalizacionesSectionComponent {
       muestra1Khz: Number(v.muestra1Khz),
       muestra2Khz: Number(v.muestra2Khz),
     }).subscribe({
-      next:  ma  => { this.toast.show('Vocalizaciones guardadas'); this.updated.emit(ma); this.saving.set(false); },
+      next:  ma  => {
+        this.toast.show('Vocalizaciones guardadas');
+        this.updated.emit(ma);
+        this.saving.set(false);
+        this.editMode.set(false);
+      },
       error: err => { this.saveError.set(extractErrorMessage(err, 'Error al guardar')); this.saving.set(false); },
     });
   }

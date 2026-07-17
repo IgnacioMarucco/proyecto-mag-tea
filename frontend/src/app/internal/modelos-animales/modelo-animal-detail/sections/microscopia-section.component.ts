@@ -26,11 +26,27 @@ export class MicroscopiaSectionComponent {
 
   saving    = signal(false);
   saveError = signal<string | null>(null);
+  editMode  = signal(false);
 
   form = this.fb.group({
     numCelulasGanglionares: [null as number | null, [Validators.required, Validators.min(0)]],
     numCelulasPurkinje:     [null as number | null, [Validators.required, Validators.min(0)]],
   });
+
+  startEdit(): void {
+    const ma = this.modeloAnimal();
+    this.form.patchValue({
+      numCelulasGanglionares: ma.numCelulasGanglionares ?? null,
+      numCelulasPurkinje:     ma.numCelulasPurkinje ?? null,
+    });
+    this.saveError.set(null);
+    this.editMode.set(true);
+  }
+
+  cancelEdit(): void {
+    this.editMode.set(false);
+    this.saveError.set(null);
+  }
 
   save(): void {
     if (this.form.invalid) { this.form.markAllAsTouched(); return; }
@@ -42,7 +58,12 @@ export class MicroscopiaSectionComponent {
       numCelulasGanglionares: Number(v.numCelulasGanglionares),
       numCelulasPurkinje:     Number(v.numCelulasPurkinje),
     }).subscribe({
-      next:  ma  => { this.toast.show('Microscopía guardada'); this.updated.emit(ma); this.saving.set(false); },
+      next:  ma  => {
+        this.toast.show('Microscopía guardada');
+        this.updated.emit(ma);
+        this.saving.set(false);
+        this.editMode.set(false);
+      },
       error: err => { this.saveError.set(extractErrorMessage(err, 'Error al guardar')); this.saving.set(false); },
     });
   }

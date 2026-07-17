@@ -25,6 +25,8 @@ export class TresCamarasSectionComponent {
   savingM2    = signal(false);
   saveErrorM1 = signal<string | null>(null);
   saveErrorM2 = signal<string | null>(null);
+  editModeM1  = signal(false);
+  editModeM2  = signal(false);
 
   formM1 = this.fb.group({
     m1TiempoRatonNovedad:   [null as number | null, [Validators.required, Validators.min(0)]],
@@ -39,6 +41,36 @@ export class TresCamarasSectionComponent {
   readonly socializacionColors = SOCIALIZACION_COLORS;
   readonly socializacionLabels = SOCIALIZACION_LABELS;
 
+  startEditM1(): void {
+    const tc = this.modeloAnimal().tresCamaras;
+    this.formM1.patchValue({
+      m1TiempoRatonNovedad:   tc?.m1TiempoRatonNovedad ?? null,
+      m1TiempoObjetoNovedoso: tc?.m1TiempoObjetoNovedoso ?? null,
+    });
+    this.saveErrorM1.set(null);
+    this.editModeM1.set(true);
+  }
+
+  cancelEditM1(): void {
+    this.editModeM1.set(false);
+    this.saveErrorM1.set(null);
+  }
+
+  startEditM2(): void {
+    const tc = this.modeloAnimal().tresCamaras;
+    this.formM2.patchValue({
+      m2TiempoRatonDesconocido: tc?.m2TiempoRatonDesconocido ?? null,
+      m2TiempoRatonFamiliar:    tc?.m2TiempoRatonFamiliar ?? null,
+    });
+    this.saveErrorM2.set(null);
+    this.editModeM2.set(true);
+  }
+
+  cancelEditM2(): void {
+    this.editModeM2.set(false);
+    this.saveErrorM2.set(null);
+  }
+
   saveM1(): void {
     if (this.formM1.invalid) { this.formM1.markAllAsTouched(); return; }
     if (this.savingM1()) return;
@@ -49,7 +81,12 @@ export class TresCamarasSectionComponent {
       m1TiempoRatonNovedad:   Number(v.m1TiempoRatonNovedad),
       m1TiempoObjetoNovedoso: Number(v.m1TiempoObjetoNovedoso),
     }).subscribe({
-      next:  ma  => { this.toast.show('Tres cámaras guardado'); this.updated.emit(ma); this.savingM1.set(false); },
+      next:  ma  => {
+        this.toast.show('Tres cámaras guardado');
+        this.updated.emit(ma);
+        this.savingM1.set(false);
+        this.editModeM1.set(false);
+      },
       error: err => { this.saveErrorM1.set(extractErrorMessage(err, 'Error al guardar')); this.savingM1.set(false); },
     });
   }
@@ -64,7 +101,12 @@ export class TresCamarasSectionComponent {
       m2TiempoRatonDesconocido: Number(v.m2TiempoRatonDesconocido),
       m2TiempoRatonFamiliar:    Number(v.m2TiempoRatonFamiliar),
     }).subscribe({
-      next:  ma  => { this.toast.show('Tres cámaras guardado'); this.updated.emit(ma); this.savingM2.set(false); },
+      next:  ma  => {
+        this.toast.show('Tres cámaras guardado');
+        this.updated.emit(ma);
+        this.savingM2.set(false);
+        this.editModeM2.set(false);
+      },
       error: err => { this.saveErrorM2.set(extractErrorMessage(err, 'Error al guardar')); this.savingM2.set(false); },
     });
   }
