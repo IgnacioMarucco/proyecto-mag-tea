@@ -116,7 +116,7 @@ export class CajaListComponent {
     const tag = (event.target as HTMLElement).tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
     if (event.key === '/') { event.preventDefault(); this.toolbar()?.focusSearch(); }
-    if ((event.ctrlKey || event.metaKey) && event.key === 'n') {
+    if (event.altKey && event.key === 'n') {
       event.preventDefault();
       this.router.navigate(['/internal/cajas/nuevo']);
     }

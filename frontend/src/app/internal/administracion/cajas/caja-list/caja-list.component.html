@@ -3,12 +3,14 @@
   <div class="flex items-center justify-between mb-6">
     <app-page-header [crumbs]="crumbs()" />
     <a routerLink="/internal/cajas/nuevo"
+      data-tour="cajas-nuevo"
       class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors whitespace-nowrap">
       <app-icon name="plus" class="w-4 h-4" /> Registrar caja
     </a>
   </div>
 
   <app-list-toolbar
+    data-tour="cajas-toolbar"
     placeholder="Buscar por freezer o número…"
     [filterGroups]="filterGroups"
     [activeFilters]="{}"
@@ -20,6 +22,7 @@
   </span>
 
   <app-data-table
+    data-tour="cajas-tabla"
     [columns]="columns"
     [rows]="cajas().length"
     ariaLabel="Listado de cajas"
@@ -33,7 +36,7 @@
         <td class="px-5 py-3.5 text-text font-mono font-medium">{{ caja.freezer }}</td>
         <td class="px-5 py-3.5 text-text-muted font-mono">{{ caja.cajon }}</td>
         <td class="px-5 py-3.5 text-text-muted font-mono">{{ caja.numero }}</td>
-        <td class="px-5 py-3.5">
+        <td class="px-5 py-3.5" data-tour="cajas-acciones">
           <app-row-actions [actions]="getActionsFor(caja)" />
         </td>
       </tr>
@@ -41,6 +44,7 @@
   </app-data-table>
 
   <app-paginator
+    data-tour="cajas-paginador"
     [currentPage]="currentPage()"
     [totalPages]="totalPages()"
     [totalElements]="totalElements()"
