@@ -1,6 +1,9 @@
 package com.utn.magtea.reporte;
 
 import com.utn.magtea.common.exception.BusinessRuleException;
+import com.utn.magtea.donacion.Donacion;
+import com.utn.magtea.donacion.DonacionRepository;
+import com.utn.magtea.donacion.EstadoDonacion;
 import com.utn.magtea.formulariointeres.ComoConocioProyecto;
 import com.utn.magtea.formulariointeres.EstadoFormulario;
 import com.utn.magtea.formulariointeres.FormularioInteres;
@@ -25,16 +28,17 @@ import com.utn.magtea.reporte.dto.CorrelacionResponseDTO;
 import com.utn.magtea.reporte.dto.DashboardAnaliticaDTO;
 import com.utn.magtea.reporte.dto.DemograficoDTO;
 import com.utn.magtea.reporte.dto.DistribucionDTO;
+import com.utn.magtea.reporte.dto.DonacionesAnaliticaDTO;
+import com.utn.magtea.reporte.dto.DonanteDTO;
 import com.utn.magtea.reporte.dto.EmbudoDTO;
 import com.utn.magtea.reporte.dto.EstadisticasGrupoDTO;
 import com.utn.magtea.reporte.dto.EtapaDTO;
 import com.utn.magtea.reporte.dto.MchatAnaliticaDTO;
+import com.utn.magtea.reporte.dto.PuntoTemporalDTO;
 import com.utn.magtea.reporte.dto.ResumenGeneralDTO;
 import com.utn.magtea.reporte.dto.VinelandAnaliticaDTO;
-import org.apache.commons.math3.distribution.TDistribution;
 import com.utn.magtea.suero.Suero;
 import com.utn.magtea.suero.SueroRepository;
-import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -43,6 +47,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,6 +58,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -63,13 +69,14 @@ public class ReporteService {
     private final PacienteRepository pacienteRepository;
     private final FormularioInteresRepository formularioRepository;
     private final SueroRepository sueroRepository;
+    private final DonacionRepository donacionRepository;
     private final Clock clock;
 
     private static final double[] CARS_BIN_EDGES = {
         15.0, 18.0, 21.0, 24.0, 27.0, 30.0, 33.0, 36.5, 40.0, 44.0, 48.0, 52.0, 56.0, 60.0
     };
 
-    // Límites en meses para cada grupo etario del filtro (clave = año cumplido)
+    // Límites en meses para cada grupo etario de la distribución (clave = año cumplido)
     private static final Map<Integer, int[]> EDAD_GRUPOS_MESES = Map.of(
         2, new int[]{18,  35},
         3, new int[]{36,  47},
@@ -83,37 +90,36 @@ public class ReporteService {
     // ══ Endpoint consolidado ══
 
     @Transactional(readOnly = true)
-    public DashboardAnaliticaDTO getDashboard(String tipoPaciente, List<Integer> edades) {
-        List<Paciente> todos = filtrarPacientes("TODOS", edades);
-        List<Paciente> filtrados = (tipoPaciente == null || tipoPaciente.isBlank() || tipoPaciente.equals("TODOS"))
-                ? todos
-                : todos.stream()
-                        .filter(p -> p.getTipoPaciente() == TipoPaciente.valueOf(tipoPaciente))
-                        .toList();
-        List<FormularioInteres> formulariosFiltrados = filtrarFormularios(edades);
+    public DashboardAnaliticaDTO getDashboard() {
+        List<Paciente> pacientes = pacientesActivos();
+        List<FormularioInteres> formularios = formularioRepository.findAll(activoSpec());
 
         return new DashboardAnaliticaDTO(
-                computeResumen(filtrados, formulariosFiltrados),
-                computeEmbudo(filtrados),
-                computeDemografico(filtrados, formulariosFiltrados),
-                computeMchat(filtrados),
-                computeCars(filtrados),
-                computeVineland(filtrados),
-                computeAnticuerpos(filtrados),
-                computeComparacionGrupos(todos)
+                computeResumen(pacientes, formularios),
+                computeEmbudo(pacientes),
+                computeDemografico(pacientes, formularios),
+                computeMchat(pacientes),
+                computeCars(pacientes),
+                computeVineland(pacientes),
+                computeAnticuerpos(pacientes),
+                computeComparacionGrupos(pacientes)
         );
     }
 
     // ══ Correlaciones (endpoint separado — el par se elige dinámicamente en el frontend) ══
 
     @Transactional(readOnly = true)
-    public CorrelacionResponseDTO getCorrelaciones(String ejeX, String ejeY,
-            String tipoPaciente, List<Integer> edades) {
+    public CorrelacionResponseDTO getCorrelaciones(String ejeX, String ejeY) {
         if (!EJES_VALIDOS.contains(ejeX) || !EJES_VALIDOS.contains(ejeY)) {
             throw new BusinessRuleException("Eje no válido. Opciones: " + EJES_VALIDOS);
         }
+        if (!"BTU_VALUE".equals(ejeX) && !"BTU_VALUE".equals(ejeY)) {
+            throw new BusinessRuleException(
+                "La correlación debe incluir el valor de anticuerpos (BTU_VALUE). "
+                + "No se admite cruzar escalas clínicas entre sí.");
+        }
 
-        List<Paciente> filtrados = filtrarPacientes(tipoPaciente, edades).stream()
+        List<Paciente> filtrados = pacientesActivos().stream()
             .filter(p -> p.getFechaNacimientoNino() != null)
             .toList();
 
@@ -144,57 +150,58 @@ public class ReporteService {
         double[] xs = xys.stream().mapToDouble(a -> a[0]).toArray();
         double[] ys = xys.stream().mapToDouble(a -> a[1]).toArray();
         Double r = calcPearson(xs, ys);
-        return new CorrelacionResponseDTO(puntos, r, calcPValue(r, puntos.size()), puntos.size());
+        return new CorrelacionResponseDTO(puntos, r, puntos.size());
     }
 
-    // ══ Filtrado en DB ══
+    // ══ Donaciones (endpoint separado — no depende de los filtros de cohorte clínica) ══
 
-    private List<Paciente> filtrarPacientes(String tipoPaciente, List<Integer> edades) {
-        TipoPaciente tipo = (tipoPaciente != null && !tipoPaciente.isBlank()
-                             && !tipoPaciente.equals("TODOS"))
-                            ? TipoPaciente.valueOf(tipoPaciente) : null;
-        return pacienteRepository.findAll(buildReportSpec(tipo, edades));
+    @Transactional(readOnly = true)
+    public DonacionesAnaliticaDTO getDonaciones() {
+        List<Donacion> todas = donacionRepository.findAll();
+        List<Donacion> aprobadas = todas.stream()
+            .filter(d -> d.getEstado() == EstadoDonacion.APROBADO)
+            .toList();
+
+        long totalRecaudado = aprobadas.stream().mapToLong(Donacion::getMonto).sum();
+        long cantidadAprobadas = aprobadas.size();
+        double montoPromedio = cantidadAprobadas > 0 ? round((double) totalRecaudado / cantidadAprobadas) : 0;
+
+        Map<YearMonth, Long> porMes = new TreeMap<>();
+        for (Donacion d : aprobadas) {
+            porMes.merge(YearMonth.from(d.getCreatedAt()), d.getMonto(), Long::sum);
+        }
+        List<PuntoTemporalDTO> recaudacionPorMes = porMes.entrySet().stream()
+            .map(e -> new PuntoTemporalDTO(e.getKey().toString(), e.getValue()))
+            .toList();
+
+        Map<EstadoDonacion, Long> estadoFreq = todas.stream()
+            .collect(Collectors.groupingBy(Donacion::getEstado, Collectors.counting()));
+        long totalDonaciones = todas.size();
+        List<DistribucionDTO> porEstado = Arrays.stream(EstadoDonacion.values())
+            .map(e -> {
+                long n = estadoFreq.getOrDefault(e, 0L);
+                return new DistribucionDTO(e.name(), n,
+                    totalDonaciones > 0 ? round(n / (double) totalDonaciones * 100) : 0);
+            })
+            .toList();
+
+        List<DonanteDTO> donantes = aprobadas.stream()
+            .filter(d -> tieneTexto(d.getDonante()) || tieneTexto(d.getCorreo()))
+            .map(d -> new DonanteDTO(d.getDonante(), d.getCorreo()))
+            .toList();
+
+        return new DonacionesAnaliticaDTO(totalRecaudado, cantidadAprobadas, montoPromedio,
+            recaudacionPorMes, porEstado, donantes);
     }
 
-    private List<FormularioInteres> filtrarFormularios(List<Integer> edades) {
-        Specification<FormularioInteres> spec = (root, query, cb) -> cb.isTrue(root.get("activo"));
-        if (edades != null && !edades.isEmpty()) {
-            LocalDate hoy = LocalDate.now(clock);
-            spec = spec.and((root, query, cb) -> {
-                List<Predicate> rangos = edades.stream()
-                    .map(EDAD_GRUPOS_MESES::get)
-                    .filter(Objects::nonNull)
-                    .map(r -> cb.between(root.get("fechaNacimientoNino"),
-                                         hoy.minusMonths(r[1]),
-                                         hoy.minusMonths(r[0])))
-                    .map(p -> (Predicate) p)
-                    .toList();
-                return rangos.size() == 1 ? rangos.get(0) : cb.or(rangos.toArray(new Predicate[0]));
-            });
-        }
-        return formularioRepository.findAll(spec);
+    // ══ Fetch en DB ══
+
+    private List<Paciente> pacientesActivos() {
+        return pacienteRepository.findAll(activoSpec());
     }
 
-    private Specification<Paciente> buildReportSpec(TipoPaciente tipo, List<Integer> edades) {
-        Specification<Paciente> spec = (root, query, cb) -> cb.isTrue(root.get("activo"));
-        if (tipo != null) {
-            spec = spec.and((root, query, cb) -> cb.equal(root.get("tipoPaciente"), tipo));
-        }
-        if (edades != null && !edades.isEmpty()) {
-            LocalDate hoy = LocalDate.now(clock);
-            spec = spec.and((root, query, cb) -> {
-                List<Predicate> rangos = edades.stream()
-                    .map(EDAD_GRUPOS_MESES::get)
-                    .filter(Objects::nonNull)
-                    .map(r -> cb.between(root.get("fechaNacimientoNino"),
-                                         hoy.minusMonths(r[1]),
-                                         hoy.minusMonths(r[0])))
-                    .map(p -> (Predicate) p)
-                    .toList();
-                return rangos.size() == 1 ? rangos.get(0) : cb.or(rangos.toArray(new Predicate[0]));
-            });
-        }
-        return spec;
+    private <T> Specification<T> activoSpec() {
+        return (root, query, cb) -> cb.isTrue(root.get("activo"));
     }
 
     // ══ Métodos de cómputo privados ══
@@ -447,22 +454,12 @@ public class ReporteService {
 
     private AnticuerposDTO computeAnticuerpos(List<Paciente> filtrados) {
         if (filtrados.isEmpty()) {
-            return new AnticuerposDTO(0, 0, 0, 0, 0, buildDistribucionRangosVacia());
+            return new AnticuerposDTO(buildDistribucionRangosVacia());
         }
 
         List<Long> ids = filtrados.stream().map(Paciente::getId).toList();
         List<Suero> sueros = sueroRepository.findAllByPacienteIdInAndActivoTrue(ids);
         long totalConSuero = sueros.size();
-        long totalSinSuero = filtrados.size() - totalConSuero;
-
-        double[] btus = sueros.stream()
-            .filter(s -> s.getValorAnticuerpos() != null)
-            .mapToDouble(s -> s.getValorAnticuerpos().doubleValue())
-            .toArray();
-
-        double media   = btus.length > 0 ? Arrays.stream(btus).average().orElse(0) : 0;
-        double sd      = calcSD(btus, media);
-        double mediana = calcMediana(btus);
 
         Map<Integer, Long> rangoFreq = sueros.stream()
             .filter(s -> s.getRango() != null)
@@ -476,8 +473,7 @@ public class ReporteService {
             })
             .toList();
 
-        return new AnticuerposDTO(totalConSuero, totalSinSuero,
-            round(media), round(sd), round(mediana), distribucionRangos);
+        return new AnticuerposDTO(distribucionRangos);
     }
 
     private ComparacionGruposDTO computeComparacionGrupos(List<Paciente> todos) {
@@ -502,10 +498,7 @@ public class ReporteService {
         EstadisticasGrupoDTO statsProblema = buildEstadisticas(problemaPacientes.size(), btuProblema);
         EstadisticasGrupoDTO statsControl  = buildEstadisticas(controlPacientes.size(),  btuControl);
 
-        Double pValue = calcWelchPValue(btuProblema, btuControl);
-        Double cohenD = calcCohenD(btuProblema, btuControl);
-
-        return new ComparacionGruposDTO(statsProblema, statsControl, pValue, cohenD);
+        return new ComparacionGruposDTO(statsProblema, statsControl);
     }
 
     private EstadisticasGrupoDTO buildEstadisticas(int nTotal, double[] btus) {
@@ -513,15 +506,14 @@ public class ReporteService {
         double pct     = nTotal > 0 ? round(nConSuero / (double) nTotal * 100) : 0;
         double media   = btus.length > 0 ? Arrays.stream(btus).average().orElse(0) : 0;
         double sd      = calcSD(btus, media);
-        double mediana = calcMediana(btus);
-        return new EstadisticasGrupoDTO(nTotal, nConSuero, pct, round(media), round(sd), round(mediana));
+        return new EstadisticasGrupoDTO(nTotal, nConSuero, pct, round(media), round(sd));
     }
 
     // ══ Helpers privados ══
 
     private Double extraerValorEje(Paciente p, String eje, Map<Long, Double> btuMap) {
         return switch (eje) {
-            case "MCHAT_SCORE"       -> p.getMchatFamilia()       != null ? (double) p.getMchatFamilia().getScoreTotal() : null;
+            case "MCHAT_SCORE"       -> mchatFinal(p);
             case "CARS_RAW"          -> p.getEvaluacionCars()     != null && p.getEvaluacionCars().getRawScore() != null
                                         ? p.getEvaluacionCars().getRawScore().doubleValue() : null;
             case "VINELAND_COCIENTE" -> p.getEvaluacionVineland() != null && p.getEvaluacionVineland().getCocienteFinal() != null
@@ -529,6 +521,14 @@ public class ReporteService {
             case "BTU_VALUE"         -> btuMap.get(p.getId());
             default -> null;
         };
+    }
+
+    // Usa el score del seguimiento cuando existe (tamizaje en riesgo mediano, 3-7,
+    // ya reevaluado); si no, el tamizaje es definitivo y se usa tal cual.
+    private Double mchatFinal(Paciente p) {
+        if (p.getMchatSeguimiento() != null) return (double) p.getMchatSeguimiento().getFallas();
+        if (p.getMchatFamilia() != null)     return (double) p.getMchatFamilia().getScoreTotal();
+        return null;
     }
 
     private List<DistribucionDTO> buildDistribucionRangosVacia() {
@@ -551,14 +551,6 @@ public class ReporteService {
         }
         double denom = Math.sqrt(dx2 * dy2);
         return denom == 0 ? null : round(num / denom);
-    }
-
-    private double calcMediana(double[] values) {
-        if (values.length == 0) return 0;
-        double[] sorted = Arrays.copyOf(values, values.length);
-        Arrays.sort(sorted);
-        int mid = sorted.length / 2;
-        return sorted.length % 2 == 0 ? (sorted[mid - 1] + sorted[mid]) / 2.0 : sorted[mid];
     }
 
     private String binLabel(double from, double to) {
@@ -609,49 +601,8 @@ public class ReporteService {
         return Math.round(v * 100.0) / 100.0;
     }
 
-    private Double calcPValue(Double r, int n) {
-        if (r == null || n < 3) return null;
-        double t = r * Math.sqrt(n - 2) / Math.sqrt(1 - r * r);
-        TDistribution dist = new TDistribution(n - 2);
-        double p = 2.0 * (1.0 - dist.cumulativeProbability(Math.abs(t)));
-        return Math.round(p * 10000.0) / 10000.0;
+    private boolean tieneTexto(String s) {
+        return s != null && !s.isBlank();
     }
 
-    // Welch's t-test (no asume igual varianza entre grupos)
-    private Double calcWelchPValue(double[] g1, double[] g2) {
-        if (g1.length < 2 || g2.length < 2) return null;
-        double m1 = Arrays.stream(g1).average().orElse(0);
-        double m2 = Arrays.stream(g2).average().orElse(0);
-        double v1 = calcVarianza(g1, m1);
-        double v2 = calcVarianza(g2, m2);
-        double n1 = g1.length, n2 = g2.length;
-        double se = Math.sqrt(v1 / n1 + v2 / n2);
-        if (se == 0) return null;
-        double t  = (m1 - m2) / se;
-        double df = Math.pow(v1 / n1 + v2 / n2, 2)
-                  / (Math.pow(v1 / n1, 2) / (n1 - 1) + Math.pow(v2 / n2, 2) / (n2 - 1));
-        TDistribution dist = new TDistribution(df);
-        double p = 2.0 * (1.0 - dist.cumulativeProbability(Math.abs(t)));
-        return Math.round(p * 10000.0) / 10000.0;
-    }
-
-    // Cohen's d con SD poolado
-    private Double calcCohenD(double[] g1, double[] g2) {
-        if (g1.length < 2 || g2.length < 2) return null;
-        double m1 = Arrays.stream(g1).average().orElse(0);
-        double m2 = Arrays.stream(g2).average().orElse(0);
-        double v1 = calcVarianza(g1, m1);
-        double v2 = calcVarianza(g2, m2);
-        double n1 = g1.length, n2 = g2.length;
-        double sdPooled = Math.sqrt(((n1 - 1) * v1 + (n2 - 1) * v2) / (n1 + n2 - 2));
-        if (sdPooled == 0) return null;
-        return round((m1 - m2) / sdPooled);
-    }
-
-    private double calcVarianza(double[] values, double media) {
-        if (values.length <= 1) return 0;
-        double suma = 0;
-        for (double v : values) suma += Math.pow(v - media, 2);
-        return suma / (values.length - 1);  // varianza muestral (n-1) para Welch
-    }
 }
