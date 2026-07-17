@@ -3,7 +3,7 @@
   <div class="flex items-center justify-between mb-6">
     <app-page-header [crumbs]="crumbs()" />
     <div class="flex items-center gap-2">
-      <div class="relative group/raton inline-flex">
+      <div class="relative group/raton inline-flex" data-tour="pools-crear-raton">
         <button
           type="button"
           [disabled]="!canCreateRaton()"
@@ -23,13 +23,14 @@
         }
       </div>
       <a routerLink="/internal/pools/nuevo"
+        data-tour="pools-registrar"
         class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors whitespace-nowrap">
         <app-icon name="plus" class="w-4 h-4" /> Registrar pool
       </a>
     </div>
   </div>
 
-  <div class="mb-4 flex flex-col gap-2">
+  <div class="mb-4 flex flex-col gap-2" data-tour="pools-disponibilidad">
     @for (row of disponibilidadMatrix(); track row.uso) {
       <div class="bg-surface border border-border rounded-lg px-5 py-2.5 grid grid-cols-[6rem_1fr_1fr_1fr_1fr] items-center text-sm">
         <span class="text-text-muted font-mono text-xs uppercase tracking-wider">{{ row.label }}</span>
@@ -48,6 +49,7 @@
   </div>
 
   <app-list-toolbar
+    data-tour="pools-toolbar"
     placeholder="Buscar por código"
     [filterGroups]="filterGroups"
     [activeFilters]="activeFilters()"
@@ -69,6 +71,7 @@
   </span>
 
   <app-data-table
+    data-tour="pools-tabla"
     [columns]="columns"
     [rows]="pools().length"
     [loading]="loading()"
@@ -117,7 +120,7 @@
           {{ pool.modelosAnimalesCount }}
         </td>
 
-        <td class="px-5 py-3.5">
+        <td class="px-5 py-3.5" data-tour="pools-acciones">
           <app-row-actions [actions]="getActionsFor(pool)" />
         </td>
 
@@ -126,6 +129,7 @@
   </app-data-table>
 
   <app-paginator
+    data-tour="pools-paginador"
     [currentPage]="currentPage()"
     [totalPages]="totalPages()"
     [totalElements]="totalElements()"

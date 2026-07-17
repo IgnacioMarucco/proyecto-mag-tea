@@ -126,7 +126,7 @@ export class PoolFormComponent {
 
   readonly ocupadasStr    = computed(() => this.ocupadasAjustadas().join(', '));
   readonly totalPoolTubos = computed(() =>
-    this.tubosPoolConCantidad().reduce((s, t) => s + (t.cantidadInicial || 0), 0)
+    this.tubosPoolConCantidad().reduce((s, t) => s + (t.cantidad || 0), 0)
   );
   readonly diferencia    = computed(() =>
     Math.round((this.totalAportes() - this.totalPoolTubos()) * 1000) / 1000
@@ -154,8 +154,8 @@ export class PoolFormComponent {
         });
         this.tubosValue.set(pool.tubos.map(t => t.posicion).join(', '));
         this.tubosPoolConCantidad.set(pool.tubos.map(t => ({
-          posicion:        t.posicion,
-          cantidadInicial: t.cantidadInicial,
+          posicion: t.posicion,
+          cantidad: t.cantidadRestante,
         })));
         this.step.set(2);
         this.onCajaChange(pool.cajaId);
@@ -276,10 +276,10 @@ export class PoolFormComponent {
     this.tubosValue.set(val);
     const posiciones = val ? val.split(',').map(s => s.trim()).filter(Boolean) : [];
     this.tubosPoolConCantidad.update(prev => {
-      const prevMap = new Map(prev.map(t => [t.posicion, t.cantidadInicial]));
+      const prevMap = new Map(prev.map(t => [t.posicion, t.cantidad]));
       return posiciones.map(pos => ({
         posicion: pos,
-        cantidadInicial: prevMap.get(pos) ?? 0,
+        cantidad: prevMap.get(pos) ?? 0,
       }));
     });
   }
@@ -344,7 +344,7 @@ export class PoolFormComponent {
       this.error.set('Seleccioná al menos un tubo en la grilla del pool');
       return;
     }
-    if (this.tubosPoolConCantidad().some(t => !t.cantidadInicial || t.cantidadInicial <= 0)) {
+    if (this.tubosPoolConCantidad().some(t => !t.cantidad || t.cantidad <= 0)) {
       this.error.set('Todos los tubos del pool deben tener una cantidad mayor a 0');
       return;
     }
