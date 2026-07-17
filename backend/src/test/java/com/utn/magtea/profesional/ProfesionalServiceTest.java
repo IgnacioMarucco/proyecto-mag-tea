@@ -1,5 +1,6 @@
 package com.utn.magtea.profesional;
 
+import com.utn.magtea.common.exception.BusinessRuleException;
 import com.utn.magtea.common.exception.DuplicateResourceException;
 import com.utn.magtea.common.exception.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
@@ -118,7 +119,7 @@ class ProfesionalServiceTest {
 
     @Test
     void deberia_actualizarProfesional_cuandoDatosValidos() {
-        var dto = new ProfesionalUpdateDTO("Ana", "López", "ana@test.com", "351-000-0000", Role.CUERPO_TECNICO);
+        var dto = new ProfesionalUpdateDTO("Ana", "López", "ana@test.com", "351-000-0000", Role.CUERPO_TECNICO, null);
         var entidad = new Profesional();
         entidad.setActivo(true);
         entidad.setEmail("ana@test.com");
@@ -161,7 +162,7 @@ class ProfesionalServiceTest {
 
     @Test
     void deberia_lanzarDuplicateException_cuandoUpdateConEmailDeOtroProfesional() {
-        var dto = new ProfesionalUpdateDTO("Ana", "García", "nuevo@test.com", "351-000-0000", Role.CUERPO_MEDICO);
+        var dto = new ProfesionalUpdateDTO("Ana", "García", "nuevo@test.com", "351-000-0000", Role.CUERPO_MEDICO, null);
         var entidad = new Profesional();
         entidad.setActivo(true);
         entidad.setEmail("viejo@test.com"); // email distinto al del DTO
@@ -201,5 +202,102 @@ class ProfesionalServiceTest {
 
         assertThat(result.content()).hasSize(1);
         assertThat(result.content().getFirst().role()).isEqualTo(Role.CUERPO_TECNICO);
+    }
+
+    @Test
+    void deberia_actualizarProfesionalConPassword_cuandoPasswordProporcionado() {
+        var dto = new ProfesionalUpdateDTO("Ana", "López", "ana@test.com", "351-000-0000", Role.CUERPO_TECNICO, "nuevapass123");
+        var entidad = new Profesional();
+        entidad.setActivo(true);
+        entidad.setEmail("ana@test.com");
+        var response = new ProfesionalResponseDTO(1L, "Ana", "López", "ana@test.com", "351-000-0000", Role.CUERPO_TECNICO, true, null);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(entidad));
+        when(passwordEncoder.encode("nuevapass123")).thenReturn("hashedNueva");
+        when(repository.save(any())).thenReturn(entidad);
+        when(mapper.toDTO(entidad)).thenReturn(response);
+
+        var result = service.update(1L, dto);
+
+        assertThat(result).isEqualTo(response);
+        verify(passwordEncoder).encode("nuevapass123");
+    }
+
+    @Test
+    void deberia_actualizarPerfilPropio_cuandoDatosValidos() {
+        var dto = new PerfilUpdateDTO("Ana", "García", "ana@test.com", "351-111-1111");
+        var entidad = new Profesional();
+        entidad.setEmail("ana@test.com");
+        var response = new ProfesionalResponseDTO(1L, "Ana", "García", "ana@test.com", "351-111-1111", Role.CUERPO_MEDICO, true, null);
+
+        when(repository.findByEmail("ana@test.com")).thenReturn(Optional.of(entidad));
+        when(repository.save(entidad)).thenReturn(entidad);
+        when(mapper.toDTO(entidad)).thenReturn(response);
+
+        var result = service.updateSelf("ana@test.com", dto);
+
+        assertThat(result).isEqualTo(response);
+    }
+
+    @Test
+    void deberia_lanzarDuplicateException_cuandoUpdateSelfConEmailDeOtroProfesional() {
+        var dto = new PerfilUpdateDTO("Ana", "García", "otro@test.com", "351-111-1111");
+        var entidad = new Profesional();
+        entidad.setEmail("ana@test.com");
+
+        when(repository.findByEmail("ana@test.com")).thenReturn(Optional.of(entidad));
+        when(repository.existsByEmail("otro@test.com")).thenReturn(true);
+
+        assertThatThrownBy(() -> service.updateSelf("ana@test.com", dto))
+                .isInstanceOf(DuplicateResourceException.class)
+                .hasMessageContaining("otro@test.com");
+    }
+
+    @Test
+    void deberia_lanzarExcepcion_cuandoUpdateSelfYProfesionalNoExiste() {
+        var dto = new PerfilUpdateDTO("Ana", "García", "ana@test.com", "351-111-1111");
+        when(repository.findByEmail("ana@test.com")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.updateSelf("ana@test.com", dto))
+                .isInstanceOf(ResourceNotFoundException.class);
+    }
+
+    @Test
+    void deberia_cambiarPassword_cuandoContrasenaActualCorrecta() {
+        var dto = new CambiarPasswordDTO("passVieja", "passNueva");
+        var entidad = new Profesional();
+        entidad.setPassword("hashedVieja");
+
+        when(repository.findByEmail("ana@test.com")).thenReturn(Optional.of(entidad));
+        when(passwordEncoder.matches("passVieja", "hashedVieja")).thenReturn(true);
+        when(passwordEncoder.encode("passNueva")).thenReturn("hashedNueva");
+
+        service.changePassword("ana@test.com", dto);
+
+        verify(repository).save(entidad);
+        assertThat(entidad.getPassword()).isEqualTo("hashedNueva");
+    }
+
+    @Test
+    void deberia_lanzarBusinessRuleException_cuandoContrasenaActualIncorrecta() {
+        var dto = new CambiarPasswordDTO("passIncorrecta", "passNueva");
+        var entidad = new Profesional();
+        entidad.setPassword("hashedVieja");
+
+        when(repository.findByEmail("ana@test.com")).thenReturn(Optional.of(entidad));
+        when(passwordEncoder.matches("passIncorrecta", "hashedVieja")).thenReturn(false);
+
+        assertThatThrownBy(() -> service.changePassword("ana@test.com", dto))
+                .isInstanceOf(BusinessRuleException.class)
+                .hasMessageContaining("La contraseña actual es incorrecta");
+    }
+
+    @Test
+    void deberia_lanzarExcepcion_cuandoChangePasswordYProfesionalNoExiste() {
+        var dto = new CambiarPasswordDTO("passVieja", "passNueva");
+        when(repository.findByEmail("ana@test.com")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.changePassword("ana@test.com", dto))
+                .isInstanceOf(ResourceNotFoundException.class);
     }
 }

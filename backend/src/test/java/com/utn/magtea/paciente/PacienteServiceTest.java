@@ -459,7 +459,7 @@ class PacienteServiceTest {
     }
 
     @Test
-    void deberia_onMchatFamiliaGuardada_cuandoSinFamilia_quedaEnAdmitido() {
+    void deberia_onMchatFamiliaGuardada_cuandoSinTurnoExtraccion_quedaEnMchatRespondido() {
         var entidad = pacienteActivo(1L);
         entidad.setMchatToken("token-abc");
 
@@ -468,7 +468,7 @@ class PacienteServiceTest {
         service.onMchatFamiliaGuardada(new MchatEvents.MchatFamiliaGuardadaEvent(1L));
 
         assertThat(entidad.getMchatToken()).isNull();
-        assertThat(entidad.getEstadoClinico()).isEqualTo(PacienteEstado.ADMITIDO);
+        assertThat(entidad.getEstadoClinico()).isEqualTo(PacienteEstado.MCHAT_RESPONDIDO);
     }
 
     // ─── onMchatFamiliaActualizada ────────────────────────────────────────────

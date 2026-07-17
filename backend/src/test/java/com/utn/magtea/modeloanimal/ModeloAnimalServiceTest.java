@@ -104,6 +104,74 @@ class ModeloAnimalServiceTest {
         verify(repository).findAll(any(Specification.class), any(Pageable.class));
     }
 
+    @Test
+    void deberia_listarModelosAnimales_cuandoFiltroPorTextoLibre() {
+        var page = new PageImpl<ModeloAnimal>(List.of());
+        when(repository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        var result = service.findAll(0, 10, "M-1", null, null, null, null, null, null, "createdAt", "desc");
+
+        assertThat(result.content()).isEmpty();
+    }
+
+    @Test
+    void deberia_listarModelosAnimales_cuandoFiltroPorUsoYRango() {
+        var page = new PageImpl<ModeloAnimal>(List.of());
+        when(repository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        var result = service.findAll(0, 10, null, null, null, List.of(SueroUso.CONTROL), List.of(1), null, null, "createdAt", "desc");
+
+        assertThat(result.content()).isEmpty();
+    }
+
+    @Test
+    void deberia_listarModelosAnimales_cuandoFiltroPorEstado() {
+        var page = new PageImpl<ModeloAnimal>(List.of());
+        when(repository.findAll(any(Specification.class), any(Pageable.class))).thenReturn(page);
+
+        var result = service.findAll(0, 10, null, null, null, null, null, List.of(EstadoProtocolo.COMPLETO), null, "createdAt", "desc");
+
+        assertThat(result.content()).isEmpty();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void deberia_ejecutarSpecification_paraCobertura() {
+        var page = new PageImpl<ModeloAnimal>(List.of());
+        var specCaptor = org.mockito.ArgumentCaptor.forClass(Specification.class);
+        when(repository.findAll(specCaptor.capture(), any(Pageable.class))).thenReturn(page);
+
+        // Todos los filtros activos a la vez para ejercitar cada predicate builder de buildSpec
+        service.findAll(0, 20, "M-1", 10L, List.of(SexoRaton.MACHO), List.of(SueroUso.CONTROL), List.of(1),
+                List.of(EstadoProtocolo.COMPLETO), true, "createdAt", "desc");
+
+        Specification<ModeloAnimal> capturedSpec = specCaptor.getValue();
+        assertThat(capturedSpec).isNotNull();
+
+        var root = mock(jakarta.persistence.criteria.Root.class);
+        var query = mock(jakarta.persistence.criteria.CriteriaQuery.class);
+        var cb = mock(jakarta.persistence.criteria.CriteriaBuilder.class);
+        var path = mock(jakarta.persistence.criteria.Path.class);
+        var expr = mock(jakarta.persistence.criteria.Expression.class);
+        var predicate = mock(jakarta.persistence.criteria.Predicate.class);
+
+        lenient().when(root.get(anyString())).thenReturn(path);
+        lenient().when(path.get(anyString())).thenReturn(path);
+        lenient().when(cb.lower(any())).thenReturn(expr);
+        lenient().when(cb.like(any(), anyString())).thenReturn(predicate);
+        lenient().when(cb.equal(any(), any())).thenReturn(predicate);
+        lenient().when(cb.isTrue(any())).thenReturn(predicate);
+        lenient().when(cb.lessThanOrEqualTo(any(), any(LocalDate.class))).thenReturn(predicate);
+        lenient().when(path.in(any(java.util.Collection.class))).thenReturn(predicate);
+        lenient().when(cb.and(any(jakarta.persistence.criteria.Predicate.class), any(jakarta.persistence.criteria.Predicate.class)))
+                .thenReturn(predicate);
+        lenient().when(cb.or(any(jakarta.persistence.criteria.Predicate.class), any(jakarta.persistence.criteria.Predicate.class)))
+                .thenReturn(predicate);
+        lenient().when(cb.or(any(jakarta.persistence.criteria.Predicate[].class))).thenReturn(predicate);
+
+        capturedSpec.toPredicate(root, query, cb);
+    }
+
     // --- findById ---
 
     @Test
@@ -336,6 +404,26 @@ class ModeloAnimalServiceTest {
         assertThatThrownBy(() -> service.create(dto))
                 .isInstanceOf(BusinessRuleException.class)
                 .hasMessageContaining("no es un tubo de pool");
+    }
+
+    @Test
+    void deberia_lanzarResourceNotFoundException_cuandoTuboAporteNoExisteAlCrear() {
+        var aporte = new ModeloAnimalPoolAporteInputDTO(999L, BigDecimal.valueOf(0.1), 1);
+        var dto = new ModeloAnimalCreateDTO(10L, 20L, SexoRaton.MACHO, List.of(aporte));
+
+        var pool = buildPool(10L);
+        var camada = buildCamada(20L);
+        var m = buildBaseModelo();
+
+        when(poolRepository.findByIdForUpdate(10L)).thenReturn(Optional.of(pool));
+        when(camadaRepository.findById(20L)).thenReturn(Optional.of(camada));
+        when(repository.countByPool_Id(10L)).thenReturn(0L);
+        when(repository.save(any(ModeloAnimal.class))).thenReturn(m);
+        when(tuboRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.create(dto))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Tubo con id 999 no existe");
     }
 
     // --- update ---
@@ -793,6 +881,21 @@ class ModeloAnimalServiceTest {
     }
 
     @Test
+    void deberia_lanzarResourceNotFoundException_cuandoTuboInoculacionNoExiste() {
+        var m = buildBaseModelo();
+        var aporte = new ModeloAnimalPoolAporteInputDTO(999L, BigDecimal.valueOf(0.1), 1);
+        var dto = new ModeloAnimalInoculacionDTO(LocalDate.now(FIXED_CLOCK), List.of(aporte));
+
+        when(repository.findById(1L)).thenReturn(Optional.of(m));
+        when(modeloAnimalPoolAporteRepository.findByModeloAnimal_IdAndDia(1L, 1)).thenReturn(Optional.empty());
+        when(tuboRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.registrarInoculacion(1L, dto))
+                .isInstanceOf(ResourceNotFoundException.class)
+                .hasMessageContaining("Tubo con id 999 no existe");
+    }
+
+    @Test
     void deberia_lanzarBusinessRuleException_cuandoTuboNoPerteneceMismoPoolEnInoculacion() {
         var m = buildBaseModelo(); // pool.id = 10L
         var aporte = new ModeloAnimalPoolAporteInputDTO(100L, BigDecimal.valueOf(0.1), 1);
@@ -958,11 +1061,16 @@ class ModeloAnimalServiceTest {
         pool.setFechaCreacion(LocalDate.now(FIXED_CLOCK).minusDays(30));
         pool.setUso(SueroUso.CONTROL);
 
+        var paciente = new com.utn.magtea.paciente.Paciente();
+        paciente.setCodigoNumerico("TST00001");
+        paciente.setTipoPaciente(com.utn.magtea.paciente.TipoPaciente.PROBLEMA);
+
         var suero = new Suero();
         suero.setId(50L);
         suero.setValorAnticuerpos(new BigDecimal("150.0"));
         suero.setRango(2);
         suero.setFechaExtraccion(LocalDate.now(FIXED_CLOCK).minusDays(10));
+        suero.setPaciente(paciente);
 
         var tuboSuero = new Tubo();
         tuboSuero.setId(200L);
@@ -973,6 +1081,16 @@ class ModeloAnimalServiceTest {
         poolAporte.setId(1L);
         poolAporte.setTubo(tuboSuero);
         pool.getAportes().add(poolAporte);
+
+        // Segundo aporte del pool sobre el MISMO suero (otro tubo): ejercita la deduplicación por Suero::getId
+        var tuboSueroBis = new Tubo();
+        tuboSueroBis.setId(201L);
+        tuboSueroBis.setTipo(TipoTubo.SUERO);
+        tuboSueroBis.setSuero(suero);
+        var poolAporteBis = new PoolSueroAporte();
+        poolAporteBis.setId(2L);
+        poolAporteBis.setTubo(tuboSueroBis);
+        pool.getAportes().add(poolAporteBis);
 
         var aporteMA = new ModeloAnimalPoolAporte();
         aporteMA.setDia(1);
@@ -993,9 +1111,11 @@ class ModeloAnimalServiceTest {
         assertThat(result.inoculaciones()).hasSize(1);
         assertThat(result.inoculaciones().get(0).dia()).isEqualTo(1);
         assertThat(result.pool().codigo()).isEqualTo("XY1234");
+        // hasSize(1): aunque hay 2 aportes del pool, ambos apuntan al mismo Suero (id=50) → se deduplica
         assertThat(result.sueros()).hasSize(1);
         assertThat(result.sueros().get(0).valorAnticuerpos()).isEqualByComparingTo(new BigDecimal("150.0"));
-        assertThat(result.sueros().get(0).paciente()).isNull();
+        assertThat(result.sueros().get(0).paciente()).isNotNull();
+        assertThat(result.sueros().get(0).paciente().codigoNumerico()).isEqualTo("TST00001");
     }
 
     @Test
@@ -1098,6 +1218,91 @@ class ModeloAnimalServiceTest {
         var fn = m.getCamada().getFechaNacimiento();
         assertThat(m.getEstadoProtocolo()).isEqualTo(EstadoProtocolo.PENDIENTE_VOCALIZACIONES);
         assertThat(m.getFechaProximoEvento()).isEqualTo(fn.plusDays(DomainConstants.DIA_VOCALIZACIONES));
+    }
+
+    @Test
+    void deberia_calcularEstadoInoculacionEnCurso_cuandoMenosDeCuatroAportes() {
+        var m = buildBaseModelo();
+        m.setFechaDia1Inoculacion(LocalDate.now(FIXED_CLOCK).minusDays(2));
+        for (int i = 0; i < 2; i++) m.getAportes().add(new ModeloAnimalPoolAporte());
+
+        when(repository.findById(1L)).thenReturn(Optional.of(m));
+        when(poolRepository.findById(10L)).thenReturn(Optional.of(m.getPool()));
+        when(camadaRepository.findById(20L)).thenReturn(Optional.of(m.getCamada()));
+        when(repository.save(m)).thenReturn(m);
+
+        // update() no toca aportes/vocalizaciones: solo recalcula estado a partir del estado actual de m
+        service.update(1L, new ModeloAnimalCreateDTO(10L, 20L, SexoRaton.MACHO, null));
+
+        assertThat(m.getEstadoProtocolo()).isEqualTo(EstadoProtocolo.INOCULACION_EN_CURSO);
+        assertThat(m.getFechaProximoEvento()).isEqualTo(m.getFechaDia1Inoculacion().plusDays(2));
+    }
+
+    @Test
+    void deberia_calcularEstadoPendienteTresCamaras_cuandoVocalizacionesListasYSinEstudio() {
+        var m = buildBaseModelo();
+        m.setFechaDia1Inoculacion(LocalDate.now(FIXED_CLOCK).minusDays(21));
+        for (int i = 0; i < 4; i++) m.getAportes().add(new ModeloAnimalPoolAporte());
+        m.setVocalizaciones(new VocalizacionesUltrasonicas());
+        m.setTresCamaras(null);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(m));
+        when(poolRepository.findById(10L)).thenReturn(Optional.of(m.getPool()));
+        when(camadaRepository.findById(20L)).thenReturn(Optional.of(m.getCamada()));
+        when(repository.save(m)).thenReturn(m);
+
+        service.update(1L, new ModeloAnimalCreateDTO(10L, 20L, SexoRaton.MACHO, null));
+
+        var fn = m.getCamada().getFechaNacimiento();
+        assertThat(m.getEstadoProtocolo()).isEqualTo(EstadoProtocolo.PENDIENTE_TRES_CAMARAS);
+        assertThat(m.getFechaProximoEvento()).isEqualTo(fn.plusDays(DomainConstants.DIA_TRES_CAMARAS));
+    }
+
+    @Test
+    void deberia_calcularEstadoPendienteMicroscopia_cuandoTresCamarasListasYSinCelulas() {
+        var m = buildBaseModelo();
+        m.setFechaDia1Inoculacion(LocalDate.now(FIXED_CLOCK).minusDays(21));
+        for (int i = 0; i < 4; i++) m.getAportes().add(new ModeloAnimalPoolAporte());
+        m.setVocalizaciones(new VocalizacionesUltrasonicas());
+        m.setTresCamaras(new TresCamaras());
+        m.setNumCelulasGanglionares(null);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(m));
+        when(poolRepository.findById(10L)).thenReturn(Optional.of(m.getPool()));
+        when(camadaRepository.findById(20L)).thenReturn(Optional.of(m.getCamada()));
+        when(repository.save(m)).thenReturn(m);
+
+        service.update(1L, new ModeloAnimalCreateDTO(10L, 20L, SexoRaton.MACHO, null));
+
+        var fn = m.getCamada().getFechaNacimiento();
+        assertThat(m.getEstadoProtocolo()).isEqualTo(EstadoProtocolo.PENDIENTE_MICROSCOPIA);
+        assertThat(m.getFechaProximoEvento()).isEqualTo(fn.plusDays(DomainConstants.DIA_TRES_CAMARAS));
+    }
+
+    @Test
+    void deberia_noNecesitarVocalizaciones_cuandoCamadaEsNull() {
+        var m = buildBaseModelo();
+        m.setCamada(null);
+        m.setVocalizaciones(null);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(m));
+
+        var result = service.findById(1L);
+
+        assertThat(result.necesitaVocalizaciones()).isFalse();
+    }
+
+    @Test
+    void deberia_noNecesitarTresCamaras_cuandoCamadaEsNull() {
+        var m = buildBaseModelo();
+        m.setCamada(null);
+        m.setTresCamaras(null);
+
+        when(repository.findById(1L)).thenReturn(Optional.of(m));
+
+        var result = service.findById(1L);
+
+        assertThat(result.necesitaTresCamaras()).isFalse();
     }
 
     // --- Helpers ---

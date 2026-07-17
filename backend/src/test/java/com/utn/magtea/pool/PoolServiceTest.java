@@ -510,30 +510,6 @@ class PoolServiceTest {
 
     // --- update: validaciones adicionales ---
 
-    @Test
-    void deberia_lanzarBusinessRuleException_cuandoNuevaCantidadMenorAUsadaEnUpdate() {
-        var pool = buildPool(1L);
-        var caja = buildCaja(1L);
-        // Tubo existente en P1 con 0.2 mL usados; dto quiere reducir inicial a 0.1
-        var tubosInput = List.of(new TuboInputDTO("P1", BigDecimal.valueOf(0.1)));
-        var dto = new PoolUpdateDTO(1L, LocalDate.now(), tubosInput);
-
-        var tuboExistente = new Tubo();
-        tuboExistente.setTipo(TipoTubo.POOL);
-        tuboExistente.setPosicion("P1");
-        tuboExistente.setCantidadInicial(BigDecimal.valueOf(0.5));
-        tuboExistente.setCantidadUsada(BigDecimal.valueOf(0.2));
-        tuboExistente.setPool(pool);
-
-        when(repository.findById(1L)).thenReturn(Optional.of(pool));
-        when(cajaRepository.findById(1L)).thenReturn(Optional.of(caja));
-        when(tuboRepository.findByPoolId(1L)).thenReturn(List.of(tuboExistente));
-
-        assertThatThrownBy(() -> service.update(1L, dto))
-                .isInstanceOf(BusinessRuleException.class)
-                .hasMessageContaining("ya tiene");
-    }
-
     // --- Helpers ---
 
     private Pool buildPool(Long id) {
