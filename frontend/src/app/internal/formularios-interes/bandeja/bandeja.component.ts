@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal, viewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { BehaviorSubject, catchError, combineLatest, map, of, switchMap, tap, timer } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -26,11 +26,13 @@ const ALL_ESTADOS = ['PENDIENTE', 'CONTACTADO', 'ADMITIDO', 'DESCARTADO'];
   imports: [ListToolbarComponent, ConfirmModalComponent, DataTableComponent, StatusBadgeComponent, RowActionsComponent, PaginatorComponent, PageHeaderComponent, EdadPipe, FechaPipe, FormularioDetalleModalComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './bandeja.component.html',
+  host: { '(window:keydown)': 'onGlobalKey($event)' },
 })
 export class BandejaComponent {
   private readonly service = inject(FormularioInteresService);
   private readonly router  = inject(Router);
   private readonly route   = inject(ActivatedRoute);
+  private readonly toolbar = viewChild(ListToolbarComponent);
 
   readonly crumbs = toSignal(
     this.route.data.pipe(map(d => d['crumbs'] as Crumb[] ?? [])),
@@ -134,6 +136,12 @@ export class BandejaComponent {
 
   private reload(): void {
     this.params$.next({ ...this.params$.value });
+  }
+
+  onGlobalKey(event: KeyboardEvent): void {
+    const tag = (event.target as HTMLElement).tagName;
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+    if (event.key === '/') { event.preventDefault(); this.toolbar()?.focusSearch(); }
   }
 
   private hasActiveSearch(): boolean {

@@ -5,6 +5,7 @@
   </div>
 
   <app-list-toolbar
+    data-tour="bandeja-toolbar"
     placeholder="Buscar por tutor o niño/a…"
     [filterGroups]="filterGroups"
     [activeFilters]="activeFilters()"
@@ -26,6 +27,7 @@
   }
 
   <app-data-table
+    data-tour="bandeja-tabla"
     [columns]="columns"
     [rows]="formularios().length"
     [loading]="loading()"
@@ -69,7 +71,7 @@
           <app-status-badge [value]="f.estado" [labels]="estadoLabels" [colorMap]="estadoColors" />
         </td>
 
-        <td class="px-5 py-3.5">
+        <td class="px-5 py-3.5" data-tour="bandeja-acciones">
           <app-row-actions [actions]="getActionsFor(f)" />
         </td>
 
@@ -78,6 +80,7 @@
   </app-data-table>
 
   <app-paginator
+    data-tour="bandeja-paginador"
     [currentPage]="currentPage()"
     [totalPages]="totalPages()"
     [totalElements]="totalElements()"
