@@ -5,6 +5,5 @@ public record EstadisticasGrupoDTO(
     long nConSuero,
     double pctConSuero,
     double mediaBtu,
-    double sdBtu,
-    double medianaBtu
+    double sdBtu
 ) {}
