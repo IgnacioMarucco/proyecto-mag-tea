@@ -147,7 +147,7 @@ export class ModeloAnimalReporteComponent {
     { key: 'vinelandAutovalimiento',        label: 'Autovalimiento' },
     { key: 'vinelandSocial',                label: 'Socialización' },
     { key: 'vinelandMotor',                 label: 'Habilidades motoras' },
-    { key: 'vinelandCocienteFinal',         label: 'Cociente adaptativo (ABC)' },
+    { key: 'vinelandCocienteFinal',         label: 'Cociente adaptativo (CCA)' },
     { key: 'vinelandConductaDesadaptativa', label: 'Conducta desadaptativa' },
     { key: 'vinelandInternalizante',        label: 'Internalizante' },
     { key: 'vinelandExternalizante',        label: 'Externalizante' },

@@ -3,12 +3,14 @@
   <div class="flex items-center justify-between mb-6">
     <app-page-header [crumbs]="crumbs()" />
     <a routerLink="/internal/modelos-animales/nuevo"
+      data-tour="modelos-nuevo"
       class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors whitespace-nowrap">
       <app-icon name="plus" class="w-4 h-4" /> Registrar ratón
     </a>
   </div>
 
   <app-list-toolbar
+    data-tour="modelos-toolbar"
     placeholder="Buscar por código o camada…"
     [filterGroups]="filterGroups"
     [activeFilters]="activeFilters()"
@@ -21,6 +23,7 @@
   </span>
 
   <app-data-table
+    data-tour="modelos-tabla"
     [columns]="columns"
     [rows]="modelosAnimales().length"
     ariaLabel="Listado de modelos animales"
@@ -78,7 +81,7 @@
           }
         </td>
 
-        <td class="px-5 py-3.5">
+        <td class="px-5 py-3.5" data-tour="modelos-acciones">
           <app-row-actions [actions]="getActionsFor(ma)" />
         </td>
 
@@ -87,6 +90,7 @@
   </app-data-table>
 
   <app-paginator
+    data-tour="modelos-paginador"
     [currentPage]="currentPage()"
     [totalPages]="totalPages()"
     [totalElements]="totalElements()"
