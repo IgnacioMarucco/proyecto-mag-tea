@@ -6,6 +6,8 @@ services:
     volumes:
       - ./backend:/app
       - maven_cache:/root/.m2   # cache de dependencias entre reinicios
+    ports:
+      - "8080:8080"
     environment:
       MINIO_PUBLIC_URL: ${MINIO_PUBLIC_URL:-http://localhost:9000}
 
