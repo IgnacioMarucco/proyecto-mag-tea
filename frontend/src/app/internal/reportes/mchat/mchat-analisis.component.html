@@ -27,16 +27,12 @@
           </p>
         </div>
 
-        <!-- Derecha: Ítems más fallados - Tamizaje inicial -->
+        <!-- Derecha: Ítems más fallados -->
         <div>
           <p class="mb-1 text-xs font-medium text-slate-500">
-            Ítems más fallados — Tamizaje inicial (N = {{ data()!.totalConMchat }}, todos)
+            Ítems más fallados — N = {{ data()!.totalConMchat }}, todos
           </p>
           <div echarts [options]="itemsTamizajeOptions()!" [autoResize]="true" class="h-48 w-full"></div>
-          <div class="mt-1 flex gap-3 text-xs text-slate-400">
-            <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-sm bg-indigo-500"></span> normal</span>
-            <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-sm bg-amber-400"></span> invertido (2, 5, 12)</span>
-          </div>
         </div>
       </div>
     </div>
@@ -76,10 +72,6 @@
           </p>
           @if (data()!.totalConSeguimiento > 0) {
             <div echarts [options]="itemsSeguimientoOptions()!" [autoResize]="true" class="h-48 w-full"></div>
-            <div class="mt-1 flex gap-3 text-xs text-slate-400">
-              <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-sm bg-indigo-500"></span> normal</span>
-              <span class="flex items-center gap-1"><span class="inline-block h-2 w-2 rounded-sm bg-amber-400"></span> invertido (2, 5, 12)</span>
-            </div>
           } @else {
             <div class="flex h-48 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4">
               <p class="text-sm text-slate-400">Sin entrevistas de seguimiento registradas</p>
@@ -94,7 +86,7 @@
       <h4 class="mb-4 text-xs font-bold uppercase tracking-wider text-slate-400">Resultado Final</h4>
       <div class="flex flex-col items-center">
         <p class="mb-1 text-xs font-medium text-slate-500 self-start">
-          Diagnóstico clínico final (Tamizaje + Seguimiento)
+          Diagnóstico clínico final (Familia + Seguimiento)
         </p>
         <div echarts [options]="resultadoOptions()!" [autoResize]="true" class="h-56 w-full max-w-lg"></div>
       </div>

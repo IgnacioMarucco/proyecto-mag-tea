@@ -121,7 +121,6 @@ export class MchatAnalisisComponent {
   private buildItemsChart(items: Distribucion[] | undefined): EChartsOption | null {
     if (!items) return null;
     const top20 = items.slice(0, 20);
-    const INVERTIDOS = new Set(MCHAT_PREGUNTAS.filter(p => p.invertida).map(p => p.numero));
     return {
       tooltip: {
         trigger: 'axis',
@@ -158,7 +157,7 @@ export class MchatAnalisisComponent {
         data: top20.map(i => ({
           value: i.n,
           itemStyle: {
-            color: INVERTIDOS.has(Number(i.label.replace('Ítem ', ''))) ? '#f59e0b' : '#6366f1',
+            color: '#6366f1',
             borderRadius: [3, 3, 0, 0],
           },
         })),

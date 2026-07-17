@@ -5,14 +5,6 @@
     <app-page-header [crumbs]="crumbs()" />
   </div>
 
-  <!-- Filter Bar -->
-  <app-list-toolbar
-    [showSearch]="false"
-    [filterGroups]="filterGroups"
-    [activeFilters]="filtrosActivos()"
-    (filtersChange)="onFiltersChange($event)"
-  />
-
   <!-- Error banner -->
   @if (error()) {
     <div role="alert" class="mb-4 px-4 py-3 bg-danger/10 border border-danger/30 rounded-md text-sm text-danger flex items-center gap-2">
@@ -24,46 +16,22 @@
   }
 
   <!-- KPI Ribbon (Cinta horizontal compacta) -->
-  <div class="mb-6 bg-surface border border-border rounded-lg px-6 py-3.5 flex flex-wrap items-center justify-between gap-y-2 gap-x-6 text-sm">
-    <div class="flex items-center gap-1.5">
-      <span class="text-text-muted font-mono text-xs uppercase tracking-wider">Formularios:</span>
-      <span class="font-bold text-text font-mono text-base">{{ resumen()?.totalFormularios ?? '—' }}</span>
-    </div>
-    <div class="w-px h-4 bg-border hidden lg:block"></div>
-
-    <div class="flex items-center gap-1.5">
+  <div class="mb-6 bg-surface border border-border rounded-lg px-6 py-3.5 flex flex-wrap items-center gap-y-2 gap-x-6 text-sm">
+    <div class="flex flex-1 items-center justify-center gap-1.5 min-w-0">
       <span class="text-text-muted font-mono text-xs uppercase tracking-wider">Pacientes Totales:</span>
       <span class="font-bold text-text font-mono text-base">{{ resumen()?.pacientesTotal ?? '—' }}</span>
     </div>
     <div class="w-px h-4 bg-border hidden lg:block"></div>
 
-    <div class="flex items-center gap-1.5">
+    <div class="flex flex-1 items-center justify-center gap-1.5 min-w-0">
       <span class="text-text-muted font-mono text-xs uppercase tracking-wider">Caso Problema:</span>
-      <span class="font-bold text-primary font-mono text-base">{{ resumen()?.pacientesProblema ?? '—' }}</span>
+      <span class="font-bold text-text font-mono text-base">{{ resumen()?.pacientesProblema ?? '—' }}</span>
     </div>
     <div class="w-px h-4 bg-border hidden lg:block"></div>
 
-    <div class="flex items-center gap-1.5">
-      <span class="text-text-muted font-mono text-xs uppercase tracking-wider">Control:</span>
+    <div class="flex flex-1 items-center justify-center gap-1.5 min-w-0">
+      <span class="text-text-muted font-mono text-xs uppercase tracking-wider">Caso Control:</span>
       <span class="font-bold text-text font-mono text-base">{{ resumen()?.pacientesControl ?? '—' }}</span>
-    </div>
-    <div class="w-px h-4 bg-border hidden lg:block"></div>
-
-    <div class="flex items-center gap-1.5">
-      <span class="text-text-muted font-mono text-xs uppercase tracking-wider">Admisión:</span>
-      <span class="font-bold text-accent font-mono text-base">{{ tasaAdmision() ?? '—' }}</span>
-    </div>
-    <div class="w-px h-4 bg-border hidden lg:block"></div>
-
-    <div class="flex items-center gap-1.5">
-      <span class="text-text-muted font-mono text-xs uppercase tracking-wider">M-CHAT:</span>
-      <span class="font-bold text-text font-mono text-base">{{ resumen()?.mchatCompletados ?? '—' }}</span>
-    </div>
-    <div class="w-px h-4 bg-border hidden lg:block"></div>
-
-    <div class="flex items-center gap-1.5">
-      <span class="text-text-muted font-mono text-xs uppercase tracking-wider">Con suero:</span>
-      <span class="font-bold text-text font-mono text-base">{{ resumen()?.extraccionesRealizadas ?? '—' }}</span>
     </div>
   </div>
 
@@ -89,7 +57,7 @@
       [class]="tabActivo() === 1
         ? 'border-b-2 border-primary text-primary'
         : 'text-text-muted hover:text-text'">
-      Evaluaciones Clínicas
+      Donaciones
     </button>
     <button
       role="tab"
@@ -100,7 +68,7 @@
       [class]="tabActivo() === 2
         ? 'border-b-2 border-primary text-primary'
         : 'text-text-muted hover:text-text'">
-      Anticuerpos
+      Evaluaciones Clínicas
     </button>
     <button
       role="tab"
@@ -111,7 +79,7 @@
       [class]="tabActivo() === 3
         ? 'border-b-2 border-primary text-primary'
         : 'text-text-muted hover:text-text'">
-      Correlaciones
+      Anticuerpos
     </button>
     <button
       role="tab"
@@ -120,6 +88,17 @@
       (click)="tabActivo.set(4)"
       class="px-4 py-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
       [class]="tabActivo() === 4
+        ? 'border-b-2 border-primary text-primary'
+        : 'text-text-muted hover:text-text'">
+      Correlaciones
+    </button>
+    <button
+      role="tab"
+      [attr.aria-selected]="tabActivo() === 5"
+      aria-controls="tab-panel-5"
+      (click)="tabActivo.set(5)"
+      class="px-4 py-2.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+      [class]="tabActivo() === 5
         ? 'border-b-2 border-primary text-primary'
         : 'text-text-muted hover:text-text'">
       Exportación
@@ -138,9 +117,18 @@
     }
   </div>
 
-  <!-- ══ TAB 1 — EVALUACIONES CLÍNICAS ══ -->
-  <div [hidden]="tabActivo() !== 1" id="tab-panel-1" role="tabpanel" class="flex flex-col gap-6">
+  <!-- ══ TAB 1 — DONACIONES ══ -->
+  <div [hidden]="tabActivo() !== 1" id="tab-panel-1" role="tabpanel">
     @defer (when tabActivo() === 1) {
+      <app-donaciones-analisis />
+    } @placeholder {
+      <div class="h-64 bg-background rounded-lg animate-pulse" aria-busy="true" aria-label="Cargando donaciones"></div>
+    }
+  </div>
+
+  <!-- ══ TAB 2 — EVALUACIONES CLÍNICAS ══ -->
+  <div [hidden]="tabActivo() !== 2" id="tab-panel-2" role="tabpanel" class="flex flex-col gap-6">
+    @defer (when tabActivo() === 2) {
       <app-mchat-analisis [data]="mchat()" />
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <app-cars-analisis [data]="cars()" />
@@ -151,27 +139,27 @@
     }
   </div>
 
-  <!-- ══ TAB 2 — ANTICUERPOS ══ -->
-  <div [hidden]="tabActivo() !== 2" id="tab-panel-2" role="tabpanel">
-    @defer (when tabActivo() === 2) {
+  <!-- ══ TAB 3 — ANTICUERPOS ══ -->
+  <div [hidden]="tabActivo() !== 3" id="tab-panel-3" role="tabpanel">
+    @defer (when tabActivo() === 3) {
       <app-anticuerpos-analisis [data]="anticuerpos()" [comparacion]="comparacion()" />
     } @placeholder {
       <div class="h-64 bg-background rounded-lg animate-pulse" aria-busy="true" aria-label="Cargando anticuerpos"></div>
     }
   </div>
 
-  <!-- ══ TAB 3 — CORRELACIONES ══ -->
-  <div [hidden]="tabActivo() !== 3" id="tab-panel-3" role="tabpanel">
-    @defer (when tabActivo() === 3) {
-      <app-correlaciones [filtros]="filtros()" />
+  <!-- ══ TAB 4 — CORRELACIONES ══ -->
+  <div [hidden]="tabActivo() !== 4" id="tab-panel-4" role="tabpanel">
+    @defer (when tabActivo() === 4) {
+      <app-correlaciones />
     } @placeholder {
       <div class="h-64 bg-background rounded-lg animate-pulse" aria-busy="true" aria-label="Cargando correlaciones"></div>
     }
   </div>
 
-  <!-- ══ TAB 4 — EXPORTACIÓN ══ -->
-  <div [hidden]="tabActivo() !== 4" id="tab-panel-4" role="tabpanel">
-    @defer (when tabActivo() === 4) {
+  <!-- ══ TAB 5 — EXPORTACIÓN ══ -->
+  <div [hidden]="tabActivo() !== 5" id="tab-panel-5" role="tabpanel">
+    @defer (when tabActivo() === 5) {
       <app-exportacion />
     } @placeholder {
       <div class="h-32 bg-background rounded-lg animate-pulse" aria-busy="true" aria-label="Cargando exportación"></div>

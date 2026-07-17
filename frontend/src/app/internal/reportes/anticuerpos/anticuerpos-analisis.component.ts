@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
 import { NgxEchartsDirective } from 'ngx-echarts';
 import { AnticuerposData, ComparacionGrupos } from '../../../core/models/reporte.model';
 import type { EChartsOption } from 'echarts';
@@ -10,7 +9,7 @@ const RANGO_LABELS = ['Rango 0 (Control, < 1314)', 'Rango 1 (1314–2500)', 'Ran
 @Component({
   selector: 'app-anticuerpos-analisis',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgxEchartsDirective, DecimalPipe],
+  imports: [NgxEchartsDirective],
   templateUrl: './anticuerpos-analisis.component.html',
 })
 export class AnticuerposAnalisisComponent {
@@ -19,22 +18,6 @@ export class AnticuerposAnalisisComponent {
 
   readonly isLoading = computed(() => this.data() === undefined);
   readonly hasError  = computed(() => this.data() === null);
-
-  readonly totalConSuero = computed(() => this.data()?.totalConSuero ?? null);
-  readonly pctConSuero   = computed(() => {
-    const d = this.data();
-    if (!d) return null;
-    const total = d.totalConSuero + d.totalSinSuero;
-    return total > 0 ? ((d.totalConSuero / total) * 100).toFixed(1) + '%' : '—';
-  });
-
-  readonly cohenDLabel = computed(() => {
-    const d = this.comparacion()?.cohenD;
-    if (d === null || d === undefined) return null;
-    const abs = Math.abs(d);
-    const mag = abs >= 0.8 ? 'grande' : abs >= 0.5 ? 'medio' : 'pequeño';
-    return mag;
-  });
 
   readonly barOptions = computed((): EChartsOption | null => {
     const d = this.data();

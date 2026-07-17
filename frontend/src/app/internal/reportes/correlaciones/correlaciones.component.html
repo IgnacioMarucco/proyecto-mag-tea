@@ -36,9 +36,6 @@
       @if (coefR() !== null) {
         <p class="text-xs font-mono text-slate-600">
           r = {{ coefR() | number:'1.2-2' }}
-          @if (pValue() !== null) {
-            <span class="ml-2">p = {{ pValue()! < 0.0001 ? '<0.0001' : (pValue() | number:'1.4-4') }}</span>
-          }
           <span class="ml-2 text-slate-400">(n = {{ nPuntos() }})</span>
         </p>
       }

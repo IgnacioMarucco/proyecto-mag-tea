@@ -1,0 +1,58 @@
+@if (isLoading()) {
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <div class="h-72 animate-pulse rounded-xl bg-slate-50"></div>
+    <div class="h-72 animate-pulse rounded-xl bg-slate-50"></div>
+  </div>
+} @else if (hasError()) {
+  <p class="text-sm text-slate-400">Error al cargar los datos de donaciones</p>
+} @else {
+  <div class="mb-6 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-slate-200 bg-white px-6 py-3.5 text-sm">
+    <div class="flex items-center gap-1.5">
+      <span class="font-mono text-xs uppercase tracking-wider text-slate-400">Total recaudado:</span>
+      <span class="font-mono text-base font-bold text-slate-700">${{ totalRecaudado() | number:'1.0-0' }}</span>
+    </div>
+    <div class="hidden h-4 w-px bg-slate-200 lg:block"></div>
+    <div class="flex items-center gap-1.5">
+      <span class="font-mono text-xs uppercase tracking-wider text-slate-400">Donaciones aprobadas:</span>
+      <span class="font-mono text-base font-bold text-slate-700">{{ cantidadAprobadas() }}</span>
+    </div>
+    <div class="hidden h-4 w-px bg-slate-200 lg:block"></div>
+    <div class="flex items-center gap-1.5">
+      <span class="font-mono text-xs uppercase tracking-wider text-slate-400">Promedio:</span>
+      <span class="font-mono text-base font-bold text-slate-700">${{ montoPromedio() | number:'1.0-2' }}</span>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h3 class="mb-4 text-sm font-semibold text-slate-700">Recaudación por Mes</h3>
+      <div echarts [options]="barOptions()!" [autoResize]="true" class="h-72 w-full"></div>
+    </div>
+    <div class="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h3 class="mb-4 text-sm font-semibold text-slate-700">Distribución por Estado</h3>
+      <div echarts [options]="pieOptions()!" [autoResize]="true" class="h-72 w-full"></div>
+    </div>
+  </div>
+
+  @if (donantes().length > 0) {
+    <div class="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h3 class="mb-4 text-sm font-semibold text-slate-700">Donantes (con datos de contacto)</h3>
+      <table class="w-full text-left text-sm">
+        <thead>
+          <tr class="border-b border-slate-200 text-xs uppercase tracking-wider text-slate-400">
+            <th class="pb-2 pr-4 font-medium">Nombre</th>
+            <th class="pb-2 font-medium">Email</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (d of donantes(); track $index) {
+            <tr class="border-b border-slate-100 last:border-0">
+              <td class="py-2 pr-4 text-slate-700">{{ d.donante }}</td>
+              <td class="py-2 text-slate-700">{{ d.correo }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+}

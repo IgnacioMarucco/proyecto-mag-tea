@@ -18,23 +18,23 @@ export class CarsAnalisisComponent {
     const labels = d.distribucionRawScore.map(s => s.label);
     return {
       tooltip: { trigger: 'axis' },
-      grid: { left: '3%', right: '4%', top: '8%', bottom: '20%', containLabel: true },
+      grid: { left: 45, right: '4%', top: 10, bottom: '22%', containLabel: true },
       xAxis: {
         type: 'category',
         data: labels,
         axisLabel: { fontSize: 9, rotate: 30 },
-        name: 'Raw Score CARS-2',
+        name: 'Raw Score CARS-2 (15-60)',
         nameLocation: 'middle',
-        nameGap: 38,
-        nameTextStyle: { fontSize: 11, fontWeight: 'bold' },
+        nameGap: 32,
+        nameTextStyle: { fontSize: 10, color: '#64748b', fontWeight: 500 },
       },
       yAxis: {
         type: 'value',
-        name: 'Frecuencia (N)',
+        name: 'Pacientes',
         nameLocation: 'middle',
-        nameGap: 38,
         nameRotate: 90,
-        nameTextStyle: { fontSize: 11, fontWeight: 'bold' },
+        nameGap: 28,
+        nameTextStyle: { fontSize: 10, color: '#64748b', fontWeight: 500 },
         axisLabel: { fontSize: 10 },
       },
       series: [{
@@ -43,16 +43,6 @@ export class CarsAnalisisComponent {
           value: s.n,
           itemStyle: { color: this.getColorPorBin(s.label), borderRadius: [3, 3, 0, 0] },
         })),
-        markLine: {
-          silent: true,
-          symbol: ['none', 'none'],
-          label: { show: true, position: 'insideEndTop', fontSize: 9, color: '#64748b', fontWeight: 'bold' },
-          lineStyle: { type: 'dashed', color: '#94a3b8', width: 1.5 },
-          data: [
-            { name: 'Leve-Mod.', xAxis: '27-30' },
-            { name: 'Severo',    xAxis: '33-36.5' },
-          ],
-        },
       }],
     } as EChartsOption;
   });

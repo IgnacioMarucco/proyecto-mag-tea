@@ -1,16 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { NgxEchartsDirective } from 'ngx-echarts';
-import { catchError, combineLatest, of, switchMap } from 'rxjs';
+import { catchError, of, switchMap } from 'rxjs';
 import { ReportesService } from '../../../core/services/reporte.service';
-import {
-  CorrelacionResponse,
-  EJE_LABELS,
-  EjeCorrelacion,
-  FiltroReportes,
-  PARES_CORRELACION,
-} from '../../../core/models/reporte.model';
+import { EJE_LABELS, PARES_CORRELACION } from '../../../core/models/reporte.model';
 import type { EChartsOption } from 'echarts';
 
 @Component({
@@ -22,7 +16,6 @@ import type { EChartsOption } from 'echarts';
 export class CorrelacionesComponent {
   private readonly service = inject(ReportesService);
 
-  readonly filtros = input.required<FiltroReportes>();
   readonly pares = PARES_CORRELACION;
   readonly ejeLabels = EJE_LABELS;
 
@@ -32,13 +25,10 @@ export class CorrelacionesComponent {
   readonly ejeY = computed(() => this.pares[this.parSeleccionado()].y);
 
   private readonly resp = toSignal(
-    combineLatest([
-      toObservable(this.parSeleccionado),
-      toObservable(this.filtros),
-    ]).pipe(
-      switchMap(([i, f]) => {
+    toObservable(this.parSeleccionado).pipe(
+      switchMap(i => {
         const par = this.pares[i];
-        return this.service.getCorrelaciones(par.x, par.y, f).pipe(catchError(() => of(null)));
+        return this.service.getCorrelaciones(par.x, par.y).pipe(catchError(() => of(null)));
       })
     ),
     { initialValue: undefined }
@@ -52,7 +42,6 @@ export class CorrelacionesComponent {
   });
 
   readonly coefR   = computed(() => this.resp()?.r    ?? null);
-  readonly pValue  = computed(() => this.resp()?.pValue ?? null);
   readonly nPuntos = computed(() => this.resp()?.n ?? null);
 
   readonly chartOptions = computed<EChartsOption | null>(() => {
