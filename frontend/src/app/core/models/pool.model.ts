@@ -2,7 +2,8 @@ import { MotivoVaciado, SueroUso } from './suero.model';
 
 export interface PoolTuboInput {
   posicion: string;
-  cantidadInicial: number;
+  /** Cantidad ACTUAL del tubo (lo que contiene ahora). El backend preserva lo consumido. */
+  cantidad: number;
 }
 
 export interface PoolTuboItem {

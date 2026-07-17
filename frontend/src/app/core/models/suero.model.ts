@@ -9,7 +9,8 @@ export interface VaciarTuboPayload {
 
 export interface SueroTuboInput {
   posicion: string;
-  cantidadInicial: number;
+  /** Cantidad ACTUAL del tubo (lo que contiene ahora). El backend preserva lo consumido. */
+  cantidad: number;
 }
 
 export interface SueroTuboItem {

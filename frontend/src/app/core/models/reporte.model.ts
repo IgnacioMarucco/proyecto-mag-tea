@@ -1,13 +1,3 @@
-export interface FiltroReportes {
-  tipoPaciente: 'TODOS' | 'PROBLEMA' | 'CONTROL';
-  edades: number[];   // grupos etarios seleccionados: 2 = 18-35m, 3 = 36-47m, 4 = 48-59m, 5 = 60-120m
-}
-
-export const FILTRO_DEFAULT: FiltroReportes = {
-  tipoPaciente: 'TODOS',
-  edades: [],
-};
-
 export interface ResumenGeneral {
   totalFormularios: number;
   formulariosContactados: number;
@@ -80,11 +70,6 @@ export interface VinelandData {
 }
 
 export interface AnticuerposData {
-  totalConSuero: number;
-  totalSinSuero: number;
-  mediaBtu: number;
-  sdBtu: number;
-  medianaBtu: number;
   distribucionRangos: Distribucion[];
 }
 
@@ -98,7 +83,6 @@ export interface CorrelacionPunto {
 export interface CorrelacionResponse {
   puntos: CorrelacionPunto[];
   r: number | null;
-  pValue: number | null;
   n: number;
 }
 
@@ -108,33 +92,46 @@ export interface EstadisticasGrupo {
   pctConSuero: number;
   mediaBtu: number;
   sdBtu: number;
-  medianaBtu: number;
 }
 
 export interface ComparacionGrupos {
   problema: EstadisticasGrupo;
   control: EstadisticasGrupo;
-  pValue: number | null;
-  cohenD: number | null;
 }
 
 export type EjeCorrelacion = 'MCHAT_SCORE' | 'CARS_RAW' | 'VINELAND_COCIENTE' | 'BTU_VALUE';
 
 export const EJE_LABELS: Record<EjeCorrelacion, string> = {
-  MCHAT_SCORE:       'M-CHAT Tamizaje (score)',
+  MCHAT_SCORE:       'M-CHAT (score final)',
   CARS_RAW:          'CARS-2 Raw Score',
-  VINELAND_COCIENTE: 'Vineland Cociente',
+  VINELAND_COCIENTE: 'Vineland CCA',
   BTU_VALUE:         'Anticuerpos BTU',
 };
 
 export const PARES_CORRELACION: Array<{ x: EjeCorrelacion; y: EjeCorrelacion }> = [
-  { x: 'MCHAT_SCORE',       y: 'CARS_RAW' },
-  { x: 'MCHAT_SCORE',       y: 'VINELAND_COCIENTE' },
-  { x: 'CARS_RAW',          y: 'VINELAND_COCIENTE' },
-  { x: 'BTU_VALUE',         y: 'MCHAT_SCORE' },
-  { x: 'BTU_VALUE',         y: 'CARS_RAW' },
-  { x: 'BTU_VALUE',         y: 'VINELAND_COCIENTE' },
+  { x: 'BTU_VALUE', y: 'MCHAT_SCORE' },
+  { x: 'BTU_VALUE', y: 'CARS_RAW' },
+  { x: 'BTU_VALUE', y: 'VINELAND_COCIENTE' },
 ];
+
+export interface PuntoTemporal {
+  periodo: string;
+  monto: number;
+}
+
+export interface Donante {
+  donante: string | null;
+  correo: string | null;
+}
+
+export interface DonacionesAnalitica {
+  totalRecaudado: number;
+  cantidadAprobadas: number;
+  montoPromedio: number;
+  recaudacionPorMes: PuntoTemporal[];
+  porEstado: Distribucion[];
+  donantes: Donante[];
+}
 
 export interface DashboardAnalitica {
   resumen: ResumenGeneral;

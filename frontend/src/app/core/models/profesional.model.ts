@@ -37,4 +37,5 @@ export interface ProfesionalUpdate {
   email: string;
   telefono: string;
   role: Role;
+  password?: string;
 }

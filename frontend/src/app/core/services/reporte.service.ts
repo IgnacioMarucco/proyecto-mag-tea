@@ -3,8 +3,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import {
   CorrelacionResponse,
   DashboardAnalitica,
+  DonacionesAnalitica,
   EjeCorrelacion,
-  FiltroReportes,
 } from '../models/reporte.model';
 
 @Injectable({ providedIn: 'root' })
@@ -12,24 +12,17 @@ export class ReportesService {
   private readonly http = inject(HttpClient);
   private readonly base = '/api/v1/reportes';
 
-  private buildParams(filtros?: FiltroReportes): HttpParams {
-    let params = new HttpParams();
-    if (filtros?.tipoPaciente && filtros.tipoPaciente !== 'TODOS') {
-      params = params.set('tipoPaciente', filtros.tipoPaciente);
-    }
-    for (const e of filtros?.edades ?? []) {
-      params = params.append('edades', e);
-    }
-    return params;
+  getDashboard() {
+    return this.http.get<DashboardAnalitica>(`${this.base}/dashboard`);
   }
 
-  getDashboard(filtros?: FiltroReportes) {
-    return this.http.get<DashboardAnalitica>(`${this.base}/dashboard`, { params: this.buildParams(filtros) });
-  }
-
-  getCorrelaciones(ejeX: EjeCorrelacion, ejeY: EjeCorrelacion, filtros?: FiltroReportes) {
-    const params = this.buildParams(filtros).set('ejeX', ejeX).set('ejeY', ejeY);
+  getCorrelaciones(ejeX: EjeCorrelacion, ejeY: EjeCorrelacion) {
+    const params = new HttpParams().set('ejeX', ejeX).set('ejeY', ejeY);
     return this.http.get<CorrelacionResponse>(`${this.base}/correlaciones`, { params });
+  }
+
+  getDonaciones() {
+    return this.http.get<DonacionesAnalitica>(`${this.base}/donaciones`);
   }
 
   exportarRatones() {
