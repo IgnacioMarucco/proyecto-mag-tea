@@ -3,12 +3,14 @@
   <div class="flex items-center justify-between mb-6">
     <app-page-header [crumbs]="crumbs()" />
     <a routerLink="/internal/camadas/nuevo"
+      data-tour="camadas-nuevo"
       class="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark transition-colors whitespace-nowrap">
       <app-icon name="plus" class="w-4 h-4" /> Registrar camada
     </a>
   </div>
 
   <app-list-toolbar
+    data-tour="camadas-toolbar"
     placeholder="Buscar por nombre…"
     [filterGroups]="filterGroups"
     [activeFilters]="{}"
@@ -20,6 +22,7 @@
   </span>
 
   <app-data-table
+    data-tour="camadas-tabla"
     [columns]="columns"
     [rows]="camadas().length"
     ariaLabel="Listado de camadas"
@@ -34,7 +37,7 @@
         <td class="px-5 py-3.5 font-mono text-text-muted">
           {{ camada.fechaNacimiento ? (camada.fechaNacimiento | fecha) : '—' }}
         </td>
-        <td class="px-5 py-3.5">
+        <td class="px-5 py-3.5" data-tour="camadas-acciones">
           <app-row-actions [actions]="getActionsFor(camada)" />
         </td>
       </tr>
@@ -42,6 +45,7 @@
   </app-data-table>
 
   <app-paginator
+    data-tour="camadas-paginador"
     [currentPage]="currentPage()"
     [totalPages]="totalPages()"
     [totalElements]="totalElements()"
