@@ -1,3 +1,6 @@
+/** Día de vida en que se realiza tres cámaras + microscopía y se sacrifica al ratón. */
+export const DIA_SACRIFICIO = 21;
+
 export const SEXO_LABELS: Record<string, string> = {
   MACHO:  'Macho',
   HEMBRA: 'Hembra',
