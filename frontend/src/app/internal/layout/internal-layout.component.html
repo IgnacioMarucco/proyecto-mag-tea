@@ -104,21 +104,54 @@
 
     <!-- User -->
     <div class="border-t border-sidebar-border overflow-hidden"
-         [class.px-5]="!collapsed()" [class.py-4]="!collapsed()"
+         [class.px-5]="!collapsed()" [class.pt-4]="!collapsed()" [class.pb-6]="!collapsed()"
          [class.flex]="collapsed()" [class.flex-col]="collapsed()" [class.items-center]="collapsed()" [class.py-4]="collapsed()" [class.gap-2]="collapsed()">
       @if (!collapsed()) {
-        <p class="text-white text-sm font-medium truncate" [title]="user()?.email ?? ''">
+        <button
+          (click)="startTour()"
+          class="flex items-center gap-1.5 text-xs text-sidebar-muted hover:text-white transition-colors"
+          aria-label="Abrir guía interactiva"
+        >
+          <lucide-angular [img]="HelpCircleIcon" [size]="14" [strokeWidth]="1.5" />
+          Ayuda
+        </button>
+        <p class="mt-3 text-white text-sm font-medium truncate" [title]="user()?.email ?? ''">
           {{ user()?.email }}
         </p>
         <p class="text-accent text-[11px] font-mono mt-0.5">{{ roleLabel() }}</p>
+        <a
+          routerLink="/internal/perfil"
+          class="mt-3 flex items-center gap-1.5 text-xs text-sidebar-muted hover:text-white transition-colors"
+          aria-label="Mi Perfil"
+        >
+          <lucide-angular [img]="UserIcon" [size]="14" [strokeWidth]="1.5" />
+          Mi Perfil
+        </a>
         <button
           (click)="logout()"
-          class="mt-3 text-xs text-sidebar-muted hover:text-white transition-colors"
+          class="mt-3 flex items-center gap-1.5 text-xs text-sidebar-muted hover:text-white transition-colors"
           aria-label="Cerrar sesión"
         >
-          Cerrar sesión →
+          <lucide-angular [img]="LogOutIcon" [size]="14" [strokeWidth]="1.5" />
+          Cerrar sesión
         </button>
       } @else {
+        <button
+          (click)="startTour()"
+          class="text-sidebar-muted hover:text-white transition-colors"
+          aria-label="Abrir guía interactiva"
+          title="Ayuda"
+        >
+          <lucide-angular [img]="HelpCircleIcon" [size]="17" [strokeWidth]="1.5" />
+        </button>
+        <a
+          routerLink="/internal/perfil"
+          class="text-sidebar-muted hover:text-white transition-colors"
+          aria-label="Mi Perfil"
+          title="Mi Perfil"
+        >
+          <lucide-angular [img]="UserIcon" [size]="17" [strokeWidth]="1.5" />
+        </a>
         <button
           (click)="logout()"
           class="text-sidebar-muted hover:text-white transition-colors"

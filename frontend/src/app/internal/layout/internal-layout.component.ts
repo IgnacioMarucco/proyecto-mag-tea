@@ -1,13 +1,14 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from '@angular/core';
 import { NgOptimizedImage } from '@angular/common';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {
   LucideAngularModule,
   type LucideIconData,
   Home, Inbox, Users, Droplets, Layers, Rat, Briefcase, ChartBar, Archive, Dna,
-  LogOut, PanelLeftClose, PanelLeftOpen,
+  LogOut, PanelLeftClose, PanelLeftOpen, HelpCircle, User,
 } from 'lucide-angular';
 import { AuthService } from '../../core/services/auth.service';
+import { TourService } from '../../core/services/tour.service';
 import { Role, ROLE_LABELS } from '../../core/models/profesional.model';
 import { ToastContainerComponent } from '../../shared/toast/toast-container.component';
 
@@ -110,13 +111,17 @@ const NAV_SECTIONS: NavSection[] = [
 })
 export class InternalLayoutComponent {
   private readonly authService = inject(AuthService);
+  private readonly tour        = inject(TourService);
+  private readonly router      = inject(Router);
 
   user = this.authService.currentUser;
 
-  readonly HomeIcon  = HOME_NAV_ICON;
-  readonly collapsed = signal(localStorage.getItem('sidebar-collapsed') === 'true');
-  readonly toggleIcon = computed(() => this.collapsed() ? PanelLeftOpen : PanelLeftClose);
-  readonly LogOutIcon = LogOut;
+  readonly HomeIcon      = HOME_NAV_ICON;
+  readonly collapsed     = signal(localStorage.getItem('sidebar-collapsed') === 'true');
+  readonly toggleIcon    = computed(() => this.collapsed() ? PanelLeftOpen : PanelLeftClose);
+  readonly LogOutIcon    = LogOut;
+  readonly HelpCircleIcon = HelpCircle;
+  readonly UserIcon      = User;
 
   constructor() {
     effect(() => {
@@ -143,6 +148,10 @@ export class InternalLayoutComponent {
       }))
       .filter(section => section.items.length > 0);
   });
+
+  startTour(): void {
+    this.tour.start(this.router.url);
+  }
 
   logout(): void {
     this.authService.logout();
