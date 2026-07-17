@@ -3,7 +3,7 @@ import { ModeloAnimalResponse } from '../../../../core/models/modelo-animal.mode
 import { StatusBadgeComponent } from '../../../../shared/status-badge/status-badge.component';
 import { FechaPipe } from '../../../../core/pipes/fecha.pipe';
 import { RANGO_COLORS, RANGO_LABELS } from '../../../../shared/utils/btu.utils';
-import { SEXO_COLORS, SEXO_LABELS } from '../../../../shared/utils/modelo-animal.utils';
+import { DIA_SACRIFICIO, SEXO_COLORS, SEXO_LABELS } from '../../../../shared/utils/modelo-animal.utils';
 
 @Component({
   selector: 'app-datos-basicos-ma-section',
@@ -25,7 +25,7 @@ export class DatosBasicosMaSectionComponent {
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
     const diff = Math.floor((hoy.getTime() - nac.getTime()) / (1000 * 60 * 60 * 24));
-    return diff + 1;
+    return Math.min(diff + 1, DIA_SACRIFICIO);
   });
 
 }
