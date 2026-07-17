@@ -7,7 +7,7 @@ import { catchError, of } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { LucideAngularModule, AlertTriangle, CheckCircle, Activity, Inbox } from 'lucide-angular';
 import { InicioService } from '../../core/services/inicio.service';
-import { AgendaEvento, AlertaConductualItem } from '../../core/models/inicio.model';
+import { AgendaEvento } from '../../core/models/inicio.model';
 import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
 import { FechaPipe } from '../../core/pipes/fecha.pipe';
 
@@ -106,29 +106,6 @@ export class InicioComponent {
 
   readonly agendaVacia = computed(() =>
     (this.data()?.agendaSemana ?? []).length === 0);
-
-  nivelAlerta(item: AlertaConductualItem): 'aviso' | 'urgente' | 'critico' | 'vencida' {
-    if (item.diasRestantes < 0) return 'vencida';
-    if (item.diasRestantes === 0) return 'critico';
-    if (item.diasRestantes === 1) return 'urgente';
-    return 'aviso';
-  }
-
-  labelDiasRestantes(item: AlertaConductualItem): string {
-    if (item.diasRestantes < 0) return `Vencida hace ${Math.abs(item.diasRestantes)} día(s)`;
-    if (item.diasRestantes === 0) return 'HOY';
-    if (item.diasRestantes === 1) return 'Mañana';
-    return `En ${item.diasRestantes} días`;
-  }
-
-  labelTipoTest(tipo: string): string {
-    const labels: Record<string, string> = {
-      VOCALIZACIONES: 'Vocalizaciones',
-      TRES_CAMARAS: 'Tres cámaras',
-      SACRIFICIO: 'Sacrificio / Microscopía',
-    };
-    return labels[tipo] ?? tipo;
-  }
 
   rolLabel(rol: string | null): string {
     const labels: Record<string, string> = {
