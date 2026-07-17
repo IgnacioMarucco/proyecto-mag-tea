@@ -3,8 +3,11 @@ import {
   Component,
   AfterViewInit,
   OnDestroy,
+  ElementRef,
+  effect,
   inject,
   signal,
+  viewChild,
 } from '@angular/core';
 import { extractErrorMessage } from '../../shared/utils/error.utils';
 import { NgOptimizedImage, DecimalPipe } from '@angular/common';
@@ -49,6 +52,8 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
   submitState = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
   errorMessage = signal<string | null>(null);
 
+  private readonly successBox = viewChild<ElementRef<HTMLElement>>('successBox');
+
   showOtroField = toSignal(this.form.get('comoConocioProyecto')!.valueChanges, {
     initialValue: '',
   });
@@ -61,6 +66,13 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
       { property: 'og:description', content: 'Estudiamos la relación entre anticuerpos anti-MAG y el Trastorno del Espectro Autista. Sumate como familia participante desde Córdoba.' },
       { property: 'og:type', content: 'website' },
     ]);
+
+    effect(() => {
+      if (this.submitState() !== 'success') return;
+      const el = this.successBox()?.nativeElement;
+      el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el?.focus({ preventScroll: true });
+    });
   }
 
   ngAfterViewInit(): void {
@@ -147,6 +159,41 @@ export class LandingComponent implements AfterViewInit, OnDestroy {
     {
       title: 'Segunda visita al laboratorio',
       desc: 'Se realiza una pequeña extracción de sangre para el análisis de anticuerpos. El equipo acompaña a la familia durante todo el proceso.',
+    },
+  ];
+
+  readonly faqs: { q: string; a: string }[] = [
+    {
+      q: '¿Mi hijo/a necesita tener diagnóstico de TEA para participar?',
+      a: 'No necesariamente. Además del grupo con diagnóstico, buscamos niños y niñas sin diagnóstico de TEA, de edad y sexo similar, para formar el grupo de comparación (grupo control).',
+    },
+    {
+      q: '¿Tiene algún costo participar?',
+      a: 'No. La participación es completamente gratuita y voluntaria, y tampoco se ofrece remuneración económica.',
+    },
+    {
+      q: '¿Es doloroso o riesgoso para el niño/a?',
+      a: 'Se realiza una extracción de sangre convencional (no mayor a 12 ml), a cargo de personal calificado y especializado en pediatría. Los riesgos son mínimos: molestia o enrojecimiento leve en la zona de punción.',
+    },
+    {
+      q: '¿Se le administra algún medicamento o tratamiento?',
+      a: 'No. Es un estudio observacional: no se evalúa, prescribe ni administra ningún fármaco, sustancia o tratamiento experimental.',
+    },
+    {
+      q: '¿Qué pasa con los datos y la muestra de mi hijo/a? ¿Son confidenciales?',
+      a: 'Sí. Todos los datos y muestras se identifican con un código numérico encriptado. Nunca se utilizan nombres reales ni DNI en las muestras de laboratorio ni en las publicaciones científicas.',
+    },
+    {
+      q: '¿Podemos retirarnos del estudio en cualquier momento?',
+      a: 'Sí, en cualquier momento y sin necesidad de dar explicaciones. Si la muestra ya fue tomada, podés pedir formalmente su destrucción segura y la baja del protocolo.',
+    },
+    {
+      q: '¿Dónde se hacen las visitas y cuántas son?',
+      a: 'Son dos visitas. La primera, informativa, en el Centro Wernicke Sede Norte (presencial o virtual por videollamada). La segunda, obligatoria y presencial, en el Laboratorio Castillo Chidiak, donde se realiza la extracción de sangre.',
+    },
+    {
+      q: '¿Quién supervisa el estudio y con quién puedo consultar dudas?',
+      a: 'El protocolo está aprobado y supervisado por el Comité Institucional de Ética de Investigación en Salud (C.I.E.I.S.) OULTON, y es llevado adelante por el Centro Wernicke junto al CIQUIBIC (CONICET / Universidad Nacional de Córdoba). Para cualquier consulta podés escribir a proyectomagtea@gmail.com.',
     },
   ];
 
