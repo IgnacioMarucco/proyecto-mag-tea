@@ -46,7 +46,7 @@ Reportes                ←   Modelos Animales          ←   Sueros y Pools
 
 ---
 
-## Modelo de datos
+## Modelo de datos simplificado
 
 ```mermaid
 erDiagram
