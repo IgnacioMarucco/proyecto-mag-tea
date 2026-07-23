@@ -28,17 +28,7 @@
     <div class="mt-3 flex flex-wrap items-center justify-between gap-2">
       <p class="text-xs text-slate-400">
         Hover sobre un punto para ver el código del paciente.
-        <span class="ml-2 inline-flex items-center gap-1">
-          <span class="inline-block h-2.5 w-2.5 rounded-full bg-orange-500"></span> Caso problema
-          <span class="ml-2 inline-block h-2.5 w-2.5 rounded-full bg-indigo-500"></span> Control
-        </span>
       </p>
-      @if (coefR() !== null) {
-        <p class="text-xs font-mono text-slate-600">
-          r = {{ coefR() | number:'1.2-2' }}
-          <span class="ml-2 text-slate-400">(n = {{ nPuntos() }})</span>
-        </p>
-      }
     </div>
   }
 </div>

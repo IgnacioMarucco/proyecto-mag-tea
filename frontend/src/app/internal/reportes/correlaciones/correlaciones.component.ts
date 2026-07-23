@@ -1,5 +1,4 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
 import { toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { NgxEchartsDirective } from 'ngx-echarts';
 import { catchError, of, switchMap } from 'rxjs';
@@ -10,7 +9,7 @@ import type { EChartsOption } from 'echarts';
 @Component({
   selector: 'app-correlaciones',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [NgxEchartsDirective, DecimalPipe],
+  imports: [NgxEchartsDirective],
   templateUrl: './correlaciones.component.html',
 })
 export class CorrelacionesComponent {
@@ -40,9 +39,6 @@ export class CorrelacionesComponent {
     const r = this.resp();
     return r !== null && r !== undefined && r.puntos.length === 0;
   });
-
-  readonly coefR   = computed(() => this.resp()?.r    ?? null);
-  readonly nPuntos = computed(() => this.resp()?.n ?? null);
 
   readonly chartOptions = computed<EChartsOption | null>(() => {
     const resp = this.resp();
